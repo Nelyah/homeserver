@@ -1,0 +1,4 @@
+domain_list
+ovh-credentials
+.env
+services/nginx/nginx_config/generated/*
