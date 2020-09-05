@@ -1,0 +1,9 @@
+#! /bin/bash
+
+cred_file=$(readlink -f $(dirname $${BASH_SOURCE[0]})/ovh-credentials)
+domain_list=$(for domain in $(cat domain_list); do echo " -d ${domain}"; done)
+
+docker run -it --rm --name certbot \
+            -v "certificates:/etc/letsencrypt" \
+            -v "${cred_file}":/ovh-credentials \
+            certbot/dns-ovh certonly --dns-ovh --dns-ovh-credentials /ovh-credentials ${domain_list}

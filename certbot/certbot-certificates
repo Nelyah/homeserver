@@ -1,0 +1,5 @@
+#! /bin/bash
+
+docker run -it --rm --name certbot \
+            -v "certificates:/etc/letsencrypt" \
+            certbot/dns-ovh certificates
