@@ -1,0 +1,78 @@
+#!/bin/bash
+
+bin_dir=$(readlink -f "$(dirname $(which $0))")
+source "${bin_dir}/colour-output"
+
+function system-update ()
+{
+    #check for updates
+    local updates_count=$(yum check-update --quiet | grep -v "^$" | wc -l)
+    local updates_security_count=$(yum check-update --security --quiet | grep -v "^$" | wc -l)
+    local total_count=$((updates_count+updates_security_count))
+
+    if [[ $((updates_count+updates_security_count)) -gt 0 ]];
+    then
+        [[ "$updates_security_count" == 0 ]] && colour_secu="${green}" || colour_secu="${light_red}"
+        echo -e "${orange}${total_count}${reset} Updates available. ${colour_secu}${updates_security_count}${reset} of them are security updates."
+    else
+      echo "System is up to date."
+    fi
+}
+
+avail_updates=$(system-update)
+
+DISTRIB_DESCRIPTION=$(cat /etc/centos-release)
+
+date=$(date)
+LOAD1=$(cat /proc/loadavg | awk '{print $1}')
+LOAD5=$(cat /proc/loadavg | awk '{print $2}')
+LOAD15=$(cat /proc/loadavg | awk '{print $3}')
+
+# uptime
+uptime=$(cat /proc/uptime | cut -f1 -d.)
+upDays=$((uptime/60/60/24))
+upHours=$((uptime/60/60%24))
+upMins=$((uptime/60%60))
+upSecs=$((uptime%60))
+
+# filesystem info
+root_usage=$(df -h / | awk '/\// {print $5}'|grep -v "^$")
+data_usage=$(df -h /media/data | awk '/\/media\/data/ {print $5}'|grep -v "^$")
+data2_usage=$(df -h /media/data2 | awk '/\/media\/data/ {print $5}'|grep -v "^$")
+
+# memory
+memory_usage=$(free -t -h | grep Mem | awk '{print $3;}')
+memory_total=$(free -t -h | grep Mem | awk '{print $2;}')
+memory_usage_num=$(free -t | grep Mem | awk '{print $3;}')
+memory_total_num=$(free -t | grep Mem | awk '{print $2;}')
+memory_ratio_usage=$(bc -l <<< "${memory_usage_num}/${memory_total_num}")
+
+if [[ $(bc -l <<< "${memory_ratio_usage} < 0.33") ]]; then
+    memory_colour="${green}"
+elif [[ $(bc -l <<< "${memory_ratio_usage} < 0.66") ]]; then
+    memory_colour="${orange}"
+else
+    memory_colour="${light_red}"
+fi
+
+swap_usage=$(free -m | awk '/Swap/ { printf("%3.1f%%", $3/$2*100) }')
+
+# users
+users=$(users | wc -w)
+if [[ "${users}" -gt 1 ]]; then
+    logged_users="There are currently ${yellow}${users}${reset} logged in:\n$(users)"
+fi
+
+
+# processes
+processes=$(ps aux | wc -l)
+
+printf "System information as of: %s\n\n" "$date"
+printf "System Load:\t%s %s %s\tSystem Uptime:\t\t%s days %s hours %s min %s sec\n" "$LOAD1", "$LOAD5", "$LOAD15" "$upDays" "$upHours" "$upMins" "$upSecs"
+printf "Memory Usage:\t${memory_colour}%s${reset}\t\tSwap Usage:\t\t%s\n" "${memory_usage}/${memory_total}" "$swap_usage"
+printf "Disks Usage:\tRoot: %s\t\tData: %s\t\tBackup: %s\n" "$root_usage" "$data_usage" "$data2_usage"
+printf "Processes:\t%s\t\t\t\n\n" "$processes"
+printf "$logged_users\n"
+echo -e $avail_updates
+printf "\n\n"
+

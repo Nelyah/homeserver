@@ -1,0 +1,9 @@
+#! /bin/bash
+
+# Update all owned docker images
+
+docker images | \
+    tail -n +2 | \
+    awk '{ if ($1 != "<none>" && $2 != "<none>") { print $1":"$2 } }' | \
+    uniq | \
+    xargs -P 8 -n 1 docker pull

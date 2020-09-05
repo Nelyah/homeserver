@@ -1,0 +1,19 @@
+# This file is meant to provide some utility aliases and functions
+
+git_repo_path=$(readlink -f $(dirname ${BASH_SOURCE[0]})/..)
+services_directory="${git_repo_path}/services"
+
+export PATH="${git_repo_path}/bin:${PATH}"
+
+alias cdd="cd ${git_repo_path}"
+alias cddd="cd ${services_directory}"
+alias cdn="cd ${services_directory}/nextcloud"
+alias cdw="cd ${services_directory}/wordpress"
+
+alias dc="docker-compose"
+alias dcn="docker-compose -f ${services_directory}/nextcloud/docker-compose.yml"
+alias dcb="docker-compose -f ${services_directory}/wordpress/docker-compose.yml"
+alias dcw="docker-compose -f ${services_directory}/wiki/docker-compose.yml"
+alias dcng="docker-compose -f ${services_directory}/nginx/docker-compose.yml"
+
+# vim: syntax=sh

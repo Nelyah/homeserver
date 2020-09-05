@@ -1,0 +1,4 @@
+#! /bin/bash
+
+dangling_anonymous_volumes=$(docker volume ls -q --filter dangling=true | awk -F, 'length($0) == 64 { print }')
+[ -n "$dangling_anonymous_volumes" ] && docker volume rm "$dangling_anonymous_volumes"

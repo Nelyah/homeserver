@@ -1,0 +1,255 @@
+#!/bin/bash
+
+set -e
+
+log_backup() {
+    echo "[backup] "$(date "+%Y%m%d-%H:%M")" ${@}"
+}
+
+print_usage () {
+    cat << EOF
+Usage: ./$(basename ${0}) [--remote <dest_host>] --dest <dest_dir> --backup <file_1> --backup <file_2> ... [ARGS]
+
+Arguments:
+    --remote <host>                         If the backup destination is remote, specify the hostname that should be used by ssh and rsync.
+    --dest   <folder>                       The backup folder path. Either local path or remote one.
+    --backup-container <container_name>     Name of a docker container to backup.
+    --backup <file>                         Absolute path of a file or folder to backup.
+    --prefix <string>                       Prefix your backup names before the timestamp. Useful in combination with --max-bkp. (default: "backup")
+    --max-bkp <int>                         Maximum number of backup matching <prefix> to keep. (default: inf)
+    --user <string>                         If given, will chown the backup folder (not its content) and the "latest" symlink to this user
+    --group <string>                        If given, will chown the backup folder (not its content) and the "latest" symlink to this group
+    -h|--help                               Print this help message.
+    --dependencies                          Print the dependencies for this script
+    ARGS                                    Any additional argument will be passed to the rsync command to perform the backup.
+EOF
+}
+
+check_dependencies () {
+    cat << EOF
+This script depends on the following:
+
+- bash
+- docker
+- A docker image of the image name "backup"
+EOF
+}
+
+parse_args () {
+    additionnal_args=()
+    to_backup=()
+    container_to_backup=()
+    max_bkp=
+    prefix=backup
+    user=root
+    group=
+
+    while [ $# -gt 0 ]; do
+        case "${1}" in 
+            --remote) 
+                is_remote=true
+                DESTHOST="${2}"
+                shift 2
+                ;;
+            --dest)
+                backup_dest="${2}"
+                shift 2
+                ;;
+            --backup-container)
+                container_to_backup+=( "$2" )
+                shift 2
+                ;;
+            --backup)
+                to_backup+=( "$2" )
+                shift 2
+                ;;
+            --help|-h)
+                print_usage
+                exit 0
+                ;;
+            --prefix)
+                prefix="${2}"
+                shift 2
+                ;;
+            --max-bkp)
+                max_bkp="${2}"
+                shift 2
+                ;;
+            --user)
+                user="${2}"
+                shift 2
+                ;;
+            --group)
+                group="${2}"
+                shift 2
+                ;;
+            --dependencies|--dependency)
+                check_dependencies
+                exit 0
+                ;;
+            *) 
+                additionnal_args+=("${1}")
+                shift
+                ;;
+        esac
+    done
+
+    # If we didn't mention a group, default to the user
+    [ -z "${group}" ] && group=${user}
+
+    # If doing backup locally, then check folder existence
+    if [ -z "${is_remote}" ] && [ ! -e "${backup_dest}" ]; then
+        log_backup "Error: No such backup destination ${backup_dest}"
+        exit 1
+    # Else, check its existence on the remote
+    elif [ -n "${is_remote}" ] && [ -z $(ssh ${DESTHOST} "[ -e ${backup_dest} ] && echo yes") ]; then
+        log_backup "Error: No such remote backup destination ${DESTHOST}:${backup_dest}"
+        exit 1
+    fi
+}
+
+
+check_latest_backup () {
+    log_backup "Check for latest backup, if it exists"
+    if [ -n "$is_remote" ]; then
+        has_latest=$(docker run --rm backup ssh "${DESTHOST}" "[ -e \"${backup_dest}/latest\" ] && echo yes || echo no")
+        [ "${has_latest}" = no ] && has_latest=
+    else
+        [ -e ${backup_dest}/latest ] && has_latest="yes"
+    fi
+
+    if [ -n "$has_latest" ]; then
+        link_dest="--link-dest=../latest/"
+        log_backup "Latest link to backup exists"
+    else
+        log_backup "No link to latest backup could be found"
+    fi
+}
+
+check_target_exists () {
+    local is_container="$1"
+    local target="$2"
+
+    if [ "$is_container" = is_container ]; then
+        docker_check=$(docker volume ls | awk '$2 == "'${target}'" {print $2}')
+
+        if [ -z "${docker_check}" ]; then
+            log_backup "Error: no such container: ${target}"
+            exit 1
+        fi
+    elif [ ! -e "${target}" ]; then
+        log_backup "Error: No such file or directory: ${target}"
+    fi
+}
+
+get_docker_mount_opts () {
+    # Array of docker options for mounting volumes
+    docker_volume_opts=()
+    # Backup mount location on the docker
+    docker_to_backup=()
+
+    for data in ${container_to_backup[@]}; do
+        check_target_exists is_container "${data}"
+    done
+    for data in ${to_backup[@]} ; do
+        check_target_exists not_container "${data}"
+    done
+        
+    local data_id=1
+    for data in ${to_backup[@]} ${container_to_backup[@]}; do
+        local docker_path=/to_bkp/${data_id}/$(basename "${data}" )
+        docker_to_backup+=( "$docker_path" )
+        docker_volume_opts+=( -v "${data}":"$docker_path" )
+
+        data_id=$((data_id + 1))
+    done
+
+    # If backup is local mount the destination
+    if [ -z "${is_remote}" ]; then
+        docker_volume_opts+=( -v "${backup_dest}":"${docker_backup_dest}" )
+    fi
+}
+
+run_backup () {
+    local rsync_command=$( cat << EOF
+        rsync -azv ${link_dest} \
+            --numeric-ids \
+            -M--fake-super \
+            --delete \
+            ${additionnal_args[@]} \
+            ${docker_to_backup[@]} ${backup_destination};
+EOF
+    )
+
+    if [ -z "${is_remote}" ]; then 
+        rsync_command="${create_user_group_command} ;\
+            mkdir ${backup_destination} ;\
+            chown ${user}:${group} ${backup_destination} ;\
+            ${rsync_command}"
+    fi
+    log_backup "${rsync_command}"
+    docker run --rm ${docker_volume_opts[@]} backup bash -c "${rsync_command}"
+}
+
+# Create a symlink to the backup we just made
+make_link_to_latest () {
+
+    if [ -n "${is_remote}" ]; then
+        docker run --rm backup ssh "${DESTHOST}" " \
+            cd ${backup_dest} ; \
+            ln -sfn ${current_backup} latest"
+    else
+        docker run --rm ${docker_volume_opts[@]} backup bash -c " \
+            cd ${docker_backup_dest}; \
+            ln -sfn ${current_backup} latest ; \
+            ${create_user_group_command} ; \
+            chown -h ${user}:${group} latest"
+    fi
+}
+
+cleanup_old_backups () {
+    if [ -n "${is_remote}" ]; then
+        docker run --rm  ${docker_volume_opts[@]} backup \
+            ssh "${DESTHOST}" "ls -dt \"${backup_dest}/${prefix}\"_* 2> /dev/null \
+            | tail -n +$((max_bkp+1)) | xargs rm -rf"
+    else
+        docker run --rm  ${docker_volume_opts[@]} backup \
+            bash -c "ls -dt \"${docker_backup_dest}/${prefix}\"_* 2> /dev/null \
+            | tail -n +$((max_bkp+1)) | xargs rm -rf" 
+    fi
+}
+
+parse_args $@
+
+# This is to be able to change permissions and ownership
+# according to the given parameters
+create_user_group_command=
+[ "${user}" != root ]  && create_user_group_command="adduser --disabled-password --gecos \"\" ${user} ;"
+[ "${group}" != root ] && create_user_group_command="${create_user_group_command} addgroup ${group}"
+
+# either remote:folder or folder, depending on being remote or not
+current_backup="${prefix}_"$( date +"%Y%m%d_%H%M" )
+log_backup "Backup folder name is ${current_backup}"
+
+# Folder to mount the backups to if we are backuping locally
+docker_backup_dest=/backups
+
+check_latest_backup
+
+get_docker_mount_opts
+
+# Final backup destination
+if [ -n "${is_remote}" ]; then
+    backup_destination="${DESTHOST}:${backup_dest}/${current_backup}"
+else
+    backup_destination="${docker_backup_dest}/${current_backup}"
+fi
+
+run_backup
+
+make_link_to_latest
+
+if [ -n "${max_bkp}" ]; then
+    log_backup "Cleaning up old backups..."
+    cleanup_old_backups
+fi

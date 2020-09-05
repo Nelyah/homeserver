@@ -1,0 +1,4 @@
+#! /bin/bash
+
+dangling_images=$(docker images -q --filter dangling=true)
+[ -n "$dangling_images" ] && echo "$dangling_images" | xargs -L 1 docker image rm

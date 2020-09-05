@@ -1,0 +1,49 @@
+#! /usr/bin/env bash
+
+set -e
+
+source $(dirname ${BASH_SOURCE[0]})/environment_config
+
+cleanup(){ local RET=$?;  rm -f ${ps_array[@]} ; exit $RET; }
+trap cleanup EXIT INT TERM HUP ERR
+
+DOCKER_COMPOSE_LIST=( $(find "$services_directory" -name 'docker-compose.yml') )
+
+output=""
+ps_array=()
+project_array=()
+
+for project in ${DOCKER_COMPOSE_LIST[@]}; do
+    tmp_f=$(mktemp)
+    docker-compose -f ${project} ps > ${tmp_f} &
+    ps_array+=( "${tmp_f}" )
+    project_array+=( "${project}" )
+done
+
+wait
+
+for idx in ${!ps_array[@]}; do
+    project=${project_array[${idx}]}
+    tmp_f=${ps_array[${idx}]}
+
+    project_name=$(basename $(dirname $project))
+    project_name_length=${#project_name}
+    underline=$( echo "${project_name}" | sed 's/./=/g' )
+
+    project_status=$(< ${tmp_f})
+    col_count=$(cat "${tmp_f}" | head -2 | tail -1 | wc -c)
+    line_sep=$(cat "${tmp_f}" | head -2 | tail -1 | sed 's/./=/g')
+
+    project_name_blank_indent_length=$((col_count/2-project_name_length/2))
+    project_name_blank_indent=$(echo ${line_sep:0:${project_name_blank_indent_length}} | sed 's/./ /g')
+
+    cat << EOF
+
+${project_name_blank_indent}${project_name}
+${line_sep}
+${project_status}
+
+EOF
+    rm -f "${tmp_f}"
+    
+done
