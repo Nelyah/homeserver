@@ -1,0 +1,17 @@
+version: "3"
+services:
+  navidrome:
+    image: docker.io/deluan/navidrome:latest
+    ports:
+      - 4533:4533
+    environment:
+      ND_MUSICFOLDER: /music
+      ND_DATAFOLDER: /data
+      ND_SCANINTERVAL: 1m
+      ND_LOGLEVEL: info  
+      ND_PORT: 4533
+      ND_TRANSCODINGCACHESIZE: 100MB
+      ND_SESSIONTIMEOUT: 30m
+      ND_BASEURL: ""
+    volumes:
+      - ${MUSIC_FOLDER}:/music:ro
