@@ -1,0 +1,50 @@
+version: "2"
+services:
+  bookstack:
+    image: docker.io/linuxserver/bookstack
+    container_name: bookstack
+    environment:
+      - PUID=${app_PUID}
+      - PGID=${app_PGID}
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_DATABASE=${DB_NAME}
+      - APP_URL=${APP_URL}
+    ports:
+      - 6875:80
+    volumes:
+      - bookstack_data:/config
+      - certificates:/etc/letsencrypt:ro
+    restart: unless-stopped
+    depends_on:
+      - bookstack_db
+    networks:
+      - bookstack
+
+  bookstack_db:
+    image: docker.io/linuxserver/mariadb
+    container_name: bookstack_db
+    environment:
+      - PUID=${db_PUID}
+      - PGID=${db_PGID}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS}
+      - TZ=${TIME_ZONE}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
+    volumes:
+      - bookstack_db:/config/
+    restart: unless-stopped
+    networks:
+      - bookstack
+
+networks:
+  bookstack:
+    external: true
+
+volumes:
+  bookstack_db:
+    external: true
+  certificates:
+    external: true

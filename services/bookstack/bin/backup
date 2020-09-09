@@ -1,0 +1,57 @@
+#! /usr/bin/env bash
+
+set -e
+
+function do-backup ()
+{
+    # Should be daily / weekly / ...
+    type_bkp="$1"
+
+    max_bkp="$2"
+
+    BOOKSTACK_FOLDER=$(readlink -f "$(dirname $0)/..")
+    source "${BOOKSTACK_FOLDER}/.env"
+
+    BACKUP_SCRIPT=$(readlink -f "${BOOKSTACK_FOLDER}/../../bin/backup-incr")
+
+    cleanup() { local RET=$?; rm -f "${DBBACKUP}" ; exit $RET; }
+    trap cleanup EXIT INT TERM HUP ERR
+
+    source "${BOOKSTACK_FOLDER}/.env"
+
+    [ ! -d "${BACKUP_DESTINATION}" ] && mkdir -p ${BACKUP_DESTINATION}
+
+    # Check if container is running or not
+    cd "${BOOKSTACK_FOLDER}"
+
+    DBBACKUP="${BOOKSTACK_FOLDER}/bookstackapp.sql"
+
+    if [[ $(docker-compose ps | wc -l) == 2 ]]; then
+        container_not_running=true
+        docker-compose up -d
+    fi
+
+    docker exec bookstack_db \
+        sh -c "exec mysqldump -u root -p${DB_ROOT_PASS} --single-transaction ${DB_NAME}" > "${DBBACKUP}"
+
+    # Turn off the container if it wasn't running
+    [[ -n "${container_not_running}" ]] && docker-compose down
+
+    # Don't backup the bookstack_db container as we already have the sql dump
+    "${BACKUP_SCRIPT}" \
+        --dest "${BACKUP_DESTINATION}" \
+        --prefix "bookstack_${type_bkp}" \
+        --max-bkp "${max_bkp}" \
+        --backup-container certificates \
+        --backup-container bookstack_data \
+        --backup "${BOOKSTACK_FOLDER}" \
+        --backup "${DBBACKUP}" \
+        --user "${MY_USER}" \
+        --group "${MY_GROUP}"
+}
+
+if [ "${1}" = weekly ]; then 
+    do-backup weekly 3
+else
+    do-backup daily 10
+fi
