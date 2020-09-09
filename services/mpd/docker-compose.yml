@@ -1,0 +1,11 @@
+version: "3"
+services:
+  mpd:
+    image: randomcoww/mpd:latest
+    ports:
+      - "6600:6600"
+      - "8800:8800"
+    volumes:
+      - ./mpd.conf:/etc/mpd.conf
+      - ${MUSIC_FOLDER}:/var/lib/mpd/music:ro
+    restart: always
