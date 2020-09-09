@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  ddclient_domain1:
+    build: .
+    container_name: ddclient
+    environment:
+      - LOGIN=${DOMAIN1_LOGIN}
+      - PASSWORD=${DOMAIN1_PASSWORD}
+    volumes:
+      - ${DOMAIN1_FILE_LIST}:/domains_list
+
+  ddclient_domain2:
+    build: .
+    container_name: ddclient
+    environment:
+      - LOGIN=${DOMAIN2_LOGIN}
+      - PASSWORD=${DOMAIN2_PASSWORD}
+    volumes:
+      - ${DOMAIN2_FILE_LIST}:/domains_list

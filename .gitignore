@@ -4,3 +4,6 @@ ovh-credentials
 services/nginx/nginx_config/generated/*
 *.swo
 *.swp
+services/ddclient/domains_list_*
+services/ddclient/.env*
+services/ddclient/.cache_my_address
