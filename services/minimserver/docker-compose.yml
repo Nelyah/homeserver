@@ -1,0 +1,12 @@
+version: '3.4'
+
+services:
+  minimserver:
+    container_name: minimserver
+    restart: unless-stopped
+    build:
+      context: .
+      network: host
+    network_mode: host
+    volumes:
+      - ${MUSIC_DIRECTORY}:/media/:ro
