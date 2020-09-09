@@ -46,5 +46,7 @@ networks:
 volumes:
   bookstack_db:
     external: true
+  bookstack_data:
+    external: true
   certificates:
     external: true
