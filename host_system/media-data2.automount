@@ -1,0 +1,9 @@
+[Unit]
+Description=Automount for second data drive
+
+[Automount]
+Where=/media/data2/
+TimeoutIdleSec=300
+
+[Install]
+WantedBy=multi-user.target

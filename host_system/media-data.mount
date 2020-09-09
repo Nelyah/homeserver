@@ -1,0 +1,11 @@
+[Unit]
+Description=Data drive
+
+[Mount]
+What=/dev/disk/by-uuid/22850f9c-53cf-44d5-9539-cbee47852b16
+Where=/media/data/
+Type=ext4
+Options=defaults
+
+[Install]
+WantedBy=multi-user.target
