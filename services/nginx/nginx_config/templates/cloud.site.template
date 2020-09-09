@@ -1,0 +1,25 @@
+upstream cloud_upstream
+{
+    server ${CLOUD_INTERNAL_NAME} fail_timeout=3s;
+}
+
+server {
+    include       /etc/nginx/generated/ssl.conf;
+
+    listen        443 ssl http2;
+
+    server_name   ${CLOUD_URL};
+
+    location / {
+        include /etc/nginx/common_location.conf;
+        proxy_pass  http://cloud_upstream;
+    }
+
+    location = /login {
+        limit_req   zone=loginrate;
+        include /etc/nginx/common_location.conf;
+        proxy_pass  http://cloud_upstream;
+    }
+}
+
+# vi:syntax=nginx

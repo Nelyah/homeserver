@@ -1,0 +1,60 @@
+upstream blog_upstream {
+    server ${BLOG_INTERNAL_NAME} fail_timeout=3s;
+}
+
+server {
+    include     /etc/nginx/generated/ssl.conf;
+    server_name ${BLOG_URL_OLD};
+
+    listen     443 ssl http2;
+    return 301 https://${BLOG_URL_NEW}$request_uri;
+}
+
+server {
+    include       /etc/nginx/generated/ssl.conf;
+
+    listen        443 ssl http2;
+
+    server_name   ${BLOG_URL_NEW};
+
+    location / {
+        include /etc/nginx/common_location.conf;
+        proxy_pass  http://blog_upstream;
+    }
+
+    # Deny direct access to php files
+    location ~* /(?:uploads|files|wp-content|wp-includes|akismet)/.*.php$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Deny access to potentially sensitive files
+    location ~ /\.(svn|git)/* {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    location ~ /\.ht {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    location ~ /\.user.ini { 
+        deny all; 
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~ /wp-login.php {
+        limit_req   zone=loginrate;
+        allow 192.168.0.0/24;
+        allow 192.168.1.0/24;
+        deny all;
+        include /etc/nginx/common_location.conf;
+        proxy_pass  http://blog_upstream;
+    }
+
+}
+
+# vim:syntax=nginx

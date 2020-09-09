@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  nginx_reverse-proxy:
+    build: .
+    container_name: nginx_reverse-proxy
+    restart: unless-stopped
+    ports:
+      - 443:443
+      - 80:80
+    environment:
+      - BLOG_URL_OLD=${BLOG_URL_OLD}
+      - BLOG_URL_NEW=${BLOG_URL_NEW}
+      - BLOG_INTERNAL_NAME=${BLOG_INTERNAL_NAME}
+      - CLOUD_INTERNAL_NAME=${CLOUD_INTERNAL_NAME}
+      - CLOUD_URL=${CLOUD_URL}
+      - WIKI_URL=${WIKI_URL}
+      - WIKI_INTERNAL_NAME=${WIKI_INTERNAL_NAME}
+      - CERTIFICATE_NAME=${CERTIFICATE_NAME}
+      - NGINX_ENVSUBST_OUTPUT_DIR=${NGINX_ENVSUBST_OUTPUT_DIR}
+    volumes:
+      - ./nginx_config:/etc/nginx/
+      - certificates:/etc/letsencrypt:ro
+    networks:
+      - nextcloud
+      - bookstack
+      - wordpress
+
+volumes:
+  certificates:
+    external: true
+  nginx_config:
+    external: true
+
+networks:
+  nextcloud:
+    external: true
+  bookstack:
+    external: true
+  wordpress:
+    external: true
+
+  
