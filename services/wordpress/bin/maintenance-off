@@ -1,0 +1,6 @@
+#! /bin/bash
+
+docker run -it --rm \
+    --volumes-from wordpress \
+    --network wordpress \
+    wordpress:cli maintenance-mode deactivate
