@@ -15,3 +15,8 @@ services:
       ND_BASEURL: ""
     volumes:
       - ${MUSIC_FOLDER}:/music:ro
+      - navidrome_data:/data/
+
+volumes:
+  navidrome_data:
+    external: true
