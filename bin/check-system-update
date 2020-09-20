@@ -37,8 +37,8 @@ upSecs=$((uptime%60))
 
 # filesystem info
 root_usage=$(df -h / | awk '/\// {print $5}'|grep -v "^$")
-data_usage=$(df -h /media/data | awk '/\/media\/data/ {print $5}'|grep -v "^$")
-data2_usage=$(df -h /media/data2 | awk '/\/media\/data/ {print $5}'|grep -v "^$")
+data_usage=$(df -h /data | awk '/\/data/ {print $5}'|grep -v "^$")
+data2_usage=$(df -h /data2 | awk '/\/data/ {print $5}'|grep -v "^$")
 
 # memory
 memory_usage=$(free -t -h | grep Mem | awk '{print $3;}')
