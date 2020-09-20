@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  syncthing:
+    container_name: syncthing
+    image: docker.io/syncthing/syncthing
+    restart: unless-stopped
+    volumes:
+      - syncthing_data:/var/syncthing
+      - syncthing_config:/var/syncthing/config/
+    user: "1000:1000"
+    ports:
+      - 8385:8384
+      - 22000:22000
+    networks:
+      - syncthing
+
+networks:
+  syncthing:
+    external: true
+
+volumes:
+  syncthing_config:
+    external: true
+  syncthing_data:
+    external: true
+

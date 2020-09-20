@@ -1,0 +1,48 @@
+#! /usr/bin/env bash
+
+set -e
+
+function do-backup ()
+{
+    # Should be daily / weekly / ...
+    type_bkp="$1"
+
+    max_bkp="$2"
+
+    SYNCTHING_FOLDER=$(readlink -f "$(dirname $0)/..")
+
+    BACKUP_SCRIPT=$(readlink -f "${SYNCTHING_FOLDER}/../../bin/backup-incr")
+
+    source "${SYNCTHING_FOLDER}/.env"
+
+    [ ! -d "${BACKUP_DESTINATION}" ] && mkdir -p ${BACKUP_DESTINATION}
+
+    # Check if container is running or not
+    cd "${SYNCTHING_FOLDER}"
+
+    if [[ $(docker-compose ps | wc -l) != 2 ]]; then
+        docker-compose down
+        container_is_running=true
+    fi
+
+    # Don't backup the bookstack_db container as we already have the sql dump
+    "${BACKUP_SCRIPT}" \
+        --dest "${BACKUP_DESTINATION}" \
+        --prefix "syncthing_${type_bkp}" \
+        --max-bkp "${max_bkp}" \
+        --backup-container syncthing_data \
+        --backup-container syncthing_config \
+        --backup "${SYNCTHING_FOLDER}" \
+        --user "${MY_USER}" \
+        --group "${MY_GROUP}"
+
+    # Turn on the container if it was running
+    [[ -n "${container_is_running}" ]] && docker-compose up -d
+}
+
+
+if [ "${1}" = weekly ]; then 
+    do-backup weekly 3
+else
+    do-backup daily 10
+fi
