@@ -1,6 +1,6 @@
 upstream wiki_upstream
 {
-    server ${WIKI_INTERNAL_NAME} fail_timeout=3s;
+    server ${WIKI_INTERNAL_NAME} fail_timeout=3s max_fails=0;
 }
 
 server {
