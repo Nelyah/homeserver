@@ -1,0 +1,40 @@
+#! /bin/env bash
+
+do_all=''
+do_backup=''
+do_image_update=''
+do_dns_update=''
+
+while (( "$#" > 0 )); do
+    case "$1" in
+        --backup) do_backup=y; shift ;;
+        --image-update) do_image_update=y; shift ;;
+        --dns-update) do_dns_update=y; shift ;;
+        --all) do_all=y; shift ;;
+        *) shift ;;
+    esac
+done
+
+
+bin_dir=$(readlink -f "$(dirname $(which $0))")
+
+if [[ -n "$do_all" ]] || [[ -n "$do_backup" ]]; then
+    for file in "${bin_dir}/../services/*/bin/backup"; do
+        "$file" daily
+        [[ $(date +'%A') == Sunday ]] && "$file" weekly
+    done
+fi
+
+if [[ -n "$do_all" ]] || [[ -n "$do_image_update" ]]; then
+    "${bin_dir}/docker-update-images"
+
+    for file in ${bin_dir}/../services/*/bin/update; do
+        "$file"
+    done
+fi
+
+if [[ -n "$do_all" ]] || [[ -n "$do_dns_update" ]]; then
+    pushd ../services/ddclient/
+    ./update_dns
+    popd
+fi
