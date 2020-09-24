@@ -11,7 +11,7 @@ services:
       ND_LOGLEVEL: info  
       ND_PORT: 4533
       ND_TRANSCODINGCACHESIZE: 100MB
-      ND_SESSIONTIMEOUT: 30m
+      ND_SESSIONTIMEOUT: "744h"
       ND_BASEURL: ""
     volumes:
       - ${MUSIC_FOLDER}:/music:ro
