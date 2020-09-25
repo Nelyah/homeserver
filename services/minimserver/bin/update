@@ -1,16 +1,15 @@
 #! /bin/bash
 
+image_name="minimserver"
 minimserver_dir=$(readlink -f "$(dirname $(which $0))/..")
 
-images=( docker.io/java:8-jre )
-
-if ${minimserver_dir}/../../bin/check-images-need-update ${images[@]} ; then
-    cd "${minimserver_dir}"
-    docker build --no-cache -t "minimserver" -proxy --pull  .
+cd "$minimserver_dir"
+needs_update=$(docker-compose images | tail -n +3 | awk '{ if ( $3 == "<none>" ) { print "yes" } }')
+if [ ! -z "$needs_update" ]; then
+    docker build --no-cache -t "$image_name" --pull .
     docker-compose down
     docker-compose up -d
-
-    echo "Navidrome docker has been updated." 1>&2
+    echo "Minimserver docker has been updated." 1>&2
 else
     echo "Image SHA hasn't changed, keeping the container running." 1>&2
 fi
