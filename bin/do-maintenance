@@ -19,7 +19,7 @@ done
 bin_dir=$(readlink -f "$(dirname $(which $0))")
 
 if [[ -n "$do_all" ]] || [[ -n "$do_backup" ]]; then
-    for file in "${bin_dir}/../services/*/bin/backup"; do
+    for file in ${bin_dir}/../services/*/bin/backup; do
         "$file" daily
         [[ $(date +'%A') == Sunday ]] && "$file" weekly
     done
@@ -34,7 +34,7 @@ if [[ -n "$do_all" ]] || [[ -n "$do_image_update" ]]; then
 fi
 
 if [[ -n "$do_all" ]] || [[ -n "$do_dns_update" ]]; then
-    pushd ../services/ddclient/
+    pushd "${bin_dir}/../services/ddclient/" > /dev/null
     ./update_dns
-    popd
+    popd > /dev/null
 fi
