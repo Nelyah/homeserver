@@ -2,6 +2,7 @@ version: "3"
 services:
   navidrome:
     image: docker.io/deluan/navidrome:latest
+    restart: unless-stopped
     ports:
       - 4533:4533
     environment:
