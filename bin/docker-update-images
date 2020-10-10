@@ -2,8 +2,25 @@
 
 # Update all owned docker images
 
+list_images_pre_update=()
+for image in $(docker images | \
+    tail -n +2 | \
+    awk '{ if ($1 != "<none>" && $2 != "<none>") { print $1":"$2":"$3 } }'); do
+    list_images_pre_update+=( "$image" )
+done
+
 docker images | \
     tail -n +2 | \
     awk '{ if ($1 != "<none>" && $2 != "<none>") { print $1":"$2 } }' | \
     uniq | \
-    xargs -P 8 -n 1 docker pull
+    xargs -P 8 -n 1 docker pull &> /dev/null
+
+docker_images_post_update=$(docker images)
+
+for image in "${list_images_pre_update[@]}"; do
+    image_id=$(cut -d':' -f 3 <<< "$image" )
+    image_tag=$(cut -d':' -f 2 <<< "$image" )
+    image_name=$(cut -d':' -f 2 <<< "$image" )
+    image_line=$(grep "$image_name.*$image_id" <<< "$docker_images_post_update")
+    awk -v tag="$image_tag" '{if ($2 == "<none>") {print "Image "$1":"tag" has been updated."} }' <<< "$image_line"
+done
