@@ -3,7 +3,7 @@
 cd $(dirname $(readlink -f $0))
 
 [ -f .cache_my_address ] && OLD_PUB_IP=$(cat .cache_my_address) || OLD_PUB_IP=""
-CUR_PUB_IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+CUR_PUB_IP=$(curl ifconfig.me 2> /dev/null)
 
 if [ -z "${OLD_PUB_IP}" ] || [ "${OLD_PUB_IP}" != "${CUR_PUB_IP}" ]; then
 
