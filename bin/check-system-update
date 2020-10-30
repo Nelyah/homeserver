@@ -8,12 +8,11 @@ function system-update ()
     #check for updates
     local updates_count=$(yum check-update --quiet | grep -v "^$" | wc -l)
     local updates_security_count=$(yum check-update --security --quiet | grep -v "^$" | wc -l)
-    local total_count=$((updates_count+updates_security_count))
 
     if [[ $((updates_count+updates_security_count)) -gt 0 ]];
     then
         [[ "$updates_security_count" == 0 ]] && colour_secu="${green}" || colour_secu="${light_red}"
-        echo -e "${orange}${total_count}${reset} Updates available. ${colour_secu}${updates_security_count}${reset} of them are security updates."
+        echo -e "${orange}${updates_count}${reset} Updates available. ${colour_secu}${updates_security_count}${reset} of them are security updates."
     else
       echo "System is up to date."
     fi
