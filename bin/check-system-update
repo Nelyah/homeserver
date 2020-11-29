@@ -73,5 +73,7 @@ printf "Disks Usage:\tRoot: %s\t\tData: %s\t\tBackup: %s\n" "$root_usage" "$data
 printf "Processes:\t%s\t\t\t\n\n" "$processes"
 printf "$logged_users\n"
 echo -e $avail_updates
+echo ""
+needs-restarting -r
 printf "\n\n"
 
