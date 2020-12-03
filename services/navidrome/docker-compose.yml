@@ -3,21 +3,25 @@ services:
   navidrome:
     image: docker.io/deluan/navidrome:latest
     restart: unless-stopped
-    ports:
-      - 4533:4533
     environment:
       ND_MUSICFOLDER: /music
       ND_DATAFOLDER: /data
       ND_SCANINTERVAL: 1m
       ND_LOGLEVEL: info  
-      ND_PORT: 4533
+      ND_PORT: 80
       ND_TRANSCODINGCACHESIZE: 100MB
       ND_SESSIONTIMEOUT: "744h"
       ND_BASEURL: ""
+    networks:
+      - navidrome
     volumes:
       - ${MUSIC_FOLDER}:/music:ro
       - navidrome_data:/data/
 
 volumes:
   navidrome_data:
+    external: true
+
+networks:
+  navidrome:
     external: true

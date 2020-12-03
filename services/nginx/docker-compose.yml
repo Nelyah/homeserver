@@ -16,6 +16,8 @@ services:
       - CLOUD_URL=${CLOUD_URL}
       - WIKI_URL=${WIKI_URL}
       - WIKI_INTERNAL_NAME=${WIKI_INTERNAL_NAME}
+      - MUSIC_URL=${MUSIC_URL}
+      - MUSIC_INTERNAL_NAME=${MUSIC_INTERNAL_NAME}
       - CERTIFICATE_NAME=${CERTIFICATE_NAME}
       - NGINX_ENVSUBST_OUTPUT_DIR=${NGINX_ENVSUBST_OUTPUT_DIR}
     volumes:
@@ -23,6 +25,7 @@ services:
       - certificates:/etc/letsencrypt:ro
     networks:
       - nextcloud
+      - navidrome
       - bookstack
       - wordpress
 
@@ -38,6 +41,8 @@ networks:
   bookstack:
     external: true
   wordpress:
+    external: true
+  navidrome:
     external: true
 
   
