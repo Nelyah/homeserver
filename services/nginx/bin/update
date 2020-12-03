@@ -4,7 +4,10 @@ image_name="nginx_reverse-proxy"
 nginx_dir=$(readlink -f "$(dirname $(which $0))/..")
 
 cd "$nginx_dir"
-needs_update=$(docker-compose images | tail -n +3 | awk '{ if ( $3 == "<none>" ) { print "yes" } }')
+image_id=$(docker-compose images | tail -n +3 | awk '{print $4}')
+last_known_parent=$(docker history -q $image_id | grep -v '<missing>' | tail -1)
+needs_update=$(docker images --digests | awk -v imageid="$last_known_parent" '{if ($4 == imageid && $3 == "<none>") { print "yes"} }')
+
 if [ ! -z "$needs_update" ]; then
     docker build --no-cache -t "$image_name" --pull .
     docker-compose down

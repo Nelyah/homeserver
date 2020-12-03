@@ -2,7 +2,7 @@ version: '3'
 
 services:
   nginx_reverse-proxy:
-    build: .
+    image: nginx_reverse-proxy
     container_name: nginx_reverse-proxy
     restart: unless-stopped
     ports:

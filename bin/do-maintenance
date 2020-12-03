@@ -29,6 +29,7 @@ if [[ -n "$do_all" ]] || [[ -n "$do_image_update" ]]; then
     "${bin_dir}/docker-update-images"
 
     for file in ${bin_dir}/../services/*/bin/update; do
+        echo "Running update for $file"
         "$file"
     done
 fi
