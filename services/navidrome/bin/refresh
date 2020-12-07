@@ -1,0 +1,5 @@
+#! /bin/bash
+
+navidrome_dir=$(readlink -f "$(dirname $(which $0))/..")
+cd "$navidrome_dir"
+docker-compose exec navidrome /app/navidrome scan -f
