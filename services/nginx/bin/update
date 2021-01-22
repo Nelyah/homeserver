@@ -1,6 +1,6 @@
 #! /bin/bash
 
-image_name="nginx_reverse-proxy"
+image_name="nginx_proxy"
 nginx_dir=$(readlink -f "$(dirname $(which $0))/..")
 
 cd "$nginx_dir"

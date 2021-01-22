@@ -2,8 +2,8 @@ version: '3'
 
 services:
   nginx_reverse-proxy:
-    image: nginx_reverse-proxy
-    container_name: nginx_reverse-proxy
+    image: nginx_proxy
+    container_name: nginx_proxy
     restart: unless-stopped
     ports:
       - 443:443
