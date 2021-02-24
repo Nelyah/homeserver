@@ -1,19 +1,15 @@
-upstream music_upstream
-{
-    server ${MUSIC_INTERNAL_NAME} fail_timeout=3s max_fails=0;
-}
-
 server {
     include       /etc/nginx/generated/ssl.conf;
 
     listen        443 ssl http2;
 
     server_name   ${MUSIC_URL};
+    set $music "http://${MUSIC_INTERNAL_NAME}";
 
     location / {
         include /etc/nginx/common_location.conf;
         proxy_buffering off;
-        proxy_pass  http://music_upstream;
+        proxy_pass  $music;
     }
 }
 

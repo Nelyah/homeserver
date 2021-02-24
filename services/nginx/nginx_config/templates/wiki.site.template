@@ -1,7 +1,3 @@
-upstream wiki_upstream
-{
-    server ${WIKI_INTERNAL_NAME} fail_timeout=3s max_fails=0;
-}
 
 server {
     include       /etc/nginx/generated/ssl.conf;
@@ -9,10 +5,11 @@ server {
     listen        443 ssl http2;
 
     server_name   ${WIKI_URL};
+    set $wiki "http://${WIKI_INTERNAL_NAME}";
 
     location / {
         include /etc/nginx/common_location.conf;
-        proxy_pass  http://wiki_upstream;
+        proxy_pass  $wiki;
     }
 }
 

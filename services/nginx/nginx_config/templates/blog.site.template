@@ -1,7 +1,3 @@
-upstream blog_upstream {
-    server ${BLOG_INTERNAL_NAME} fail_timeout=3s;
-}
-
 server {
     include     /etc/nginx/generated/ssl.conf;
     server_name ${BLOG_URL_OLD};
@@ -16,10 +12,11 @@ server {
     listen        443 ssl http2;
 
     server_name   ${BLOG_URL_NEW};
+    set $blog "http://${BLOG_INTERNAL_NAME}";
 
     location / {
         include /etc/nginx/common_location.conf;
-        proxy_pass  http://blog_upstream;
+        proxy_pass  $blog;
     }
 
     # Deny direct access to php files
@@ -52,7 +49,7 @@ server {
         allow 192.168.1.0/24;
         deny all;
         include /etc/nginx/common_location.conf;
-        proxy_pass  http://blog_upstream;
+        proxy_pass  $blog;
     }
 
 }
