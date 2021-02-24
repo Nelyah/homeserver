@@ -1,8 +1,8 @@
 version: "3"
 services:
   navidrome:
-    image: docker.io/deluan/navidrome:latest
     container_name: navidrome
+    image: docker.io/deluan/navidrome:develop
     restart: unless-stopped
     environment:
       ND_MUSICFOLDER: /music
