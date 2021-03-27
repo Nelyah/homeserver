@@ -1,0 +1,10 @@
+./.env
+./services/syncthing/.env
+./services/bookstack/.env
+./services/minimserver/.env
+./services/ddclient/.env
+./services/nginx/.env
+./services/nextcloud/.env
+./services/navidrome/.env
+./services/mpd/.env
+./services/wordpress/.env
