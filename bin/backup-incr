@@ -3,12 +3,12 @@
 set -e
 
 log_backup() {
-    echo "[backup] "$(date "+%Y%m%d-%H:%M")" ${@}"
+    echo "[backup] $(date "+%Y%m%d-%H:%M") ${@}"
 }
 
 print_usage () {
     cat << EOF
-Usage: ./$(basename ${0}) [--remote <dest_host>] --dest <dest_dir> --backup <file_1> --backup <file_2> ... [ARGS]
+Usage: ./$(basename "${0}") [--remote <dest_host>] --dest <dest_dir> --backup <file_1> --backup <file_2> ... [ARGS]
 
 Arguments:
     --remote <host>                         If the backup destination is remote, specify the hostname that should be used by ssh and rsync.
@@ -102,7 +102,7 @@ parse_args () {
         log_backup "Error: No such backup destination ${backup_dest}"
         exit 1
     # Else, check its existence on the remote
-    elif [ -n "${is_remote}" ] && [ -z $(ssh ${DESTHOST} "[ -e ${backup_dest} ] && echo yes") ]; then
+    elif [ -n "${is_remote}" ] && [ -z $(ssh "${DESTHOST}" "[ -e '${backup_dest}' ] && echo yes") ]; then
         log_backup "Error: No such remote backup destination ${DESTHOST}:${backup_dest}"
         exit 1
     fi
@@ -115,7 +115,7 @@ check_latest_backup () {
         has_latest=$(docker run --rm backup ssh "${DESTHOST}" "[ -e \"${backup_dest}/latest\" ] && echo yes || echo no")
         [ "${has_latest}" = no ] && has_latest=
     else
-        [ -e ${backup_dest}/latest ] && has_latest="yes"
+        [ -e "${backup_dest}/latest" ] && has_latest="yes"
     fi
 
     if [ -n "$has_latest" ]; then
@@ -148,15 +148,15 @@ get_docker_mount_opts () {
     # Backup mount location on the docker
     docker_to_backup=()
 
-    for data in ${container_to_backup[@]}; do
+    for data in "${container_to_backup[@]}"; do
         check_target_exists is_container "${data}"
     done
-    for data in ${to_backup[@]} ; do
+    for data in "${to_backup[@]}"; do
         check_target_exists not_container "${data}"
     done
         
     local data_id=1
-    for data in ${to_backup[@]} ${container_to_backup[@]}; do
+    for data in "${to_backup[@]}" "${container_to_backup[@]}"; do
         local docker_path=/to_bkp/${data_id}/$(basename "${data}" )
         docker_to_backup+=( "$docker_path" )
         docker_volume_opts+=( -v "${data}":"$docker_path" )
@@ -188,7 +188,7 @@ EOF
             ${rsync_command}"
     fi
     log_backup "${rsync_command}"
-    docker run --rm ${docker_volume_opts[@]} backup bash -c "${rsync_command}"
+    docker run --rm "${docker_volume_opts[@]}" backup bash -c "${rsync_command}"
 }
 
 # Create a symlink to the backup we just made
@@ -199,7 +199,7 @@ make_link_to_latest () {
             cd ${backup_dest} ; \
             ln -sfn ${current_backup} latest"
     else
-        docker run --rm ${docker_volume_opts[@]} backup bash -c " \
+        docker run --rm "${docker_volume_opts[@]}" backup bash -c " \
             cd ${docker_backup_dest}; \
             ln -sfn ${current_backup} latest ; \
             ${create_user_group_command} ; \
@@ -209,17 +209,17 @@ make_link_to_latest () {
 
 cleanup_old_backups () {
     if [ -n "${is_remote}" ]; then
-        docker run --rm  ${docker_volume_opts[@]} backup \
+        docker run --rm  "${docker_volume_opts[@]}" backup \
             ssh "${DESTHOST}" "ls -dt \"${backup_dest}/${prefix}\"_* 2> /dev/null \
             | tail -n +$((max_bkp+1)) | xargs rm -rf"
     else
-        docker run --rm  ${docker_volume_opts[@]} backup \
+        docker run --rm  "${docker_volume_opts[@]}" backup \
             bash -c "ls -dt \"${docker_backup_dest}/${prefix}\"_* 2> /dev/null \
             | tail -n +$((max_bkp+1)) | xargs rm -rf" 
     fi
 }
 
-parse_args $@
+parse_args "$@"
 
 # This is to be able to change permissions and ownership
 # according to the given parameters
