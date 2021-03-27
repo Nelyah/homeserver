@@ -9,6 +9,7 @@ server {
 
     location / {
         include /etc/nginx/common_location.conf;
+        include /etc/nginx/header_security.conf;
         proxy_pass  $wiki;
     }
 }

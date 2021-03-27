@@ -6,6 +6,8 @@ server {
     server_name   ${CLOUD_URL};
     set $cloud "http://${CLOUD_INTERNAL_NAME}";
 
+    include /etc/nginx/header_security.conf;
+
     location / {
         # This is added to allow clients to download from nextcloud regardless
         # of the downloaded file size. The default value of 1024mb makes nginx
@@ -21,6 +23,7 @@ server {
         include /etc/nginx/common_location.conf;
         proxy_pass  $cloud;
     }
+
 }
 
 # vi:syntax=nginx
