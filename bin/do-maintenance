@@ -18,13 +18,35 @@ done
 
 bin_dir=$(readlink -f "$(dirname $(which $0))")
 
+[ -f "${bin_dir}/../.env" ] && source "${bin_dir}/../.env"
+
+################
+#  Do backups  #
+################
 if [[ -n "$do_all" ]] || [[ -n "$do_backup" ]]; then
     for file in ${bin_dir}/../services/*/bin/backup; do
+        echo "[backup] Running backups for ${file}"
         "$file" daily
         [[ $(date +'%A') == Sunday ]] && "$file" weekly
     done
+
+    [ ! -d "${MUSIC_BACKUP_DESTINATION}" ] && mkdir -p "${MUSIC_BACKUP_DESTINATION}"
+
+    # Backup music data
+    "${bin_dir}/backup-incr" \
+        --dest "${MUSIC_BACKUP_DESTINATION}" \
+        --prefix music_daily \
+        --max-bkp 180 \
+        --user "${LOGIN}" \
+        --group ${MY_GROUP} \
+        --backup "${MUSIC_FOLDER}/music_clean" \
+        --backup "${MUSIC_FOLDER}/Classique" \
+        --backup "${MUSIC_FOLDER}/beets-library.db"
 fi
 
+##########################
+#  Update docker images  #
+##########################
 if [[ -n "$do_all" ]] || [[ -n "$do_image_update" ]]; then
     "${bin_dir}/docker-update-images"
 
@@ -34,6 +56,9 @@ if [[ -n "$do_all" ]] || [[ -n "$do_image_update" ]]; then
     done
 fi
 
+########################
+#  Update DNS entries  #
+########################
 if [[ -n "$do_all" ]] || [[ -n "$do_dns_update" ]]; then
     pushd "${bin_dir}/../services/ddclient/" > /dev/null
     ./update_dns
