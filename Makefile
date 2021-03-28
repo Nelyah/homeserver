@@ -8,8 +8,9 @@ encrypt: $(FILES_ENCRYPTED)
 decrypt: $(FILES_TO_ENCRYPT)
 .PHONY: decrypt
 
-$(FILES_TO_ENCRYPT):
-	@$(GPG) --decrypt --batch -o $@ $(@:=.secret)
+%:: %.secret
+	@$(GPG) --decrypt -o $@ $(@:=.secret)
+	@touch -r $? $@ # to be no newer than the encrypted one
 
-%.secret: %
+%.secret:: %
 	@$(GPG) --encrypt --default-recipient-self --armor -o $@ $^
