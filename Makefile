@@ -16,7 +16,7 @@ decrypt: $(FILES_TO_ENCRYPT)
 .PHONY: decrypt
 
 %:: %.secret
-	@$(GPG) --decrypt -o $@ $(@:=.secret)
+	@$(GPG) --decrypt -o $@ $<
 	@touch -r $? $@ # to be no newer than the encrypted one
 
 %.secret:: %
