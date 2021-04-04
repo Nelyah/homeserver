@@ -1,0 +1,13 @@
+[Unit]
+Description=Remote backup drive
+After=unlock-luks-backup.service
+Requires=unlock-luks-backup.service
+
+[Mount]
+What=/dev/mapper/remote_backup
+Where=/remote_backup/
+Type=ext4
+Options=defaults
+
+[Install]
+WantedBy=multi-user.target

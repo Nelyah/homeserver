@@ -1,0 +1,9 @@
+[Unit]
+Description=Automount for remote backup drive
+
+[Automount]
+Where=/remote_backup/
+TimeoutIdleSec=300
+
+[Install]
+WantedBy=multi-user.target
