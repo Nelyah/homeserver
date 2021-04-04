@@ -7,3 +7,4 @@ services/nginx/nginx_config/generated/*
 services/ddclient/domains_list_*
 services/ddclient/.env*
 services/ddclient/.cache_my_address
+host_system/.backup-drive-luks-passphrase

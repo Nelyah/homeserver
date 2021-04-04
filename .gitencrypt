@@ -1,10 +1,12 @@
 ./.env
-./services/syncthing/.env
+./certbot/ovh-credentials
+./host_system/.backup-drive-luks-passphrase
 ./services/bookstack/.env
-./services/minimserver/.env
 ./services/ddclient/.env
-./services/nginx/.env
-./services/nextcloud/.env
-./services/navidrome/.env
+./services/minimserver/.env
 ./services/mpd/.env
+./services/navidrome/.env
+./services/nextcloud/.env
+./services/nginx/.env
+./services/syncthing/.env
 ./services/wordpress/.env
