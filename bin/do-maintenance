@@ -23,13 +23,15 @@ bin_dir=$(readlink -f "$(dirname $(which $0))")
 ################
 #  Do backups  #
 ################
-if [[ -n "$do_all" ]] || [[ -n "$do_backup" ]]; then
+function backup () {
+    external=$1
     for file in ${bin_dir}/../services/*/bin/backup; do
         echo "[backup] Running backups for ${file}"
-        "$file" daily
-        [[ $(date +'%A') == Sunday ]] && "$file" weekly
+        "$file" daily $external
+        [[ $(date +'%A') == Sunday ]] && "$file" weekly $external
     done
 
+    [ -n "$external" ] && MUSIC_BACKUP_DESTINATION="${MUSIC_REMOTE_BACKUP_DESTINATION}"
     [ ! -d "${MUSIC_BACKUP_DESTINATION}" ] && mkdir -p "${MUSIC_BACKUP_DESTINATION}"
 
     # Backup music data
@@ -42,6 +44,11 @@ if [[ -n "$do_all" ]] || [[ -n "$do_backup" ]]; then
         --backup "${MUSIC_FOLDER}/music_clean" \
         --backup "${MUSIC_FOLDER}/Classique" \
         --backup "${MUSIC_FOLDER}/beets-library.db"
+}
+
+if [[ -n "$do_all" ]] || [[ -n "$do_backup" ]]; then
+    backup
+    [ -e "/dev/disk/by-uuid/cb9efc14-4e1d-458e-8d3a-67d3b947954d" ] && backup --external
 fi
 
 ##########################

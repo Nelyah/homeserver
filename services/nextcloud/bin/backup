@@ -15,7 +15,8 @@ function do-backup ()
     NEXTCLOUD_FOLDER=$(readlink -f "$(dirname $0)/..")
     source "${NEXTCLOUD_FOLDER}/.env"
 
-    BACKUP_DESTINATION=$(readlink -f "${BACKUP_DESTINATION}")
+    [ "$external" = y ] && BACKUP_DESTINATION="${REMOTE_BACKUP_DESTINATION}"
+
     BACKUP_SCRIPT=$(readlink -f "${NEXTCLOUD_FOLDER}/../../bin/backup-incr")
     OCC="docker exec -u www-data -i nextcloud php /var/www/html/occ"
 
@@ -51,9 +52,17 @@ function do-backup ()
         --exclude=ncp-update-backups
 }
 
+args=()
+external=n
+while (( "$#" > 0 )); do
+    case "$1" in
+        --external) external=y; shift ;;
+        *) args+=( "$1" ) ; shift ;;
+    esac
+done
 
-if [ "${1}" = weekly ]; then 
-    do-backup weekly 3
+if [ "${args[1]}" = weekly ]; then 
+    do-backup weekly 3 "$external"
 else
-    do-backup daily 10
+    do-backup daily 10 "$external"
 fi

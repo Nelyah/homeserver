@@ -19,6 +19,7 @@ function do-backup ()
 
     source "${BOOKSTACK_FOLDER}/.env"
 
+    [ "$external" = y ] && BACKUP_DESTINATION="${REMOTE_BACKUP_DESTINATION}"
     [ ! -d "${BACKUP_DESTINATION}" ] && mkdir -p ${BACKUP_DESTINATION}
 
     # Check if container is running or not
@@ -50,8 +51,17 @@ function do-backup ()
         --group "${MY_GROUP}"
 }
 
-if [ "${1}" = weekly ]; then 
-    do-backup weekly 3
+args=()
+external=n
+while (( "$#" > 0 )); do
+    case "$1" in
+        --external) external=y; shift ;;
+        *) args+=( "$1" ) ; shift ;;
+    esac
+done
+
+if [ "${args[1]}" = weekly ]; then 
+    do-backup weekly 3 "$external"
 else
-    do-backup daily 10
+    do-backup daily 10 "$external"
 fi

@@ -62,6 +62,7 @@ function do-backup ()
     DBBACKUP="${tmp_backup_folder}/wordpress_db.sql"
     dc_compose="docker-compose -f ${WORDPRESS_FOLDER}/docker-compose.yml"
 
+    [ "$external" = y ] && BACKUP_DESTINATION="${REMOTE_BACKUP_DESTINATION}"
 
     run-if-not-running
 
@@ -91,8 +92,17 @@ function do-backup ()
 cleanup() { local RET=$?; rm -rf "${tmp_backup_folder}" ; [ -z "${container_not_running}" ] &&  maintenance-off; exit $RET; }
 trap cleanup EXIT INT TERM HUP ERR
 
-if [ "${1}" = weekly ]; then 
-    do-backup weekly 3
+args=()
+external=n
+while (( "$#" > 0 )); do
+    case "$1" in
+        --external) external=y; shift ;;
+        *) args+=( "$1" ) ; shift ;;
+    esac
+done
+
+if [ "${args[1]}" = weekly ]; then 
+    do-backup weekly 3 "$external"
 else
-    do-backup daily 10
+    do-backup daily 10 "$external"
 fi
