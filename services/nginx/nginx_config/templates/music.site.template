@@ -9,7 +9,18 @@ server {
     location / {
         include /etc/nginx/common_location.conf;
         include /etc/nginx/header_security.conf;
+
+        # Without these settings, the navidrome UI freezes because nginx
+        # apparently doesn't like `EventSource` well.
+        # Link to Stackoverflow solution:
+        # https://stackoverflow.com/questions/13672743/eventsource-server-sent-events-through-nginx/13673298#13673298
+        add_header X-Accel-Buffering     "no";
+        chunked_transfer_encoding off;
         proxy_buffering off;
+        proxy_cache off;
+        proxy_http_version 1.1;
+        proxy_set_header Connection '';
+
         proxy_pass  $music;
     }
 }
