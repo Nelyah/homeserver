@@ -7,5 +7,5 @@ services:
       - "8800:8800"
     volumes:
       - ./mpd.conf:/etc/mpd.conf
-      - ${MUSIC_FOLDER}:/var/lib/mpd/music:ro
+      - ${MUSIC_LIBRARY}:/var/lib/mpd/music:ro
     restart: always

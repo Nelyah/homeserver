@@ -41,8 +41,7 @@ function backup () {
         --max-bkp 180 \
         --user "${LOGIN}" \
         --group ${MY_GROUP} \
-        --backup "${MUSIC_FOLDER}/music_clean" \
-        --backup "${MUSIC_FOLDER}/Classique" \
+        --backup "${MUSIC_FOLDER}/library" \
         --backup "${MUSIC_FOLDER}/beets-library.db"
 }
 

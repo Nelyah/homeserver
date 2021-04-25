@@ -9,4 +9,4 @@ services:
       network: host
     network_mode: host
     volumes:
-      - ${MUSIC_DIRECTORY}:/media/:ro
+      - ${MUSIC_LIBRARY}:/media/:ro

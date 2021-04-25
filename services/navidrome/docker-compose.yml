@@ -16,7 +16,7 @@ services:
     networks:
       - navidrome
     volumes:
-      - ${MUSIC_FOLDER}:/music:ro
+      - ${MUSIC_LIBRARY}:/music:ro
       - navidrome_data:/data/
 
 volumes:
