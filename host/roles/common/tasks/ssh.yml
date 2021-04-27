@@ -1,0 +1,33 @@
+---
+
+- name: Create ssh directory for root
+  file:
+    path: /root/.ssh
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Create ssh directory for users
+  file:
+    path: '/home/{{ item }}/.ssh'
+    state: directory
+    owner: '{{ item }}'
+    group: '{{ item }}'
+    mode: '0700'
+  loop: '{{ users | selectattr("ssh_config") | map(attribute="login") | list }}'
+
+- name: Deploy ssh config for root
+  copy:
+    src: ssh_config
+    dest: /root/.ssh/config
+    mode: '0600'
+
+- name: Deploy ssh config for users
+  copy:
+    src: ssh_config
+    dest: /home/{{ item }}/.ssh/config
+    owner: '{{ item }}'
+    group: '{{ item }}'
+    mode: '0600'
+  loop: '{{ users | selectattr("ssh_config") | map(attribute="login") | list }}'

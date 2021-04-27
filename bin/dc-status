@@ -2,7 +2,7 @@
 
 set -e
 
-source $(dirname ${BASH_SOURCE[0]})/../host_system/environment_config
+services_directory="$(git rev-parse --show-top-level)/services"
 
 cleanup(){ local RET=$?;  rm -f ${ps_array[@]} ; exit $RET; }
 trap cleanup EXIT INT TERM HUP ERR

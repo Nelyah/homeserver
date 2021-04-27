@@ -1,0 +1,29 @@
+---
+
+- name: Add Docker-CE repository
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+  when: ansible_facts['os_family'] == "RedHat"
+
+- include: debian_setup.yml
+  when: ansible_distribution == "Debian"
+
+- name: Install docker packages
+  package:
+    name:
+      - containerd.io
+      - docker-ce
+      - docker-ce-cli
+      - docker-compose
+
+- name: Install docker configuration template
+  template:
+    src: docker-daemon.json.j2
+    dest: /etc/docker/daemon.json
+
+- name: Start and enable docker deamon
+  service:
+    name: docker
+    state: started
+    enabled: yes

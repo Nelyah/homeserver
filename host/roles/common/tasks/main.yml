@@ -1,0 +1,29 @@
+---
+
+- name: Gather the package facts
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Add appropriate repos
+  import_tasks: 'repos.yml'
+
+- name: Install required packages
+  import_tasks: 'packages.yml'
+
+- name: Setup fail2ban
+  import_tasks: 'fail2ban.yml'
+
+- name: Set users
+  import_tasks: 'users.yml'
+
+- name: Setup ssh configuration for users
+  import_tasks: 'ssh.yml'
+
+- name: Deploy environment configuration for users
+  template:
+    src: user_env_config.j2
+    dest: '/home/{{ item }}/.homeserver'
+    owner: '{{ item }}'
+    group: '{{ item }}'
+    mode: '0644'
+  loop: '{{ users | map(attribute="login") | list }}'

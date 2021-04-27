@@ -1,0 +1,11 @@
+[Unit]
+Description=Second data drive
+
+[Mount]
+What=/dev/disk/by-uuid/{{ drives.backup.uuid }}
+Where={{ drives.backup.mount }}
+Type={{ drives.backup.type }}
+Options=defaults
+
+[Install]
+WantedBy=multi-user.target

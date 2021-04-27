@@ -1,0 +1,21 @@
+---
+
+- name: determine available groups
+  getent:
+    database: group
+
+- name: Add the missing groups
+  group:
+    name: '{{ item }}'
+    state: present
+  loop: '{{ users | map(attribute="groups") | flatten }}'
+
+- name: Set users
+  loop: '{{ users }}'
+  user:
+    name: '{{ item.login }}'
+    comment: '{{ item.full_name }}'
+    password: '{{ item.password | password_hash("sha512") }}'
+    groups: '{{ item.groups | join(",") }}{{ ",wheel" if item.can_sudo else "" }}'
+    shell: '{{ item.shell | default("/bin/bash") }}'
+    update_password: on_create

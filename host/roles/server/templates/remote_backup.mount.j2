@@ -4,9 +4,9 @@ After=unlock-luks-backup.service
 Requires=unlock-luks-backup.service
 
 [Mount]
-What=/dev/mapper/remote_backup
-Where=/remote_backup/
-Type=ext4
+What=/dev/mapper/{{ drives.remote_backup.luks_mapper}}
+Where={{ drives.remote_backup.mount }}
+Type={{ drives.remote_backup.type }}
 Options=defaults
 
 [Install]

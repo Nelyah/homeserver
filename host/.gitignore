@@ -1,0 +1,13 @@
+venv
+.venv
+group_vars/all/system.yml
+roles/server/files/cert.pem
+roles/server/files/key.pem
+roles/server/files/https-cert.pem
+roles/server/files/https-key.pem
+roles/server/vars/syncthing.yml
+roles/common/files/ssh_config
+roles/server/files/ssh_config_1/authorized_keys
+roles/server/files/ssh_config_1/id_rsa
+roles/server/files/ssh_config_1/id_rsa.pub
+.cache

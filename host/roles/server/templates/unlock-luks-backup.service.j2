@@ -1,0 +1,10 @@
+[Unit]
+Description=Open encrypted data volume
+Before=remote_backup.mount
+PartOf=remote_backup.mount
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c "/sbin/cryptsetup luksOpen /dev/disk/by-uuid/{{ drives.remote_backup.uuid }} {{ drives.remote_backup.luks_mapper }} < {{ drives.remote_backup.luks_passphrase_file_dest }}"
+RemainAfterExit=true
+ExecStop=/bin/sh -c "/sbin/cryptsetup -v luksClose {{ drives.remote_backup.luks_mapper }}"

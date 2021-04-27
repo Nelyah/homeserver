@@ -1,6 +1,6 @@
 # This file is meant to provide some utility aliases and functions
 
-git_repo_path=$(readlink -f $(dirname "$0")/..)
+git_repo_path={{ homeserver_repo_dir }}
 services_directory="${git_repo_path}/services"
 
 export PATH="${git_repo_path}/bin:${PATH}"

@@ -1,0 +1,89 @@
+---
+
+# First drive setup
+
+- name: Check that the main disk is present
+  register: disk_uuid
+  stat:
+    path: '/dev/disk/by-uuid/{{ drives.main.uuid }}'
+
+- assert:
+    that: disk_uuid.stat.islnk is defined
+    fail_msg: Main disk UUID could not be found!
+
+- name: Setup the main drive
+  template:
+    src: main_drive.mount.j2
+    dest: '{{ drives.main.mount_file_dest }}'
+
+- name: Start and enable main drive
+  systemd:
+    daemon_reload: yes
+    name: '{{ drives.main.mount_file_dest | basename }}'
+    state: started
+    enabled: yes
+
+# Second drive setup (backup drive)
+
+- name: Check that the second disk is present
+  register: disk_uuid
+  stat:
+    path: '/dev/disk/by-uuid/{{ drives.backup.uuid }}'
+
+- assert:
+    that: disk_uuid.stat.islnk is defined
+    fail_msg: Second disk UUID could not be found!
+
+- name: Setup the second drive
+  template:
+    src: second_drive.mount.j2
+    dest: '{{ drives.backup.mount_file_dest }}'
+
+- name: Setup the second drive automount
+  template:
+    src: second_drive.automount.j2
+    dest: '{{ drives.backup.automount_file_dest }}'
+
+- name: Start and enable second drive automount
+  systemd:
+    daemon_reload: yes
+    name: '{{ drives.backup.automount_file_dest | basename }}'
+    state: started
+    enabled: yes
+
+# Third drive setup (external drive)
+
+- name: Create the passphrase file directory if it does not exist
+  file:
+    path: '{{ drives.remote_backup.luks_passphrase_file_dest | dirname }}'
+    state: directory
+    mode: '0755'
+
+- name: Setup the third drive passphrase file
+  template:
+    src: luks_passphrase_file.j2
+    dest: '{{ drives.remote_backup.luks_passphrase_file_dest }}'
+    mode: '400'
+    owner: '{{ crontab_user }}'
+
+- name: Setup the third drive
+  template:
+    src: remote_backup.mount.j2
+    dest: '{{ drives.remote_backup.mount_file_dest }}'
+
+- name: Setup the third drive automount
+  template:
+    src: remote_backup.automount.j2
+    dest: '{{ drives.remote_backup.automount_file_dest }}'
+
+- name: Setup the third drive LUKS unlock service
+  template:
+    src: unlock-luks-backup.service.j2
+    dest: '{{ drives.remote_backup.luks_unlock_file_dest }}'
+
+- name: Start and enable third drive automount
+  systemd:
+    daemon_reload: yes
+    name: '{{ drives.remote_backup.automount_file_dest | basename }}'
+    state: started
+    enabled: yes

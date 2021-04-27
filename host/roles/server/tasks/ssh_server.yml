@@ -1,0 +1,37 @@
+---
+
+- name: Apply the sshd_config
+  template:
+    src: sshd_config_server.j2
+    dest: /etc/ssh/sshd_config
+  notify: 'reload sshd'
+
+- name: 'Add ssh port {{ ssh_server_port }} in selinux policy'
+  seport:
+    setype: 'ssh_port_t'
+    ports: '{{ ssh_server_port }}'
+    proto: 'tcp'
+    state: 'present'
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Ensure firewalld is running
+  systemd:
+    name: firewalld.service
+    state: started
+    enabled: yes
+
+- name: 'Add ssh port {{ ssh_server_port }} in firewalld policy'
+  firewalld:
+    port: '{{ ssh_server_port }}/tcp'
+    state: enabled
+    permanent: yes
+  notify: 'reload firewalld'
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: 'Remove port 22 from firewalld policy'
+  firewalld:
+    port: 22/tcp
+    state: disabled
+    permanent: yes
+  notify: 'reload firewalld'
+  when: ansible_facts['os_family'] == 'RedHat'

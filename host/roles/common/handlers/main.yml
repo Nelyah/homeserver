@@ -1,0 +1,16 @@
+---
+
+- name: 'reload fail2ban'
+  service:
+    name: 'fail2ban'
+    state: 'reloaded'
+
+- name: 'reload sshd'
+  service:
+    name: 'sshd'
+    state: 'reloaded'
+
+- name: "reload firewalld"
+  service:
+    name: "firewalld"
+    state: "reloaded"

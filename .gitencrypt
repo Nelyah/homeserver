@@ -1,6 +1,15 @@
 ./.env
 ./certbot/ovh-credentials
-./host_system/.backup-drive-luks-passphrase
+./host/group_vars/all/system.yml
+./host/roles/common/files/ssh_config
+./host/roles/server/files/cert.pem
+./host/roles/server/files/https-cert.pem
+./host/roles/server/files/https-key.pem
+./host/roles/server/files/key.pem
+./host/roles/server/files/ssh_config_1/authorized_keys
+./host/roles/server/files/ssh_config_1/id_rsa
+./host/roles/server/files/ssh_config_1/id_rsa.pub
+./host/roles/server/vars/syncthing.yml
 ./services/bookstack/.env
 ./services/ddclient/.env
 ./services/minimserver/.env

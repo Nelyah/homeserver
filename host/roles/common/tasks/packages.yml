@@ -1,0 +1,61 @@
+---
+
+- name: Install packages
+  package:
+    name:
+      - ca-certificates
+      - cmake
+      - ctags
+      - curl
+      - gdb
+      - git
+      - gnupg
+      - htop
+      - isync
+      - jq
+      - msmtp
+      - ncdu
+      - neovim
+      - net-tools
+      - python3
+      - ripgrep
+      - rsync
+      - syncthing
+      - tmux
+      - wget
+      - youtube-dl
+      - zsh
+    state: present
+    update_cache: true
+
+- name: Install Debian packages
+  package:
+    name:
+      - apt-transport-https
+      - build-essential
+      - fzf
+      - golang-go
+      - lsb_release
+      - neomutt
+      - notmuch
+    state: present
+    update_cache: true
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Install RedHat packages
+  package:
+    name:
+      - golang
+      - policycoreutils-python
+      - yum-utils
+    state: present
+    update_cache: true
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Install RedHat 7 packages
+  package:
+    name:
+      - redhat-lsb-core
+    state: present
+    update_cache: true
+  when: ansible_facts['os_family'] == 'RedHat' and ansible_facts ['distribution_major_version'] == '7'
