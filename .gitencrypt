@@ -1,5 +1,6 @@
 ./.env
 ./certbot/ovh-credentials
+./certbot/domain_list
 ./host/group_vars/all/system.yml
 ./host/roles/common/files/ssh_config
 ./host/roles/server/files/cert.pem
