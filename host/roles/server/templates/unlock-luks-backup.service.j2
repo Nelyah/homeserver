@@ -2,6 +2,7 @@
 Description=Open encrypted data volume
 Before=remote_backup.mount
 PartOf=remote_backup.mount
+StopWhenUnneeded=true
 
 [Service]
 Type=oneshot
