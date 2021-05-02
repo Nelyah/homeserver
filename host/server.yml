@@ -2,9 +2,12 @@
 
 - hosts: localhost
   connection: local
-  become: true
 
   roles:
-    - common
-    - server
-    - docker
+    - role: common
+      become: yes
+
+    - role: server
+      become: yes
+
+    - role: docker
