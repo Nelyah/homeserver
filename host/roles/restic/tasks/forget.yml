@@ -1,0 +1,69 @@
+---
+
+# expect as available variables:
+#
+# restic_repos:
+#   repo1:
+#     password: secret_pass
+#     path: /path/to/the/repo1
+#     init: true
+#   repo2:
+#     password: secret_pass2
+#     path: /path/to/the/repo2
+#     init: true
+#
+#   restic_forget_data:
+#     tags_intersect:
+#       - tag1
+#       - tag2
+#     tags_union:
+#       - tag3
+#       - tag4
+#     keep_last: 1
+#     keep_hourly: 2
+#     keep_daily: 3
+#     keep_monthly: 4
+#     keep_yearly: 5
+#     prune: true
+
+- name: Forget data from repository
+  become: true
+  command: >
+    restic forget
+    {{ prune }}
+    {{ keep_hourly }}
+    {{ keep_daily }}
+    {{ keep_weekly }}
+    {{ keep_monthly }}
+    {{ keep_yearly }}
+    {{ keep_last }}
+    {{ ["--tag"] | product(tags_union) | map("join", " ") | list | join(" ")}}
+    {{ "--tag " + tags_intersect if tags_intersect }}
+  no_log: true
+  environment:
+    RESTIC_PASSWORD: '{{ repo_keys.value.password }}'
+    RESTIC_REPOSITORY: '{{ repo_keys.value.path }}'
+  loop: '{{ restic_repos | dict2items }}'
+  loop_control:
+    loop_var: repo_keys
+  when: 'repo_keys.value.path is exists'
+  vars:
+    keep_hourly:  '{{ "--keep-hourly "  + restic_forget_data.keep_hourly  | string if "keep_hourly"  in restic_forget_data }}'
+    keep_daily:   '{{ "--keep-daily "   + restic_forget_data.keep_daily   | string if "keep_daily"   in restic_forget_data }}'
+    keep_weekly:  '{{ "--keep-weekly "  + restic_forget_data.keep_weekly  | string if "keep_weekly"  in restic_forget_data }}'
+    keep_monthly: '{{ "--keep-monthly " + restic_forget_data.keep_monthly | string if "keep_monthly" in restic_forget_data }}'
+    keep_yearly:  '{{ "--keep-yearly "  + restic_forget_data.keep_yearly  | string if "keep_yearly"  in restic_forget_data }}'
+    keep_last:    '{{ "--keep-last "    + restic_forget_data.keep_last    | string if "keep_last"    in restic_forget_data }}'
+    tags_intersect: '{{ restic_forget_data.tags_intersect | join(",") if "tags_intersect" in restic_forget_data else [] }}'
+    tags_union: '{{ restic_forget_data.tags_union | default([]) }}'
+    prune: '{{ "--prune" if "prune" not in restic_forget_data or restic_forget_data.prune }}'
+  register: restic_forget
+  changed_when: "'removing' in restic_forget.stdout or 'deleted' in restic_forget.stdout"
+  failed_when:
+    - restic_forget.rc != 0
+
+- name: Restic output
+  debug:
+    msg: "{{ restic_forget.results | json_query('[*].{ repo_path: repo_keys.value.path, backup_output: (stdout_lines) }') }}"
+
+# vi:ft=yaml.ansible
