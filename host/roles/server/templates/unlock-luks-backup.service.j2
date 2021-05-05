@@ -6,6 +6,6 @@ StopWhenUnneeded=true
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c "/sbin/cryptsetup luksOpen /dev/disk/by-uuid/{{ drives.remote_backup.uuid }} {{ drives.remote_backup.luks_mapper }} < {{ drives.remote_backup.luks_passphrase_file_dest }}"
+ExecStart=/bin/sh -c "[ -L /dev/mapper/{{ drives.remote_backup.luks_mapper }} ] || /sbin/cryptsetup luksOpen /dev/disk/by-uuid/{{ drives.remote_backup.uuid }} {{ drives.remote_backup.luks_mapper }} < {{ drives.remote_backup.luks_passphrase_file_dest }}"
 RemainAfterExit=true
-ExecStop=/bin/sh -c "/sbin/cryptsetup -v luksClose {{ drives.remote_backup.luks_mapper }}"
+ExecStop=/bin/sh -c "[ ! -L /dev/mapper/{{ drives.remote_backup.luks_mapper }} ] || /sbin/cryptsetup -v luksClose {{ drives.remote_backup.luks_mapper }}"
