@@ -1,0 +1,50 @@
+---
+
+- name: Set facts
+  set_fact:
+    database: /tmp/bookstack_{{ansible_date_time.date | replace('-', '')}}.sql
+
+- name: Do bookstack backup
+  block:
+    - name: Do Bookstack database dump
+      shell: >
+        docker exec bookstack_db 
+        sh -c "exec mysqldump -u root -p{{ bookstack_env.db_root_pass }}
+        --single-transaction {{ bookstack_env.db_name }}" > {{ database }}
+
+    - name: Perform backup with restic
+      tags:
+        - backup
+      include_role:
+        name: restic
+        tasks_from: backup
+      vars:
+        restic_backup_data:
+          path:
+            - '{{ database }}'
+          volumes:
+            - bookstack_db
+            - bookstack_data
+          tags:
+            - bookstack
+          ignore_patterns:
+  always:
+    - name: Remove database temporary file
+      file:
+        name: '{{ database }}'
+        state: absent
+
+- name: Prune Bookstack snapshots
+  include_role:
+    name: restic
+    tasks_from: forget
+  vars:
+    restic_forget_data:
+      tags_intersect:
+      tags_union:
+        - bookstack
+      keep_daily: 10
+      keep_weekly: 4
+      prune: true
+
+# vi:ft=yaml.ansible

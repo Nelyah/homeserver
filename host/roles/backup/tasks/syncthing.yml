@@ -1,0 +1,32 @@
+---
+
+- name: Do Syncthing backup
+  tags:
+    - backup
+  include_role:
+    name: restic
+    tasks_from: backup
+  vars:
+    restic_backup_data:
+      volumes:
+        - syncthing_data
+        - syncthing_config
+      tags:
+        - syncthing
+      ignore_patterns:
+      docker_data_dir: '{{ docker_data_dir }}'
+
+- name: Prune Syncthing snapshots
+  include_role:
+    name: restic
+    tasks_from: forget
+  vars:
+    restic_forget_data:
+      tags_intersect:
+      tags_union:
+        - syncthing
+      keep_daily: 10
+      keep_weekly: 4
+      prune: true
+
+# vi:ft=yaml.ansible

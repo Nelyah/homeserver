@@ -1,0 +1,26 @@
+---
+
+- name: Initialise restic repositories
+  import_role:
+    name: restic
+    tasks_from: init
+  tags:
+    - backup
+
+- name: Do the backup
+  include_tasks:
+    file: '{{ item }}.yml'
+    apply:
+      tags:
+        - '{{ item }}'
+  loop:
+    - bookstack
+    - music
+    - navidrome
+    - nextcloud
+    - syncthing
+    - wordpress
+  tags:
+    - always
+
+# vi:ft=yaml.ansible

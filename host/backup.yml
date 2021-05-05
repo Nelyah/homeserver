@@ -1,0 +1,11 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  roles:
+    - role: backup
+      vars:
+        restic_repos: '{{ vault_restic_repos }}'
+
+# vi:ft=yaml.ansible

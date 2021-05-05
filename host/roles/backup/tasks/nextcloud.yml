@@ -1,0 +1,66 @@
+---
+
+- name: Set facts
+  set_fact:
+    database: /tmp/nextcloud_{{ansible_date_time.date | replace('-', '')}}.sql
+
+- name: Do nextcloud backup
+  block:
+    - name: Enable maintenance mode
+      command: >
+        docker exec -u www-data -i nextcloud
+        php /var/www/html/occ maintenance:mode --on
+
+    - name: Do Nextcloud database dump
+      shell: >
+        docker exec mariadb-nc
+        sh -c "exec mysqldump -u root -p{{ nextcloud_env.db_root_pass }} --single-transaction {{ nextcloud_env.db_name }}" > {{ database }}
+
+    - name: Perform backup with restic
+      tags:
+        - backup
+      include_role:
+        name: restic
+        tasks_from: backup
+      vars:
+        restic_backup_data:
+          path:
+            - '{{ database }}'
+          volumes:
+            - nextcloud_mariadb
+            - nextcloud_data
+            - nextcloud_site
+          tags:
+            - nextcloud
+          ignore_patterns:
+            - .opcache
+            - access.log
+            - error.log
+            - nextcloud.log
+            - ncp-update-backups
+          docker_data_dir: '{{ docker_data_dir }}'
+  always:
+    - name: Disable maintenance mode
+      command: >
+        docker exec -u www-data -i nextcloud
+        php /var/www/html/occ maintenance:mode --off
+
+    - name: Remove database dump
+      file:
+        name: '{{ database }}'
+        state: absent
+
+- name: Prune Nextcloud snapshots
+  include_role:
+    name: restic
+    tasks_from: forget
+  vars:
+    restic_forget_data:
+      tags_intersect:
+      tags_union:
+        - nexcloud
+      keep_daily: 10
+      keep_weekly: 4
+      prune: true
+
+# vi:ft=yaml.ansible
