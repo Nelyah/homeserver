@@ -1,0 +1,9 @@
+[Unit]
+Description=Triggers backup for {{ backup_service }}
+
+[Timer]
+Unit=backup@{{ backup_service }}.service
+OnCalendar=*-*-* 05:00:00
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,38 @@
+---
+
+- name: Install backup service
+  template:
+    src: backup@.service.j2
+    dest: /etc/systemd/system/backup@.service
+
+- name: Install backup timer
+  template:
+    src: backup_service.timer.j2
+    dest: /etc/systemd/system/backup-{{ backup_service }}.timer
+  loop_control:
+    loop_var: backup_service
+  loop:
+    - bookstack
+    - music
+    - navidrome
+    - nextcloud
+    - syncthing
+    - wordpress
+
+- name: Start and enable backup timers
+  systemd:
+    daemon_reload: yes
+    name: backup-{{ backup_service }}.timer
+    state: started
+    enabled: yes
+  loop_control:
+    loop_var: backup_service
+  loop:
+    - bookstack
+    - music
+    - navidrome
+    - nextcloud
+    - syncthing
+    - wordpress
+
+# vi:ft=yaml.ansible

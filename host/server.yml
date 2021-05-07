@@ -11,3 +11,11 @@
       become: yes
 
     - role: docker
+
+  tasks:
+    - name: Setup backup services
+      become: true
+      import_role:
+        name: backup
+        tasks_from: setup_services
+
