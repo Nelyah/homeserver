@@ -1,5 +1,6 @@
 venv
 .venv
+group_vars/all/service_env.yml
 group_vars/all/system.yml
 roles/server/files/cert.pem
 roles/server/files/key.pem
