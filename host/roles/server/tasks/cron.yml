@@ -11,6 +11,6 @@
   cron:
     name: Do the backup and docker image update maintenance
     minute: '0'
-    hour: '5'
-    job: '{{ homeserver_repo_dir }}/bin/do-maintenance --backup --image-update'
+    hour: '3'
+    job: '{{ homeserver_repo_dir }}/bin/do-maintenance --image-update'
     user: '{{ crontab_user }}'
