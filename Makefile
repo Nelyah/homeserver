@@ -20,7 +20,7 @@ decrypt: $(FILES_TO_ENCRYPT)
 	@touch -r $? $@ # to be no newer than the encrypted one
 
 %.secret:: %
-	@$(GPG) --encrypt --default-recipient-self --armor -o $@ $^
+	@$(GPG) --encrypt --yes --default-recipient-self --armor -o $@ $^
 
 clean:
 	@rm -f $(FILES_TO_ENCRYPT)
