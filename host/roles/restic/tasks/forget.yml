@@ -38,7 +38,7 @@
     {{ keep_yearly }}
     {{ keep_last }}
     {{ ["--tag"] | product(tags_union) | map("join", " ") | list | join(" ")}}
-    {{ "--tag " + tags_intersect if tags_intersect }}
+    {{ "--tag " + tags_intersect if tags_intersect else "" }}
   no_log: true
   environment:
     RESTIC_PASSWORD: '{{ repo_keys.value.password }}'
@@ -48,13 +48,13 @@
     loop_var: repo_keys
   when: 'repo_keys.value.path is exists'
   vars:
-    keep_hourly:  '{{ "--keep-hourly "  + restic_forget_data.keep_hourly  | string if "keep_hourly"  in restic_forget_data }}'
-    keep_daily:   '{{ "--keep-daily "   + restic_forget_data.keep_daily   | string if "keep_daily"   in restic_forget_data }}'
-    keep_weekly:  '{{ "--keep-weekly "  + restic_forget_data.keep_weekly  | string if "keep_weekly"  in restic_forget_data }}'
-    keep_monthly: '{{ "--keep-monthly " + restic_forget_data.keep_monthly | string if "keep_monthly" in restic_forget_data }}'
-    keep_yearly:  '{{ "--keep-yearly "  + restic_forget_data.keep_yearly  | string if "keep_yearly"  in restic_forget_data }}'
-    keep_last:    '{{ "--keep-last "    + restic_forget_data.keep_last    | string if "keep_last"    in restic_forget_data }}'
-    tags_intersect: '{{ restic_forget_data.tags_intersect | join(",") if "tags_intersect" in restic_forget_data else [] }}'
+    keep_hourly:  '{{ "--keep-hourly "  + restic_forget_data.keep_hourly  | string if "keep_hourly"  in restic_forget_data else "" }}'
+    keep_daily:   '{{ "--keep-daily "   + restic_forget_data.keep_daily   | string if "keep_daily"   in restic_forget_data else "" }}'
+    keep_weekly:  '{{ "--keep-weekly "  + restic_forget_data.keep_weekly  | string if "keep_weekly"  in restic_forget_data else "" }}'
+    keep_monthly: '{{ "--keep-monthly " + restic_forget_data.keep_monthly | string if "keep_monthly" in restic_forget_data else "" }}'
+    keep_yearly:  '{{ "--keep-yearly "  + restic_forget_data.keep_yearly  | string if "keep_yearly"  in restic_forget_data else "" }}'
+    keep_last:    '{{ "--keep-last "    + restic_forget_data.keep_last    | string if "keep_last"    in restic_forget_data else "" }}'
+    tags_intersect: '{{ restic_forget_data.tags_intersect if "tags_intersect" in restic_forget_data else [] | join(",") }}'
     tags_union: '{{ restic_forget_data.tags_union | default([]) }}'
     prune: '{{ "--prune" if "prune" not in restic_forget_data or restic_forget_data.prune }}'
   register: restic_forget
