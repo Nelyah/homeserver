@@ -27,6 +27,7 @@
     - not 'config already exists' in restic_init.stderr
   loop: '{{ restic_repos | dict2items }}'
   when:
+    - item.value.path is exists
     - item.value.init is defined
     - item.value.init
 
