@@ -28,6 +28,7 @@
           tags:
             - bookstack
           ignore_patterns:
+          docker_data_dir: '{{ docker_data_dir }}'
   always:
     - name: Remove database temporary file
       file:

@@ -32,6 +32,7 @@
             - '{{ database }}'
           volumes:
             - wordpress_site
+            - wordpress_db
           tags:
             - wordpress
           ignore_patterns:
