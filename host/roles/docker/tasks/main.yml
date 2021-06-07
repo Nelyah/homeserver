@@ -8,6 +8,7 @@
     name: '{{ item }}'
   loop:
     - bookstack
+    - emby
     - navidrome
     - nextcloud
     - syncthing
@@ -20,6 +21,7 @@
     - bookstack_data
     - bookstack_db
     - certificates
+    - emby_data
     - navidrome_data
     - nextcloud_data
     - nextcloud_site

@@ -1,0 +1,19 @@
+server {
+    include       /etc/nginx/generated/ssl.conf;
+
+    listen        443 ssl http2;
+
+    server_name   ${CINEMA_URL};
+    set $cinema "http://${CINEMA_INTERNAL_NAME}:8096";
+
+    location / {
+        include /etc/nginx/common_location.conf;
+        include /etc/nginx/header_security.conf;
+
+        proxy_max_temp_file_size 0;
+
+        proxy_pass  $cinema;
+    }
+}
+
+# vi:syntax=nginx

@@ -12,6 +12,8 @@ services:
       - BLOG_URL_OLD=${BLOG_URL_OLD}
       - BLOG_URL_NEW=${BLOG_URL_NEW}
       - BLOG_INTERNAL_NAME=${BLOG_INTERNAL_NAME}
+      - CINEMA_INTERNAL_NAME=${CINEMA_INTERNAL_NAME}
+      - CINEMA_URL=${CINEMA_URL}
       - CLOUD_INTERNAL_NAME=${CLOUD_INTERNAL_NAME}
       - CLOUD_URL=${CLOUD_URL}
       - WIKI_URL=${WIKI_URL}
@@ -24,6 +26,7 @@ services:
       - ./nginx_config:/etc/nginx/
       - certificates:/etc/letsencrypt:ro
     networks:
+      - emby
       - nextcloud
       - navidrome
       - bookstack
@@ -44,5 +47,5 @@ networks:
     external: true
   navidrome:
     external: true
-
-  
+  emby:
+    external: true
