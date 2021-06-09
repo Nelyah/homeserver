@@ -1,0 +1,33 @@
+---
+
+- name: Do Emby backup
+  tags:
+    - backup
+  include_role:
+    name: restic
+    tasks_from: backup
+  vars:
+    restic_backup_data:
+      path:
+      volumes:
+        - emby_data
+      tags:
+        - emby
+      ignore_patterns:
+      docker_data_dir: '{{ docker_data_dir }}'
+
+- name: Prune Emby snapshots
+  include_role:
+    name: restic
+    tasks_from: forget
+  vars:
+    restic_forget_data:
+      tags_intersect:
+      tags_union:
+        - emby
+      keep_daily: 10
+      keep_weekly: 4
+      keep_monthly: 4
+      prune: true
+
+# vi:ft=yaml.ansible

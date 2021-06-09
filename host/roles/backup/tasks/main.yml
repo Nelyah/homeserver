@@ -15,6 +15,7 @@
         - '{{ item }}'
   loop:
     - bookstack
+    - emby
     - music
     - navidrome
     - nextcloud

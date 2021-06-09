@@ -13,6 +13,7 @@
     loop_var: backup_service
   loop:
     - bookstack
+    - emby
     - music
     - navidrome
     - nextcloud
@@ -29,6 +30,7 @@
     loop_var: backup_service
   loop:
     - bookstack
+    - emby
     - music
     - navidrome
     - nextcloud
