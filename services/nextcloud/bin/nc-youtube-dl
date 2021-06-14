@@ -1,16 +1,16 @@
 #! /bin/bash
 
 NCPATH=$(readlink -f "$(dirname $(which $0))/..")
-source ${NCPATH}/.env
+source "${NCPATH}/.env"
 
-TMPVID="$NCPATH/tmp"
-mkdir -p $TMPVID
+TMPVID="$HOME/tmp"
+mkdir -p "$TMPVID"
 cd $TMPVID
 
 youtube-dl "$1"
 cd ..
-docker exec -it nextcloud mkdir -p "${YOUTUBE_DIR}"
-docker cp $TMPVID/* nextcloud:/data/Nelyah/files/tmp/youtube/
-docker exec -it nextcloud chown -R www-data:www-data "${YOUTUBE_DIR}"
+docker exec -it nextcloud mkdir -p "$YOUTUBE_DIR"
+docker cp $TMPVID/* nextcloud:"$YOUTUBE_DIR"
+docker exec -it --user root nextcloud chown -R www-data:www-data "$YOUTUBE_DIR"
 
 rm -rf $TMPVID
