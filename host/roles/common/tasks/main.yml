@@ -16,9 +16,6 @@
 - name: Set users
   import_tasks: 'users.yml'
 
-- name: Setup ssh configuration for users
-  import_tasks: 'ssh.yml'
-
 - name: Deploy environment configuration for users
   template:
     src: user_env_config.j2
