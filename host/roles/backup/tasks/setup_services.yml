@@ -11,14 +11,7 @@
     dest: /etc/systemd/system/backup-{{ backup_service }}.timer
   loop_control:
     loop_var: backup_service
-  loop:
-    - bookstack
-    - emby
-    - music
-    - navidrome
-    - nextcloud
-    - syncthing
-    - wordpress
+  loop: '{{ backup_services }}'
 
 - name: Start and enable backup timers
   systemd:
@@ -28,13 +21,6 @@
     enabled: yes
   loop_control:
     loop_var: backup_service
-  loop:
-    - bookstack
-    - emby
-    - music
-    - navidrome
-    - nextcloud
-    - syncthing
-    - wordpress
+  loop: '{{ backup_services }}'
 
 # vi:ft=yaml.ansible

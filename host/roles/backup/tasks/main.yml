@@ -8,19 +8,15 @@
     - backup
 
 - name: Do the backup
-  include_tasks:
-    file: '{{ item }}.yml'
+  include_role:
+    name: '{{ backup_service }}'
+    tasks_from: backup
     apply:
       tags:
-        - '{{ item }}'
-  loop:
-    - bookstack
-    - emby
-    - music
-    - navidrome
-    - nextcloud
-    - syncthing
-    - wordpress
+        - '{{ backup_service }}'
+  loop: '{{ backup_services }}'
+  loop_control:
+    loop_var: backup_service
   tags:
     - always
 

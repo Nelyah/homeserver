@@ -1,0 +1,19 @@
+---
+
+docker_services:
+  - bookstack
+  - emby
+  - navidrome
+  - nextcloud
+  - syncthing
+  - wordpress
+backup_services:
+  - bookstack
+  - emby
+  - music
+  - navidrome
+  - nextcloud
+  - syncthing
+  - wordpress
+
+# vi:ft=yaml.ansible
