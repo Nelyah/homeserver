@@ -21,4 +21,13 @@
     shell: '{{ item.shell | default("/bin/bash") }}'
     update_password: on_create
 
+- name: Remove inactive users
+  no_log: true
+  user:
+    name: '{{ item.login }}'
+    state: absent
+    remove: no
+  loop: '{{ users }}'
+  when: 'item.active is defined and not item.active'
+
 # vi:ft=yaml.ansible
