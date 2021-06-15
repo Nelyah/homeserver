@@ -11,6 +11,7 @@
   loop: '{{ users | map(attribute="groups") | flatten }}'
 
 - name: Set users
+  no_log: true
   loop: '{{ users }}'
   user:
     name: '{{ item.login }}'
@@ -19,3 +20,5 @@
     groups: '{{ item.groups | join(",") }}{{ ",wheel" if item.can_sudo else "" }}'
     shell: '{{ item.shell | default("/bin/bash") }}'
     update_password: on_create
+
+# vi:ft=yaml.ansible

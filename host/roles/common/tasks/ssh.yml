@@ -31,3 +31,5 @@
     group: '{{ item }}'
     mode: '0600'
   loop: '{{ users | selectattr("ssh_config") | map(attribute="login") | list }}'
+
+# vi:ft=yaml.ansible
