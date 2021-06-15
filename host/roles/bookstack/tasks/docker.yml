@@ -1,0 +1,16 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: bookstack
+
+- name: Create required docker volumes
+  community.docker.docker_network:
+    name: '{{ docker_volumes }}'
+  loop:
+    - bookstack_data
+    - bookstack_db
+  loop_control:
+    loop_var: docker_volumes
+
+# vi:ft=yaml.ansible

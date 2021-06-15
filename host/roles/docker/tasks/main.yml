@@ -3,29 +3,14 @@
 - include: system_setup.yml
   become: true
 
-- name: Create required docker networks
-  community.docker.docker_network:
+- name: Do the Docker setup for each service
+  include_role:
     name: '{{ item }}'
-  loop:
-    - bookstack
-    - emby
-    - navidrome
-    - nextcloud
-    - syncthing
-    - wordpress
+    tasks_from: docker
+  loop: '{{ docker_services }}'
 
 - name: Create required docker volumes
   community.docker.docker_network:
     name: '{{ item }}'
   loop:
-    - bookstack_data
-    - bookstack_db
     - certificates
-    - emby_data
-    - navidrome_data
-    - nextcloud_data
-    - nextcloud_site
-    - syncthing_config
-    - syncthing_data
-    - wordpress_db
-    - wordpress_site

@@ -1,0 +1,16 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: syncthing
+
+- name: Create required docker volumes
+  community.docker.docker_network:
+    name: '{{ docker_volumes }}'
+  loop:
+    - syncthing_config
+    - syncthing_data
+  loop_control:
+    loop_var: docker_volumes
+
+# vi:ft=yaml.ansible

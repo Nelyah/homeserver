@@ -2,6 +2,14 @@
 
 - hosts: localhost
   connection: local
+  vars:
+    docker_services:
+      - bookstack
+      - emby
+      - navidrome
+      - nextcloud
+      - syncthing
+      - wordpress
 
   roles:
     - role: common
