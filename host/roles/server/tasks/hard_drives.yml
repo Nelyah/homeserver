@@ -85,5 +85,5 @@
   systemd:
     daemon_reload: yes
     name: '{{ drives.remote_backup.automount_file_dest | basename }}'
-    state: started
-    enabled: yes
+    state: stopped
+    enabled: no
