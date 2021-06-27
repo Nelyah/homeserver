@@ -3,12 +3,14 @@
 do_all=''
 do_backup=''
 do_image_update=''
+do_image_cleanup=''
 do_dns_update=''
 
 while (( "$#" > 0 )); do
     case "$1" in
         --backup) do_backup=y; shift ;;
         --image-update) do_image_update=y; shift ;;
+        --image-cleanup) do_image_cleanup=y; shift ;;
         --dns-update) do_dns_update=y; shift ;;
         --all) do_all=y; shift ;;
         *) shift ;;
@@ -60,6 +62,14 @@ if [[ -n "$do_all" ]] || [[ -n "$do_image_update" ]]; then
         echo "Running update for $file"
         "$file"
     done
+fi
+
+#############################
+#  Cleanup dangling images  #
+#############################
+
+if [[ -n "$do_all" ]] || [[ -n "$do_image_cleanup" ]]; then
+    "${bin_dir}/docker-images-cleanup"
 fi
 
 ########################
