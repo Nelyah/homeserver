@@ -16,6 +16,12 @@
 - name: Set users
   import_tasks: 'users.yml'
 
+- name: Deploy system-wide environment configuration
+  copy:
+    src: etc-environment
+    dest: '/etc/environment'
+    mode: '600'
+
 - name: Deploy environment configuration for users
   template:
     src: homeserver_config.sh.j2
