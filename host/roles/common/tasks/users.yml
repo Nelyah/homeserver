@@ -12,7 +12,6 @@
 
 - name: Set users
   no_log: true
-  loop: '{{ users }}'
   user:
     name: '{{ item.login }}'
     comment: '{{ item.full_name }}'
@@ -20,6 +19,9 @@
     groups: '{{ item.groups | join(",") }}{{ ",wheel" if item.can_sudo else "" }}'
     shell: '{{ item.shell | default("/bin/bash") }}'
     update_password: on_create
+  loop: '{{ users }}'
+  when:
+    - 'item.active is not defined or item.active'
 
 - name: Remove inactive users
   no_log: true
@@ -45,23 +47,29 @@
     mode: '0600'
 
 - name: Create ssh directory for users
+  no_log: true
   file:
-    path: '/home/{{ item }}/.ssh'
+    path: '/home/{{ item.login }}/.ssh'
     state: directory
-    owner: '{{ item }}'
-    group: '{{ item }}'
+    owner: '{{ item.login }}'
+    group: '{{ item.login }}'
     mode: '0700'
-  loop: '{{ users | selectattr("ssh_config") | map(attribute="login") | list }}'
-  when: 'item.active is not defined or item.active'
+  loop: '{{ users }}'
+  when:
+    - 'item.active is not defined or item.active'
+    - 'item.ssh_config'
 
 - name: Deploy ssh config for users
+  no_log: true
   copy:
     src: ssh_config
-    dest: /home/{{ item }}/.ssh/config
-    owner: '{{ item }}'
-    group: '{{ item }}'
+    dest: /home/{{ item.login }}/.ssh/config
+    owner: '{{ item.login }}'
+    group: '{{ item.login }}'
     mode: '0600'
-  loop: '{{ users | selectattr("ssh_config") | map(attribute="login") | list }}'
-  when: 'item.active is not defined or item.active'
+  loop: '{{ users }}'
+  when:
+    - 'item.active is not defined or item.active'
+    - 'item.ssh_config'
 
 # vi:ft=yaml.ansible
