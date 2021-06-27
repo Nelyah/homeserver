@@ -1,0 +1,14 @@
+#! /bin/bash
+
+emby_dir=$(readlink -f "$(dirname $(which $0))/..")
+
+pushd "$emby_dir"
+needs_update=$(docker-compose images | tail -n +3 | awk '{ if ( $3 == "<none>" ) { print "yes" } }')
+if [ ! -z "$needs_update" ]; then
+    docker-compose down
+    docker-compose up -d
+    echo "Emby docker has been updated." 1>&2
+else
+    echo "Image SHA hasn't changed, keep the container running." 1>&2
+fi
+popd
