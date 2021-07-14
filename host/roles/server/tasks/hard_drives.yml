@@ -87,3 +87,5 @@
     name: '{{ drives.remote_backup.automount_file_dest | basename }}'
     state: stopped
     enabled: no
+
+# vi:ft=yaml.ansible

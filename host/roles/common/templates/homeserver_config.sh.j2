@@ -10,4 +10,12 @@ alias cddd="cd ${services_directory}"
 alias cdn="cd ${services_directory}/nextcloud"
 alias cdw="cd ${services_directory}/wordpress"
 
+function dusage () {
+    if hash duf &> /dev/null ; then
+        duf -only-mp "/data*,/,/home"
+    else
+        df -h
+    fi
+}
+
 # vim: syntax=sh
