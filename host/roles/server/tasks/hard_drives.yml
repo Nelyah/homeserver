@@ -53,19 +53,6 @@
 
 # Third drive setup (external drive)
 
-- name: Create the passphrase file directory if it does not exist
-  file:
-    path: '{{ drives.remote_backup.luks_passphrase_file_dest | dirname }}'
-    state: directory
-    mode: '0755'
-
-- name: Setup the third drive passphrase file
-  template:
-    src: luks_passphrase_file.j2
-    dest: '{{ drives.remote_backup.luks_passphrase_file_dest }}'
-    mode: '400'
-    owner: '{{ crontab_user }}'
-
 - name: Setup the third drive
   template:
     src: remote_backup.mount.j2
@@ -76,16 +63,11 @@
     src: remote_backup.automount.j2
     dest: '{{ drives.remote_backup.automount_file_dest }}'
 
-- name: Setup the third drive LUKS unlock service
-  template:
-    src: unlock-luks-backup.service.j2
-    dest: '{{ drives.remote_backup.luks_unlock_file_dest }}'
-
 - name: Start and enable third drive automount
   systemd:
     daemon_reload: yes
     name: '{{ drives.remote_backup.automount_file_dest | basename }}'
-    state: stopped
-    enabled: no
+    state: started
+    enabled: yes
 
 # vi:ft=yaml.ansible

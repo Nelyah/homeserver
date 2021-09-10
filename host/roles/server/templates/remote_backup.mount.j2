@@ -1,10 +1,8 @@
 [Unit]
 Description=Remote backup drive
-After=unlock-luks-backup.service
-Requires=unlock-luks-backup.service
 
 [Mount]
-What=/dev/mapper/{{ drives.remote_backup.luks_mapper}}
+What=/dev/disk/by-uuid/{{ drives.remote_backup.uuid }}
 Where={{ drives.remote_backup.mount }}
 Type={{ drives.remote_backup.type }}
 Options=defaults
