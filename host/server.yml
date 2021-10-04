@@ -11,6 +11,8 @@
       become: yes
 
     - role: docker
+      tags:
+        - docker
 
   tasks:
     - name: Setup backup services
