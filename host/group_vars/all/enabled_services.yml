@@ -5,6 +5,7 @@ docker_services:
   - emby
   - navidrome
   - nextcloud
+  - photoprism
   - syncthing
   - wordpress
 backup_services:
@@ -13,6 +14,7 @@ backup_services:
   - music
   - navidrome
   - nextcloud
+  - photoprism
   - syncthing
   - wordpress
 

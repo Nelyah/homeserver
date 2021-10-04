@@ -1,0 +1,21 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: photoprism
+
+- name: Create required docker volumes
+  community.docker.docker_volume:
+    name: '{{ docker_volumes }}'
+  loop:
+    - photoprism_data
+    - photoprism_db
+  loop_control:
+    loop_var: docker_volumes
+
+- name: Install the .env docker-compose file
+  template:
+    src: env.j2
+    dest: '{{ homeserver_repo_dir }}/services/photoprism/.env'
+
+# vi:ft=yaml.ansible

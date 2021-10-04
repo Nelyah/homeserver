@@ -1,0 +1,33 @@
+---
+
+- name: Do Photoprism backup
+  tags:
+    - backup
+  include_role:
+    name: restic
+    tasks_from: backup
+  vars:
+    restic_backup_data:
+      path:
+      volumes:
+        - photoprism_data
+        - photoprism_db
+      tags:
+        - photoprism
+      ignore_patterns:
+      docker_data_dir: '{{ docker_data_dir }}'
+
+- name: Prune Photoprism snapshots
+  include_role:
+    name: restic
+    tasks_from: forget
+  vars:
+    restic_forget_data:
+      tags_intersect:
+      tags_union:
+        - photoprism
+      keep_daily: 10
+      keep_weekly: 4
+      prune: true
+
+# vi:ft=yaml.ansible
