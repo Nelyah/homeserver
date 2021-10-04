@@ -5,7 +5,7 @@
     name: wordpress
 
 - name: Create required docker volumes
-  community.docker.docker_network:
+  community.docker.docker_volume:
     name: '{{ docker_volumes }}'
   loop:
     - wordpress_db
