@@ -17,6 +17,7 @@ backup_services:
   - navidrome
   - nextcloud
   - photoprism
+  - pictures
   - pihole
   - syncthing
   - wordpress

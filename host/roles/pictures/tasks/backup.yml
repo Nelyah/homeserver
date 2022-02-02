@@ -1,0 +1,33 @@
+---
+
+- name: Do Pictures backup
+  tags:
+    - backup
+  include_role:
+    name: restic
+    tasks_from: backup
+  vars:
+    restic_backup_data:
+      path:
+        - '{{ pictures_env.path }}'
+      volumes:
+      tags:
+        - pictures
+      ignore_patterns:
+      docker_data_dir: '{{ docker_data_dir }}'
+
+- name: Prune Pictures snapshots
+  include_role:
+    name: restic
+    tasks_from: forget
+  vars:
+    restic_forget_data:
+      tags_intersect:
+      tags_union:
+        - pictures
+      keep_daily: 10
+      keep_weekly: 4
+      keep_monthly: 4
+      prune: true
+
+# vi:ft=yaml.ansible
