@@ -6,8 +6,10 @@ docker_services:
   - navidrome
   - nextcloud
   - photoprism
+  - pihole
   - syncthing
   - wordpress
+
 backup_services:
   - bookstack
   - emby
@@ -15,6 +17,7 @@ backup_services:
   - navidrome
   - nextcloud
   - photoprism
+  - pihole
   - syncthing
   - wordpress
 

@@ -19,5 +19,6 @@
 ./services/navidrome/.env
 ./services/nextcloud/.env
 ./services/nginx/.env
+./services/pihole/.env
 ./services/syncthing/.env
 ./services/wordpress/.env

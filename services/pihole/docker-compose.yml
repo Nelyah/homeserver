@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    environment:
+      TZ: 'Europe/Paris'
+      WEBPASSWORD: ${WEBPASSWORD}
+      FTLCONF_REPLY_ADDR4: ${FTLCONF_REPLY_ADDR4}
+      VIRTUAL_HOST: ${VIRTUAL_HOST}
+      VIRTUAL_PORT: ${VIRTUAL_PORT}
+    volumes:
+      - pihole_config:/etc/pihole
+      - pihole_dnsmasq_config:/etc/dnsmasq.d    
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    cap_add:
+      - NET_ADMIN # Recommended but not required (DHCP needs NET_ADMIN)      
+    volumes:
+      - pihole_config
+      - pihole_dnsmasq_config
+    networks:
+      - pihole
+
+networks:
+  pihole:
+    external: true
+
+volumes:
+  pihole_config:
+    external: true
+  pihole_dnsmasq_config:
+    external: true

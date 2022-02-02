@@ -12,6 +12,8 @@ services:
       - BLOG_URL_OLD=${BLOG_URL_OLD}
       - BLOG_URL_NEW=${BLOG_URL_NEW}
       - BLOG_INTERNAL_NAME=${BLOG_INTERNAL_NAME}
+      - PIHOLE_INTERNAL_NAME=${PIHOLE_INTERNAL_NAME}
+      - PIHOLE_URL=${PIHOLE_URL}
       - CINEMA_INTERNAL_NAME=${CINEMA_INTERNAL_NAME}
       - CINEMA_URL=${CINEMA_URL}
       - CLOUD_INTERNAL_NAME=${CLOUD_INTERNAL_NAME}
@@ -32,6 +34,7 @@ services:
       - nextcloud
       - navidrome
       - photoprism
+      - pihole
       - bookstack
       - wordpress
 
@@ -53,4 +56,6 @@ networks:
   emby:
     external: true
   photoprism:
+    external: true
+  pihole:
     external: true

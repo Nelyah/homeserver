@@ -1,0 +1,16 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: pihole
+
+- name: Create required docker volumes
+  community.docker.docker_volume:
+    name: '{{ docker_volumes }}'
+  loop:
+    - pihole_config
+    - pihole_dnsmasq_config
+  loop_control:
+    loop_var: docker_volumes
+
+# vi:ft=yaml.ansible
