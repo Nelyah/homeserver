@@ -5,4 +5,4 @@ Wants=backup.timer
 [Service]
 Environment=RESTIC_LOCKFILE=/tmp/restic.lock
 Type=oneshot
-ExecStart=/usr/bin/flock --exclusive $RESTIC_LOCKFILE /bin/ansible-playbook --tags backup,%i {{ homeserver_repo_dir }}/host/backup.yml
+ExecStart=/usr/bin/flock --exclusive $RESTIC_LOCKFILE make -C {{ homeserver_repo_dir }}/host backup BACKUP_SERVICE="%i"
