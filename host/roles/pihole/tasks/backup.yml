@@ -17,7 +17,7 @@
       ignore_patterns:
       docker_data_dir: '{{ docker_data_dir }}'
 
-- name: Prune Piholesnapshots
+- name: Prune Pihole snapshots
   include_role:
     name: restic
     tasks_from: forget
