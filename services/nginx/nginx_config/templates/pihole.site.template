@@ -17,7 +17,28 @@ server {
         deny all;
 
         proxy_pass  $pihole;
+        proxy_set_header X-Forwarded-Host $host;
     }
+
+    location ~ \.php$ {
+        # Only allow from within the network since I never use
+        # the service from outside
+        allow 192.168.0.0/24;
+        allow 192.168.1.0/24;
+        allow 192.168.2.0/24;
+        deny all;
+
+        proxy_pass  $pihole;
+
+        # This is really important to set in this case 
+        # PiHole checks that the hostname given in the header
+        # matches with what it expects. This happens in the file 
+        # /var/www/html/admin/scripts/pi-hole/php/auth.php in the
+        # pihole docker container
+        proxy_set_header X-Forwarded-Host $host;
+    }
+
+
 }
 
 # vi:syntax=nginx
