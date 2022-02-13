@@ -2,7 +2,7 @@
 
 set -e
 
-services_directory="$(git rev-parse --show-top-level)/services"
+services_directory="$(git rev-parse --show-toplevel)/services"
 
 cleanup(){ local RET=$?;  rm -f ${ps_array[@]} ; exit $RET; }
 trap cleanup EXIT INT TERM HUP ERR
