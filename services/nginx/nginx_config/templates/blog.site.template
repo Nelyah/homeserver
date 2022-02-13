@@ -46,9 +46,8 @@ server {
 
     location ~ /wp-login.php {
         limit_req   zone=loginrate;
-        allow 192.168.0.0/24;
-        allow 192.168.1.0/24;
-        deny all;
+
+        include /etc/nginx/restrict_to_local_network.conf;
         include /etc/nginx/common_location.conf;
         proxy_pass  $blog;
     }

@@ -10,23 +10,14 @@ server {
         include /etc/nginx/common_location.conf;
         include /etc/nginx/header_security.conf;
 
-        # Only allow from within the network since I never use
-        # the service from outside
-        allow 192.168.0.0/24;
-        allow 192.168.1.0/24;
-        deny all;
+        include /etc/nginx/restrict_to_local_network.conf;
 
         proxy_pass  $pihole;
         proxy_set_header X-Forwarded-Host $host;
     }
 
     location ~ \.php$ {
-        # Only allow from within the network since I never use
-        # the service from outside
-        allow 192.168.0.0/24;
-        allow 192.168.1.0/24;
-        allow 192.168.2.0/24;
-        deny all;
+        include /etc/nginx/restrict_to_local_network.conf;
 
         proxy_pass  $pihole;
 
