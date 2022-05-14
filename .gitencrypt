@@ -16,6 +16,7 @@
 ./services/ddclient/.env
 ./services/minimserver/.env
 ./services/mpd/.env
+./services/influxdb/.env
 ./services/navidrome/.env
 ./services/nextcloud/.env
 ./services/nginx/.env

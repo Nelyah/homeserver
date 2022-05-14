@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    restart: unless-stopped
+    volumes:
+      - influxdb_data:/var/lib/influxdb2:rw
+    networks:
+      - influxdb
+    environment: 
+      - DOCKER_INFLUXDB_INIT_MODE=${DOCKER_INFLUXDB_INIT_MODE}
+      - DOCKER_INFLUXDB_INIT_USERNAME=${DOCKER_INFLUXDB_INIT_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${DOCKER_INFLUXDB_INIT_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${DOCKER_INFLUXDB_INIT_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${DOCKER_INFLUXDB_INIT_BUCKET}
+      - DOCKER_INFLUXDB_INIT_CLI_CONFIG_NAME=${DOCKER_INFLUXDB_INIT_CLI_CONFIG_NAME}
+
+volumes:
+  influxdb_data:
+    external: true
+
+networks:
+  influxdb:
+    external: true

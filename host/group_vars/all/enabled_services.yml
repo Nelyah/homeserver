@@ -3,6 +3,7 @@
 docker_services:
   - bookstack
   - emby
+  - influxdb
   - navidrome
   - nextcloud
   - photoprism
@@ -13,6 +14,7 @@ docker_services:
 backup_services:
   - bookstack
   - emby
+  - influxdb
   - music
   - navidrome
   - nextcloud

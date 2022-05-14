@@ -14,6 +14,8 @@ services:
       - BLOG_INTERNAL_NAME=${BLOG_INTERNAL_NAME}
       - PIHOLE_INTERNAL_NAME=${PIHOLE_INTERNAL_NAME}
       - PIHOLE_URL=${PIHOLE_URL}
+      - INFLUXDB_URL=${INFLUXDB_URL}
+      - INFLUXDB_INTERNAL_NAME=${INFLUXDB_INTERNAL_NAME}
       - CINEMA_INTERNAL_NAME=${CINEMA_INTERNAL_NAME}
       - CINEMA_URL=${CINEMA_URL}
       - CLOUD_INTERNAL_NAME=${CLOUD_INTERNAL_NAME}
@@ -31,6 +33,7 @@ services:
       - certificates:/etc/letsencrypt:ro
     networks:
       - emby
+      - influxdb
       - nextcloud
       - navidrome
       - photoprism
@@ -48,6 +51,8 @@ networks:
   nextcloud:
     external: true
   bookstack:
+    external: true
+  influxdb:
     external: true
   wordpress:
     external: true
