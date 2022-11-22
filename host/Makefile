@@ -3,16 +3,16 @@
 BACKUP_SERVICE=""
 
 server: install_requires
-	. .venv/bin/activate && ansible-playbook-2 --ask-become-pass server.yml
+	. .venv/bin/activate && ansible-playbook --ask-become-pass server.yml
 .PHONY: server
 
 backup: install_requires
-	. .venv/bin/activate && ansible-playbook-2 --tags backup,$(BACKUP_SERVICE) backup.yml
+	. .venv/bin/activate && ansible-playbook --tags backup,$(BACKUP_SERVICE) backup.yml
 .PHONY: backup
 
 install_requires: .venv
 	. .venv/bin/activate \
-		&& ansible-galaxy-2 collection install community.docker \
+		&& ansible-galaxy collection install community.docker \
 		&& pip install -r requirements.txt
 .PHONY: install_requires
 

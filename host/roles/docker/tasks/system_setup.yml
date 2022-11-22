@@ -12,7 +12,7 @@
 - name: Install docker packages
   package:
     name:
-      - containerd.io
+      - containerd
       - docker-ce
       - docker-ce-cli
       - docker-compose
