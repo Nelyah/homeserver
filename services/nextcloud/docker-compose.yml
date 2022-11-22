@@ -3,7 +3,7 @@ version: '3'
 services:
   mariadb-nc:
     container_name: mariadb-nc
-    image: docker.io/mariadb
+    image: docker.io/mariadb:10.8.3
     restart: unless-stopped
     volumes:
       - nextcloud_mariadb:/var/lib/mysql
