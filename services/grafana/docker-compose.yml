@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - grafana
+
+volumes:
+  grafana_data:
+    external: true
+
+networks:
+  grafana:
+    external: true

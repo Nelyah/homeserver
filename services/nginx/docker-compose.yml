@@ -28,6 +28,8 @@ services:
       - PHOTOS_INTERNAL_NAME=${PHOTOS_INTERNAL_NAME}
       - PROMETHEUS_URL=${PROMETHEUS_URL}
       - PROMETHEUS_INTERNAL_NAME=${PROMETHEUS_INTERNAL_NAME}
+      - GRAFANA_URL=${GRAFANA_URL}
+      - GRAFANA_INTERNAL_NAME=${GRAFANA_INTERNAL_NAME}
       - CERTIFICATE_NAME=${CERTIFICATE_NAME}
       - NGINX_ENVSUBST_OUTPUT_DIR=${NGINX_ENVSUBST_OUTPUT_DIR}
     volumes:
@@ -35,6 +37,7 @@ services:
       - certificates:/etc/letsencrypt:ro
     networks:
       - emby
+      - grafana
       - influxdb
       - nextcloud
       - navidrome
@@ -68,4 +71,6 @@ networks:
   pihole:
     external: true
   prometheus:
+    external: true
+  grafana:
     external: true
