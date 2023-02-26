@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - prometheus_config:/etc/prometheus
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - prometheus
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    networks:
+      - prometheus
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+
+  cadvisor:
+    # TODO: latest tag is not updated, check latest release https://github.com/google/cadvisor/releases
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: cadvisor
+    networks:
+      - prometheus
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /data/docker-data/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
+    privileged: true
+
+volumes:
+  prometheus_data:
+    external: true
+  prometheus_config:
+    external: true
+
+networks:
+  prometheus:
+    external: true

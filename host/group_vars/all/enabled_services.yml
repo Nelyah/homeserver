@@ -8,6 +8,7 @@ docker_services:
   - nextcloud
   - photoprism
   - pihole
+  - prometheus
   - syncthing
   - wordpress
 
@@ -21,6 +22,7 @@ backup_services:
   - photoprism
   - pictures
   - pihole
+  - prometheus
   - syncthing
   - wordpress
 
