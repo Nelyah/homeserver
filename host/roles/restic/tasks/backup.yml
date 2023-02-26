@@ -33,7 +33,7 @@
     {{ [docker_volume_prefix] | product(volumes_to_backup) | map("join", "/") | list | join(" ")}}
     {{ files_to_backup | join(" ")}}
     {{ ['--exclude '] | product(patterns_to_ignore) | map('join') | list | join(' ') }}
-    {{ ['--tag '] | product(tags_to_apply) | map('join', ',') | list | join(' ') }}
+    {{ ['--tag '] | product(tags_to_apply) | map('join', ' ') | list | join(' ') }}
   no_log: true
   environment:
     RESTIC_PASSWORD: '{{ repo_keys.value.password }}'
