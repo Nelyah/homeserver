@@ -44,6 +44,13 @@
     src: second_drive.automount.j2
     dest: '{{ drives.backup.automount_file_dest }}'
 
+- name: Start and enable second drive
+  systemd:
+    daemon_reload: yes
+    name: '{{ drives.backup.mount_file_dest | basename }}'
+    state: started
+    enabled: yes
+
 - name: Start and enable second drive automount
   systemd:
     daemon_reload: yes
@@ -68,6 +75,6 @@
     daemon_reload: yes
     name: '{{ drives.remote_backup.automount_file_dest | basename }}'
     state: started
-    enabled: yes
+    enabled: no
 
 # vi:ft=yaml.ansible
