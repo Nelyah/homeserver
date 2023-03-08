@@ -12,4 +12,9 @@
   loop_control:
     loop_var: docker_volumes
 
+- name: Install the Grafana config file
+  template:
+    src: grafana.ini.j2
+    dest: '{{ homeserver_repo_dir }}/services/grafana/grafana.ini'
+
 # vi:ft=yaml.ansible
