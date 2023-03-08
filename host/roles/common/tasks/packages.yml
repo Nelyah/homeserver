@@ -24,7 +24,7 @@
       - wget
       - youtube-dl
       - zsh
-      - pip3
+      - smartmontools
       - beets
       - imagemagick
       - davfs2
