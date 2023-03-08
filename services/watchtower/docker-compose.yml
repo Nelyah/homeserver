@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - --schedule
+      # second  minute hour DoM Month DoWeek 
+      - "0 2 22 * * *"
