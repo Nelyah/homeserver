@@ -5,7 +5,7 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     volumes:
-      - prometheus_config:/etc/prometheus
+      - ./prometheus_config.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     restart: unless-stopped
     command:
@@ -18,12 +18,14 @@ services:
     container_name: node_exporter
     command:
       - '--path.rootfs=/host'
+      - '--collector.systemd'
     networks:
       - prometheus
     pid: host
     restart: unless-stopped
     volumes:
       - '/:/host:ro,rslave'
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
 
   cadvisor:
     # TODO: latest tag is not updated, check latest release https://github.com/google/cadvisor/releases
@@ -37,10 +39,30 @@ services:
       - /sys:/sys:ro
       - /data/docker-data/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+    command:
+      - --housekeeping_interval=1m0s
+      - --disable_metrics=disk
     devices:
       - /dev/kmsg
     restart: unless-stopped
     privileged: true
+
+  smartctl_exporter:
+    build: exporters
+    container_name: smartctl_exporter
+    privileged: true
+    restart: unless-stopped
+    command:
+      - --reload
+      - --port
+      - '8000'
+    environment:
+      SMART_DEVICES: /dev/sda:/dev/sdb:/dev/sdc
+    networks:
+      - prometheus
+    volumes:
+      - /dev:/dev:ro
+
 
 volumes:
   prometheus_data:
