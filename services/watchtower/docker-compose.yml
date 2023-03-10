@@ -10,4 +10,4 @@ services:
     command:
       - --schedule
       # second  minute hour DoM Month DoWeek 
-      - "0 2 22 * * *"
+      - "0 0 2 * * *"
