@@ -1,0 +1,102 @@
+(security_headers) {
+	header {
+		?X-Robots-Tag "noindex, nofollow"
+		?X-Content-Type-Options "nosniff"
+		?X-Frame-Options "SAMEORIGIN"
+		?Referrer-Policy "no-referrer"
+		Strict-Transport-Security "max-age=15552000; includeSubDomains"
+		?X-XSS-Protection: "1; mode=block"
+	}
+}
+
+cloud.nelyah.eu {
+	import security_headers
+
+	request_body {
+		max_size 5GB
+	}
+
+	root * /php-fpm-root/nextcloud/
+	file_server
+	php_fastcgi nextcloud:9000 {
+		root /var/www/html/
+	}
+
+	redir /.well-known/carddav /remote.php/dav permanent
+	redir /.well-known/caldav /remote.php/dav permanent
+
+	@forbidden {
+		path /.htaccess
+		path /data/*
+		path /config/*
+		path /db_structure
+		path /.xml
+		path /README
+		path /3rdparty/*
+		path /lib/*
+		path /templates/*
+		path /occ
+		path /console.php
+	}
+	respond @forbidden "Access Denied" 403 {
+		close
+	}
+}
+
+pihole.nelyah.eu {
+	import security_headers
+	reverse_proxy pihole
+}
+
+blog.nelyah.eu {
+	redir https://wheelingtheworld.eu{uri} permanent
+}
+
+wheelingtheworld.eu {
+	import security_headers
+	reverse_proxy wordpress
+
+	@restricted_location {
+		path /wp-admin/*
+		path /wp-login.php
+		not remote_ip private_ranges
+	}
+	respond @restricted_location "Access Denied" 403 {
+		close
+	}
+}
+
+influxdb.nelyah.eu {
+	import security_headers
+	reverse_proxy influxdb:8086
+}
+
+wiki.nelyah.eu {
+	import security_headers
+	reverse_proxy bookstack
+}
+
+music.nelyah.eu {
+	import security_headers
+	reverse_proxy navidrome
+}
+
+prometheus.nelyah.eu {
+	import security_headers
+	reverse_proxy prometheus:9090
+}
+
+grafana.nelyah.eu {
+	import security_headers
+	reverse_proxy grafana:3000
+}
+
+cinema.nelyah.eu {
+	import security_headers
+	reverse_proxy emby:8096
+}
+
+photos.nelyah.eu {
+	import security_headers
+	reverse_proxy photoprism:2342
+}

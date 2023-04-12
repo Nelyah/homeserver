@@ -1,0 +1,55 @@
+version: '3'
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - 443:443
+      - 80:80
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - nextcloud_site:/php-fpm-root/nextcloud/
+    networks:
+      - emby
+      - grafana
+      - influxdb
+      - nextcloud
+      - navidrome
+      - photoprism
+      - pihole
+      - prometheus
+      - bookstack
+      - wordpress
+
+volumes:
+  caddy_data:
+    external: true
+  # Required because caddy is being a php_fastcgi proxy to
+  # Nextcloud. Therefore, it needs access to all static files
+  nextcloud_site:
+    external: true
+
+networks:
+  nextcloud:
+    external: true
+  bookstack:
+    external: true
+  influxdb:
+    external: true
+  wordpress:
+    external: true
+  navidrome:
+    external: true
+  emby:
+    external: true
+  photoprism:
+    external: true
+  pihole:
+    external: true
+  prometheus:
+    external: true
+  grafana:
+    external: true
