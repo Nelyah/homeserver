@@ -1,11 +1,14 @@
 (security_headers) {
 	header {
-		?X-Robots-Tag "noindex, nofollow"
-		?X-Content-Type-Options "nosniff"
-		?X-Frame-Options "SAMEORIGIN"
-		?Referrer-Policy "no-referrer"
+		X-Robots-Tag "noindex, nofollow"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "no-referrer"
 		Strict-Transport-Security "max-age=15552000; includeSubDomains"
-		?X-XSS-Protection: "1; mode=block"
+		X-XSS-Protection: "1; mode=block"
+        
+         # https://www.adobe.com/devnet/adobe-media-server/articles/cross-domain-xml-for-streaming.html
+        X-Permitted-Cross-Domain-Policies "none"
 	}
 }
 
@@ -20,6 +23,10 @@ cloud.nelyah.eu {
 	file_server
 	php_fastcgi nextcloud:9000 {
 		root /var/www/html/
+
+        # This is required to inform Nextcloud that it shouldn't be setting
+        # headers itself. That's the job of the reverse proxy
+        env modHeadersAvailable true
 	}
 
 	redir /.well-known/carddav /remote.php/dav permanent
