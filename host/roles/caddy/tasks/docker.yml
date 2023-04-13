@@ -1,0 +1,11 @@
+---
+
+- name: Create required docker volumes
+  community.docker.docker_volume:
+    name: '{{ docker_volumes }}'
+  loop:
+    - caddy_data
+  loop_control:
+    loop_var: docker_volumes
+
+# vi:ft=yaml.ansible
