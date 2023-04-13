@@ -2,7 +2,10 @@
 
 - name: Set facts
   set_fact:
-    database: /tmp/nextcloud_{{ansible_date_time.date | replace('-', '')}}.sql
+    # Do not set the date in the database name. If restic gets a file with a different
+    # name as argument input, it will re-read everything
+    # https://forum.restic.net/t/restic-never-finds-a-parent-snapshot/3938/4
+    database: /tmp/nextcloud_db.sql
 
 - name: Do nextcloud backup
   block:
