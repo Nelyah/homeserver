@@ -14,12 +14,12 @@
 ./host/roles/server/vars/syncthing.yml
 ./services/bookstack/.env
 ./services/ddclient/.env
-./services/minimserver/.env
-./services/mpd/.env
+./services/deprecated/minimserver/.env
+./services/deprecated/mpd/.env
 ./services/influxdb/.env
 ./services/navidrome/.env
 ./services/nextcloud/.env
-./services/nginx/.env
+./services/deprecated/nginx/.env
 ./services/pihole/.env
 ./services/syncthing/.env
 ./services/wordpress/.env
