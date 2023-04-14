@@ -5,6 +5,8 @@
 
 - name: Setup Syncthing
   import_tasks: syncthing.yml
+  tags:
+    - syncthing
 
 - name: Setup the cronjobs
   import_tasks: cron.yml

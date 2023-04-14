@@ -4,52 +4,62 @@
   include_vars:
     file: syncthing.yml
 
-- name: Create Syncthing directory
-  file:
-    path: '{{ item }}'
-    state: directory
-    owner: '{{ syncthing_user }}'
-    group: '{{ syncthing_user }}'
-    mode: '0700'
-  loop:
-    - /home/{{ syncthing_user }}/.config/syncthing
+- name: Task name
+  stat:
+    path: /home/{{ syncthing_user }}/.config/syncthing
+  register: syncthing_config_file
 
-- name: Deploy the unit file for syncthing
-  template:
-    src: syncthing_systemd.service
-    dest: /etc/systemd/system/syncthing@.service
+- name: "Setup Syncthing"
+  block:
+    - name: Create Syncthing directory
+      file:
+        path: '{{ item }}'
+        state: directory
+        owner: '{{ syncthing_user }}'
+        group: '{{ syncthing_user }}'
+        mode: '0700'
+      loop:
+        - /home/{{ syncthing_user }}/.config/syncthing
 
-- name: Deploy keys for Syncthing
-  copy:
-    src: '{{ item }}'
-    dest: '/home/{{ syncthing_user }}/.config/syncthing/{{ item }}'
-    owner: '{{ syncthing_user }}'
-    group: '{{ syncthing_user }}'
-    mode: '0600'
-  loop:
-    - https-key.pem
-    - key.pem
+    - name: Deploy the unit file for syncthing
+      template:
+        src: syncthing_systemd.service
+        dest: /etc/systemd/system/syncthing@.service
 
-- name: Deploy certificates for Syncthing
-  copy:
-    src: '{{ item }}'
-    dest: '/home/{{ syncthing_user }}/.config/syncthing/{{ item }}'
-    owner: '{{ syncthing_user }}'
-    group: '{{ syncthing_user }}'
-    mode: '0644'
-  loop:
-    - https-cert.pem
-    - cert.pem
+    - name: Deploy keys for Syncthing
+      copy:
+        src: '{{ item }}'
+        dest: '/home/{{ syncthing_user }}/.config/syncthing/{{ item }}'
+        owner: '{{ syncthing_user }}'
+        group: '{{ syncthing_user }}'
+        mode: '0600'
+      loop:
+        - https-key.pem
+        - key.pem
 
-- name: Deploy Syncthing config file
-  template:
-    src: syncthing_config.xml.j2
-    dest: /home/{{ syncthing_user }}/.config/syncthing/config.xml
-    owner: '{{ syncthing_user }}'
-    group: '{{ syncthing_user }}'
+    - name: Deploy certificates for Syncthing
+      copy:
+        src: '{{ item }}'
+        dest: '/home/{{ syncthing_user }}/.config/syncthing/{{ item }}'
+        owner: '{{ syncthing_user }}'
+        group: '{{ syncthing_user }}'
+        mode: '0644'
+      loop:
+        - https-cert.pem
+        - cert.pem
 
-- name: Enable and start systemd unit
-  systemd:
-    state: started
-    enabled: yes
-    name: 'syncthing@{{ syncthing_user }}.service'
+    - name: Deploy Syncthing config file
+      template:
+        src: syncthing_config.xml.j2
+        dest: /home/{{ syncthing_user }}/.config/syncthing/config.xml
+        owner: '{{ syncthing_user }}'
+        group: '{{ syncthing_user }}'
+
+    - name: Enable and start systemd unit
+      systemd:
+        state: started
+        enabled: yes
+        name: 'syncthing@{{ syncthing_user }}.service'
+  when: not syncthing_config_file.stat.exists
+
+# vi:ft=yaml.ansible
