@@ -12,5 +12,5 @@
     name: Do the backup and docker image update maintenance
     minute: '0'
     hour: '3'
-    job: '{{ homeserver_repo_dir }}/bin/do-maintenance --image-update --image-cleanup'
+    job: '{{ homeserver_repo_dir }}/bin/do-maintenance --image-cleanup'
     user: '{{ crontab_user }}'
