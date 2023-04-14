@@ -31,7 +31,6 @@ services:
     volumes:
       - nextcloud_site:${NC_WEBSITE_DIR}
       - nextcloud_data:${NC_DATA_DIR}
-      - certificates:/etc/letsencrypt:ro
     networks:
       - nextcloud
 
@@ -46,25 +45,10 @@ services:
     networks:
       - nextcloud
 
-  web:
-    container_name: nginx-nc
-    image: docker.io/nginx
-    restart: unless-stopped
-    links:
-      - nextcloud-app
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - certificates:/etc/letsencrypt:ro
-      - nextcloud_site:${NC_WEBSITE_DIR}
-    networks:
-      - nextcloud
-
 volumes:
   nextcloud_data:
     external: true
   nextcloud_site:
-    external: true
-  certificates:
     external: true
   nextcloud_mariadb:
     external: true
