@@ -1,7 +1,0 @@
----
-
-- name: Deploy ssh keys and authorised keys
-  copy:
-    src: '{{ item.value }}/'
-    dest: /home/{{ item.key }}/.ssh/
-  loop: '{{ ssh_config_path | dict2items }}'

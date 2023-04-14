@@ -3,9 +3,6 @@
 - name: Setup ssh server
   import_tasks: ssh_server.yml
 
-- name: Setup ssh
-  import_tasks: ssh.yml
-
 - name: Setup Syncthing
   import_tasks: syncthing.yml
 
