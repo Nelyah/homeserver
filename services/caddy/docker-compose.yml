@@ -15,6 +15,7 @@ services:
     networks:
       - emby
       - grafana
+      - homepage
       - influxdb
       - nextcloud
       - navidrome
@@ -39,6 +40,8 @@ networks:
   bookstack:
     external: true
   influxdb:
+    external: true
+  homepage:
     external: true
   wordpress:
     external: true

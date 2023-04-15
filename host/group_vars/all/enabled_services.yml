@@ -5,6 +5,7 @@ docker_services:
   - caddy
   - emby
   - grafana
+  - homepage
   - influxdb
   - navidrome
   - nextcloud
@@ -20,6 +21,7 @@ backup_services:
   - caddy
   - emby
   - grafana
+  - homepage
   - influxdb
   - music
   - navidrome
