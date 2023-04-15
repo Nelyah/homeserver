@@ -12,6 +12,16 @@
 	}
 }
 
+(restrict_lan) {
+	@restricted_location {
+		path /*
+		not remote_ip private_ranges
+	}
+	respond @restricted_location "Access Denied" 403 {
+		close
+	}
+}
+
 cloud.nelyah.eu {
 	import security_headers
 
@@ -106,4 +116,10 @@ cinema.nelyah.eu {
 photos.nelyah.eu {
 	import security_headers
 	reverse_proxy photoprism:2342
+}
+
+watchtower.nelyah.eu {
+    import security_headers
+    import restrict_lan
+	reverse_proxy watchtower:8080
 }

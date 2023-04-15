@@ -12,6 +12,7 @@ docker_services:
   - pihole
   - prometheus
   - syncthing
+  - watchtower
   - wordpress
 
 backup_services:

@@ -1,0 +1,7 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: watchtower
+
+# vi:ft=yaml.ansible

@@ -20,3 +20,4 @@
 ./services/pihole/.env
 ./services/syncthing/.env
 ./services/wordpress/.env
+./services/watchtower/.env
