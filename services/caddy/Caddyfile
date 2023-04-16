@@ -1,3 +1,10 @@
+{
+	servers {
+		trusted_proxies static private_ranges
+	}
+	debug
+}
+
 (security_headers) {
 	header {
 		X-Robots-Tag "noindex, nofollow"
@@ -19,6 +26,23 @@
 	}
 	respond @restricted_location "Access Denied" 403 {
 		close
+	}
+}
+
+(authelia_sso) {
+	forward_auth authelia:9091 {
+		uri /api/verify?rd=https://auth.nelyah.eu
+		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+	}
+}
+
+(authelia_sso_if_not_lan) {
+	@is_not_lan {
+		not remote_ip private_ranges
+	}
+	forward_auth @is_not_lan authelia:9091 {
+		uri /api/verify?rd=https://auth.nelyah.eu
+		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
 	}
 }
 
@@ -63,6 +87,7 @@ cloud.nelyah.eu {
 pihole.nelyah.eu {
 	import security_headers
 	reverse_proxy pihole
+	import authelia_sso
 }
 
 blog.nelyah.eu {
@@ -86,6 +111,7 @@ wheelingtheworld.eu {
 influxdb.nelyah.eu {
 	import security_headers
 	reverse_proxy influxdb:8086
+	import authelia_sso_if_not_lan
 }
 
 wiki.nelyah.eu {
@@ -101,11 +127,13 @@ music.nelyah.eu {
 prometheus.nelyah.eu {
 	import security_headers
 	reverse_proxy prometheus:9090
+	import authelia_sso_if_not_lan
 }
 
 grafana.nelyah.eu {
 	import security_headers
 	reverse_proxy grafana:3000
+	import authelia_sso_if_not_lan
 }
 
 cinema.nelyah.eu {
@@ -116,6 +144,7 @@ cinema.nelyah.eu {
 photos.nelyah.eu {
 	import security_headers
 	reverse_proxy photoprism:2342
+	import authelia_sso
 }
 
 watchtower.nelyah.eu {
@@ -124,8 +153,11 @@ watchtower.nelyah.eu {
 	reverse_proxy watchtower:8080
 }
 
+auth.nelyah.eu {
+	reverse_proxy authelia:9091
+}
+
 home.nelyah.eu {
-	import security_headers
-	import restrict_lan
 	reverse_proxy homepage:3000
+	import authelia_sso
 }

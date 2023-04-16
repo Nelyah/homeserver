@@ -17,6 +17,8 @@
   tasks:
     - name: Setup backup services
       become: true
+      tags:
+        - backup
       import_role:
         name: backup
         tasks_from: setup_services

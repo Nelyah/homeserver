@@ -1,0 +1,26 @@
+---
+version: '3'
+
+networks:
+  authelia:
+    external: true
+
+volumes:
+  authelia_config:
+    external: true
+
+services:
+  authelia:
+    image: authelia/authelia
+    container_name: authelia
+    volumes:
+      - authelia_config:/config
+    networks:
+      - authelia
+    restart: unless-stopped
+    healthcheck:
+      ## In production the healthcheck section should be commented.
+      disable: true
+    environment:
+      - TZ=Europe/Paris
+

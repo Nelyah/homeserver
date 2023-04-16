@@ -1,6 +1,7 @@
 ---
 
 docker_services:
+  - authelia
   - bookstack
   - caddy
   - emby
@@ -17,6 +18,7 @@ docker_services:
   - wordpress
 
 backup_services:
+  - authelia
   - bookstack
   - caddy
   - emby
