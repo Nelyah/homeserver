@@ -2,7 +2,6 @@
 	servers {
 		trusted_proxies static private_ranges
 	}
-	debug
 }
 
 (security_headers) {
@@ -87,7 +86,7 @@ cloud.nelyah.eu {
 pihole.nelyah.eu {
 	import security_headers
 	reverse_proxy pihole
-	import authelia_sso
+	import authelia_sso_if_not_lan
 }
 
 blog.nelyah.eu {
@@ -144,7 +143,7 @@ cinema.nelyah.eu {
 photos.nelyah.eu {
 	import security_headers
 	reverse_proxy photoprism:2342
-	import authelia_sso
+	import authelia_sso_if_not_lan
 }
 
 watchtower.nelyah.eu {
