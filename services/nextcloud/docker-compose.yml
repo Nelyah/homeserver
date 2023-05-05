@@ -21,6 +21,7 @@ services:
     image: docker.io/nextcloud:fpm
     depends_on: 
       - mariadb-nc
+      - redis
     restart: unless-stopped
     environment:
       - MYSQL_HOST=${DB_HOST}
@@ -45,12 +46,26 @@ services:
     networks:
       - nextcloud
 
+  redis:
+    image: redis:latest
+    container_name: nextcloud_redis
+    volumes:
+      - nextcloud_redis_data:/data
+    networks:
+      - nextcloud
+    restart: unless-stopped
+    command:
+      # Every 60s, write to database if at least 1 entry was given
+      - --save 60 1
+
 volumes:
   nextcloud_data:
     external: true
   nextcloud_site:
     external: true
   nextcloud_mariadb:
+    external: true
+  nextcloud_redis_data:
     external: true
 
 networks:
