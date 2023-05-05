@@ -8,6 +8,8 @@ networks:
 volumes:
   authelia_config:
     external: true
+  authelia_redis_data:
+    external: true
 
 services:
   authelia:
@@ -23,4 +25,17 @@ services:
       disable: true
     environment:
       - TZ=Europe/Paris
+    depends_on: 
+      - redis
 
+  redis:
+    image: redis:latest
+    container_name: authelia_redis
+    volumes:
+      - authelia_redis_data:/data
+    networks:
+      - authelia
+    restart: unless-stopped
+    command:
+      # Every 60s, write to database if at least 1 entry was given
+      - --save 60 1

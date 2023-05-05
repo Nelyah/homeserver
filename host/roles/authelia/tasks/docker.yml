@@ -9,6 +9,7 @@
     name: '{{ docker_volumes }}'
   loop:
     - authelia_config
+    - authelia_redis_data
   loop_control:
     loop_var: docker_volumes
 
