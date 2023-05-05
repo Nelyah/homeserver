@@ -1,0 +1,21 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: ghost
+
+- name: Create required docker volumes
+  community.docker.docker_volume:
+    name: '{{ docker_volumes }}'
+  loop:
+    - ghost_data
+    - ghost_db
+  loop_control:
+    loop_var: docker_volumes
+
+- name: Deploy configuration for production
+  template:
+    src: config.production.json.j2
+    dest: '{{ homeserver_repo_dir }}/services/ghost/config.production.json'
+
+# vi:ft=yaml.ansible

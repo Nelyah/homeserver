@@ -5,6 +5,7 @@ docker_services:
   - bookstack
   - caddy
   - emby
+  - ghost
   - grafana
   - homepage
   - influxdb
@@ -22,6 +23,7 @@ backup_services:
   - bookstack
   - caddy
   - emby
+  - ghost
   - grafana
   - homepage
   - influxdb

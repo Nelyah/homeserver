@@ -17,6 +17,7 @@ services:
       - emby
       - grafana
       - homepage
+      - ghost
       - influxdb
       - nextcloud
       - navidrome
@@ -41,6 +42,8 @@ networks:
   nextcloud:
     external: true
   bookstack:
+    external: true
+  ghost:
     external: true
   influxdb:
     external: true

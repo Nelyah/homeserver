@@ -35,6 +35,13 @@
 	}
 }
 
+(authelia_sso_location) {
+	forward_auth {args.0} authelia:9091 {
+		uri /api/verify?rd=https://auth.nelyah.eu
+		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+	}
+}
+
 (authelia_sso_if_not_lan) {
 	@is_not_lan {
 		not remote_ip private_ranges
@@ -150,6 +157,16 @@ watchtower.nelyah.eu {
 	import security_headers
 	import restrict_lan
 	reverse_proxy watchtower:8080
+}
+
+ghost.nelyah.eu {
+	import security_headers
+	reverse_proxy ghost:2368
+	@restricted {
+		path /ghost/*
+	}
+
+	import authelia_sso_location @restricted
 }
 
 auth.nelyah.eu {
