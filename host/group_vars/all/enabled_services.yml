@@ -1,6 +1,7 @@
 ---
 
 docker_services:
+  - audiobookshelf
   - authelia
   - bookstack
   - caddy
@@ -19,6 +20,8 @@ docker_services:
   - wordpress
 
 backup_services:
+  - audiobook
+  - audiobookshelf
   - authelia
   - bookstack
   - caddy

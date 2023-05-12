@@ -13,6 +13,7 @@ services:
       - caddy_data:/data
       - nextcloud_site:/php-fpm-root/nextcloud/
     networks:
+      - audiobookshelf
       - authelia
       - emby
       - grafana
@@ -37,6 +38,8 @@ volumes:
     external: true
 
 networks:
+  audiobookshelf:
+    external: true
   authelia:
     external: true
   nextcloud:
