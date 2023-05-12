@@ -10,7 +10,7 @@
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "no-referrer"
-		Strict-Transport-Security "max-age=15552000; includeSubDomains"
+		Strict-Transport-Security "max-age=15552000; includeSubDomains; preload"
 		X-XSS-Protection: "1; mode=block"
 
 		# https://www.adobe.com/devnet/adobe-media-server/articles/cross-domain-xml-for-streaming.html
