@@ -56,7 +56,7 @@
     keep_last:    '{{ "--keep-last "    + restic_forget_data.keep_last    | string if "keep_last"    in restic_forget_data else "" }}'
     tags_intersect: '{{ restic_forget_data.tags_intersect if "tags_intersect" in restic_forget_data else [] | join(",") }}'
     tags_union: '{{ restic_forget_data.tags_union | default([]) }}'
-    prune: '{{ "--prune" if "prune" not in restic_forget_data or restic_forget_data.prune }}'
+    prune: '{{ "--prune" if "prune" not in restic_forget_data or restic_forget_data.prune else "" }}'
   register: restic_forget
   changed_when: "'removing' in restic_forget.stdout or 'deleted' in restic_forget.stdout"
   failed_when:
