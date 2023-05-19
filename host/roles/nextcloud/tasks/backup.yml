@@ -61,7 +61,7 @@
     restic_forget_data:
       tags_intersect:
       tags_union:
-        - nexcloud
+        - nextcloud
       keep_daily: 10
       keep_weekly: 4
       prune: true
