@@ -170,7 +170,8 @@ ghost.nelyah.eu {
 	import security_headers
 	reverse_proxy ghost:2368
 	@restricted {
-		path /ghost/*
+		path /ghost*
+		not path /ghost/api*
 	}
 
 	import authelia_sso_location @restricted
