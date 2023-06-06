@@ -10,7 +10,7 @@
 - name: Apply fail2ban common config
   template:
     src: fail2ban.conf.j2
-    dest: '/etc/fail2ban/jail.d/10-common.conf'
+    dest: '/etc/fail2ban/jail.d/homeserver-common.conf'
   notify: 'reload fail2ban'
 
 - name: Start and enable fail2ban systemd service

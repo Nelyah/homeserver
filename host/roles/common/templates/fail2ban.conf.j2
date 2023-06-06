@@ -1,20 +1,17 @@
 [DEFAULT]
-bantime = 3600
-findtime = 1800
-maxretry = 4
 
-[sshd]
-enabled = true
-port = ssh
-filter = sshd
+bantime = 1h
+maxretry = 3
 
 # the length of time between login attempts for maxretry.
-findtime = 600
+findtime = 1800
 
-# attempts from a single ip before a ban is imposed.
-maxretry = 5
+[sshd]
 
-# the number of seconds that a host is banned for.
-bantime = 3600
+# -1 means indefinite
+bantime = -1
+enabled = true
+port    = {{ ssh_server_port }}
+maxretry = 1
 
 # vim: syntax=conf

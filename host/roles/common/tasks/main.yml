@@ -11,6 +11,8 @@
   import_tasks: 'packages.yml'
 
 - name: Setup fail2ban
+  tags:
+    - fail2ban
   import_tasks: 'fail2ban.yml'
 
 - name: Set users
