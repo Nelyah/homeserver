@@ -26,6 +26,7 @@
       - zsh
       - smartmontools
       - beets
+      - ufw
       - imagemagick
       - davfs2
     state: present

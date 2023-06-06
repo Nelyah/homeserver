@@ -18,6 +18,28 @@
 - name: Set users
   import_tasks: 'users.yml'
 
+- name: Allow all access to tcp port 80
+  tags:
+    - firewall
+  block:
+    - name: Enable and start the ufw systemd service
+      systemd:
+        daemon_reload: yes
+        name: ufw
+        state: started
+        enabled: yes
+
+    - name: Set rules to open ports
+      community.general.ufw:
+        rule: allow
+        port: '{{ item }}'
+        proto: any
+      loop: '{{ firewall.open_ports }}'
+
+    - name: Enable ufw
+      community.general.ufw:
+        state: enabled
+
 - name: Deploy system-wide environment configuration
   copy:
     src: etc-environment

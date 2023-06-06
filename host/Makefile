@@ -12,7 +12,7 @@ backup: install_requires
 
 install_requires: .venv
 	. .venv/bin/activate \
-		&& ansible-galaxy collection install community.docker \
+		&& ansible-galaxy collection install community.docker community.general \
 		&& pip install -r requirements.txt
 .PHONY: install_requires
 
