@@ -11,7 +11,7 @@ findtime = 1800
 # -1 means indefinite
 bantime = -1
 enabled = true
-port    = {{ ssh_server_port }}
+port    = {{ fail2ban.sshd.ports | join(",") }}
 maxretry = 1
 
 # vim: syntax=conf
