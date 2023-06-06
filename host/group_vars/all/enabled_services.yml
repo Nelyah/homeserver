@@ -7,6 +7,7 @@ docker_services:
   - caddy
   - emby
   - ghost
+  - gitea
   - grafana
   - homepage
   - influxdb
@@ -27,6 +28,7 @@ backup_services:
   - caddy
   - emby
   - ghost
+  - gitea
   - grafana
   - homepage
   - influxdb

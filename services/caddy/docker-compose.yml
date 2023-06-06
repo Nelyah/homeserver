@@ -19,6 +19,7 @@ services:
       - grafana
       - homepage
       - ghost
+      - gitea
       - influxdb
       - nextcloud
       - navidrome
@@ -47,6 +48,8 @@ networks:
   bookstack:
     external: true
   ghost:
+    external: true
+  gitea:
     external: true
   influxdb:
     external: true

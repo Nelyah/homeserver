@@ -96,6 +96,12 @@ pihole.nelyah.eu {
 	import authelia_sso_if_not_lan
 }
 
+gitea.nelyah.eu {
+	import security_headers
+	reverse_proxy gitea:3000
+	import authelia_sso_if_not_lan
+}
+
 blog.nelyah.eu {
 	redir https://wheelingtheworld.eu{uri} permanent
 }

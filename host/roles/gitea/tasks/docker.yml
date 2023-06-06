@@ -1,0 +1,21 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: gitea
+
+- name: Create required docker volumes
+  community.docker.docker_volume:
+    name: '{{ docker_volumes }}'
+  loop:
+    - gitea_data
+    - gitea_db
+  loop_control:
+    loop_var: docker_volumes
+
+- name: Install the .env docker-compose file
+  template:
+    src: env.j2
+    dest: '{{ homeserver_repo_dir }}/services/gitea/.env'
+
+# vi:ft=yaml.ansible

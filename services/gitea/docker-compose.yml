@@ -1,0 +1,43 @@
+version: "3"
+
+networks:
+  gitea:
+    external: true
+
+volumes:
+  gitea_data:
+    external: true
+  gitea_db:
+    external: true
+
+services:
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+    restart: unless-stopped
+    networks:
+      - gitea
+    volumes:
+      - gitea_data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "2542:22"
+    env_file:
+      - .env
+    depends_on:
+      - gitea_db
+
+  gitea_db:
+    image: mysql:8
+    container_name: gitea_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - gitea
+    volumes:
+      - gitea_db:/var/lib/mysql
