@@ -7,7 +7,14 @@
   include_role:
     name: '{{ item }}'
     tasks_from: docker
+    apply:
+      tags:
+        - '{{ item }}'
   loop: '{{ docker_services }}'
+
+  # Always run this. the apply.tags is what really matters
+  tags:
+    - always
 
 - name: Create required docker volumes
   community.docker.docker_network:
