@@ -4,6 +4,7 @@ services:
   syncthing:
     container_name: syncthing
     image: docker.io/syncthing/syncthing
+    stop_grace_period: 1m
     restart: unless-stopped
     volumes:
       - syncthing_data:/var/syncthing

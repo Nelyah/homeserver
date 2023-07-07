@@ -4,6 +4,7 @@ services:
   photoprism_app:
     image: photoprism/photoprism:latest
     container_name: photoprism
+    stop_grace_period: 1m
     depends_on:
       - photoprism_db
     restart: unless-stopped
@@ -49,6 +50,7 @@ services:
   photoprism_db:
     restart: unless-stopped
     image: mariadb:10.5
+    stop_grace_period: 1m
     container_name: photoprism_db
     security_opt:
       - seccomp:unconfined

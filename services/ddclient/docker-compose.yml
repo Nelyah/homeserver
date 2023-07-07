@@ -4,6 +4,7 @@ services:
   ddclient_domain1:
     build: .
     container_name: ddclient
+    stop_grace_period: 1m
     environment:
       - LOGIN=${DOMAIN1_LOGIN}
       - PASSWORD=${DOMAIN1_PASSWORD}

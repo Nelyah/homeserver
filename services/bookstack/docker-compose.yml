@@ -3,6 +3,7 @@ services:
   bookstack:
     image: docker.io/linuxserver/bookstack
     container_name: bookstack
+    stop_grace_period: 1m
     environment:
       - PUID=${app_PUID}
       - PGID=${app_PGID}
@@ -25,6 +26,7 @@ services:
   bookstack_db:
     image: docker.io/linuxserver/mariadb
     container_name: bookstack_db
+    stop_grace_period: 1m
     environment:
       - PUID=${db_PUID}
       - PGID=${db_PGID}

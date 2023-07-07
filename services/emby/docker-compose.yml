@@ -1,6 +1,7 @@
 version: "2.3"
 services:
   emby:
+    stop_grace_period: 1m
     image: emby/embyserver
     container_name: emby
     # network_mode: host # Enable DLNA and Wake-on-Lan

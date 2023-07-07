@@ -4,6 +4,7 @@ services:
   mariadb-nc:
     container_name: mariadb-nc
     image: docker.io/mariadb:10.8.3
+    stop_grace_period: 1m
     restart: unless-stopped
     volumes:
       - nextcloud_mariadb:/var/lib/mysql
@@ -19,6 +20,7 @@ services:
   nextcloud-app:
     container_name: nextcloud
     image: docker.io/nextcloud:fpm
+    stop_grace_period: 1m
     depends_on: 
       - mariadb-nc
       - redis
@@ -38,6 +40,7 @@ services:
   cron:
     container_name: nextcloud-cron
     image: docker.io/nextcloud:fpm
+    stop_grace_period: 1m
     restart: unless-stopped
     volumes:
       - nextcloud_site:${NC_WEBSITE_DIR}
@@ -49,6 +52,7 @@ services:
   redis:
     image: redis:latest
     container_name: nextcloud_redis
+    stop_grace_period: 1m
     volumes:
       - nextcloud_redis_data:/data
     networks:

@@ -4,6 +4,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    stop_grace_period: 1m
     volumes:
       - ./prometheus_config.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -31,6 +32,7 @@ services:
     # TODO: latest tag is not updated, check latest release https://github.com/google/cadvisor/releases
     image: gcr.io/cadvisor/cadvisor:v0.47.0
     container_name: cadvisor
+    stop_grace_period: 1m
     networks:
       - prometheus
     volumes:
@@ -50,6 +52,7 @@ services:
   smartctl_exporter:
     build: exporters
     container_name: smartctl_exporter
+    stop_grace_period: 1m
     privileged: true
     restart: unless-stopped
     command:

@@ -14,6 +14,7 @@ services:
   gitea:
     image: gitea/gitea:latest
     container_name: gitea
+    stop_grace_period: 1m
     environment:
       - USER_UID=1000
       - USER_GID=1000
@@ -34,6 +35,7 @@ services:
   gitea_db:
     image: mysql:8
     container_name: gitea_db
+    stop_grace_period: 1m
     restart: unless-stopped
     env_file:
       - .env

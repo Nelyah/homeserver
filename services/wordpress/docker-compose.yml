@@ -4,6 +4,7 @@ services:
   mariadb-wp:
     container_name: mariadb-wp
     image: docker.io/mariadb
+    stop_grace_period: 1m
     restart: unless-stopped
     volumes:
       - wordpress_db:/var/lib/mysql
@@ -21,6 +22,7 @@ services:
   wordpress:
     container_name: wordpress
     image: docker.io/wordpress
+    stop_grace_period: 1m
     restart: unless-stopped
     environment:
       - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}

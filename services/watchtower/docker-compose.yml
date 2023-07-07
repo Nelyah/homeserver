@@ -4,6 +4,7 @@ services:
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower
+    stop_grace_period: 1m
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
