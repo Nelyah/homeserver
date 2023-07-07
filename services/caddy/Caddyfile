@@ -173,6 +173,10 @@ audiobookshelf.nelyah.eu {
 }
 
 ghost.nelyah.eu {
+	redir https://stories.nelyah.eu{uri} permanent
+}
+
+stories.nelyah.eu {
 	import security_headers
 	reverse_proxy ghost:2368
 	@restricted {

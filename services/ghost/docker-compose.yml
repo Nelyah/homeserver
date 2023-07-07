@@ -19,7 +19,7 @@ services:
       database__connection__user: root
       database__connection__password: ${MYSQL_ROOT_PASSWORD}
       database__connection__database: ghost
-      url: https://ghost.nelyah.eu
+      url: https://stories.nelyah.eu
       # Default is production mode, can also be 'development'
       NODE_ENV: production
 
