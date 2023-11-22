@@ -18,6 +18,7 @@ services:
       - authelia
       - emby
       - grafana
+      - homebox
       - homepage
       - ghost
       - gitea
@@ -53,6 +54,8 @@ networks:
   gitea:
     external: true
   influxdb:
+    external: true
+  homebox:
     external: true
   homepage:
     external: true

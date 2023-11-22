@@ -195,3 +195,9 @@ home.nelyah.eu {
 	reverse_proxy homepage:3000
 	import authelia_sso
 }
+
+homebox.nelyah.eu {
+	import security_headers
+	reverse_proxy homebox:7745
+	import authelia_sso_if_not_lan
+}

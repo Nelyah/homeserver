@@ -9,6 +9,7 @@ docker_services:
   - ghost
   - gitea
   - grafana
+  - homebox
   - homepage
   - influxdb
   - navidrome
@@ -30,6 +31,7 @@ backup_services:
   - ghost
   - gitea
   - grafana
+  - homebox
   - homepage
   - influxdb
   - music
