@@ -20,6 +20,10 @@ services:
     command:
       - '--path.rootfs=/host'
       - '--collector.systemd'
+      # this is causing some issues with the collector failing because of
+      # "invalid argument." since I am not using it especially, I disable it
+      # to avoid having the process fail on repeat
+      - '--no-collector.thermal_zone'
     networks:
       - prometheus
     pid: host
@@ -43,7 +47,9 @@ services:
       - /dev/disk/:/dev/disk:ro
     command:
       - --housekeeping_interval=1m0s
-      - --disable_metrics=disk
+      # The reference_memory metrics is disable because I was getting an error
+      # when reading smap files... see https://github.com/google/cadvisor/issues/3139
+      - --disable_metrics=disk,referenced_memory
     devices:
       - /dev/kmsg
     restart: unless-stopped
