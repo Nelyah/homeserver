@@ -168,8 +168,6 @@ watchtower.nelyah.eu {
 audiobookshelf.nelyah.eu {
 	import security_headers
 	reverse_proxy audiobookshelf
-
-	import authelia_sso_if_not_lan
 }
 
 ghost.nelyah.eu {
