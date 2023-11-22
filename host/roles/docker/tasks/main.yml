@@ -15,9 +15,3 @@
   # Always run this. the apply.tags is what really matters
   tags:
     - always
-
-- name: Create required docker volumes
-  community.docker.docker_network:
-    name: '{{ item }}'
-  loop:
-    - certificates
