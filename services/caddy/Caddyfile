@@ -36,7 +36,7 @@
 }
 
 (authelia_sso_location) {
-	forward_auth {args.0} authelia:9091 {
+	forward_auth {args[0]} authelia:9091 {
 		uri /api/verify?rd=https://auth.nelyah.eu
 		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
 	}
