@@ -1,8 +1,5 @@
 ---
 
-- include: system_setup.yml
-  become: true
-
 - name: Do the Docker setup for each service
   include_role:
     name: '{{ item }}'

@@ -53,3 +53,6 @@
     owner: 'root'
     group: 'root'
     mode: '0644'
+
+- name: Install required packages
+  import_tasks: 'docker.yml'

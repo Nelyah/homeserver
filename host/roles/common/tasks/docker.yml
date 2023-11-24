@@ -1,0 +1,44 @@
+---
+- name: Install docker for Debian
+  block:
+    - name: Install apt-transport-https
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - lsb-release
+          - gnupg
+        state: latest
+        update_cache: true
+
+    - name: Add signing key
+      ansible.builtin.apt_key:
+        url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+        state: present
+
+    - name: Add repository into sources list
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+          - docker
+          - docker-ce
+          - docker-compose
+        state: latest
+        update_cache: true
+  when: ansible_distribution == "Debian"
+
+- name: Install docker configuration template
+  template:
+    src: docker-daemon.json.j2
+    dest: /etc/docker/daemon.json
+
+- name: Start and enable docker deamon
+  service:
+    name: docker
+    state: started
+    enabled: yes

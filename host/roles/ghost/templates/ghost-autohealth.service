@@ -1,0 +1,8 @@
+[Unit]
+Description=Checks whether the ghost blog is under maintenance and restart the service if it is
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ghost-autohealth.sh

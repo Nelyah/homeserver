@@ -1,0 +1,9 @@
+#! /bin/bash
+
+set -euo pipefail
+
+if /usr/bin/curl https://stories.nelyah.eu 2>/dev/null | grep -q "busy updating our site"; then
+    /usr/bin/docker-compose -f {{ homeserver_repo_dir }}/services/ghost/docker-compose.yml restart
+    echo "restarted ghost service"
+fi
+

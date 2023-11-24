@@ -18,4 +18,28 @@
     src: config.production.json.j2
     dest: '{{ homeserver_repo_dir }}/services/ghost/config.production.json'
 
+- name: Deploy ghost-autohealth script
+  template:
+    src: ghost-autohealth.sh.j2
+    dest: /usr/bin/ghost-autohealth.sh
+    mode: '0744'
+    owner: root
+    group: wheel
+
+- name: Deploy systemd service
+  template:
+    src: ghost-autohealth.service
+    dest: /etc/systemd/system/ghost-autohealth.service
+
+- name: Deploy systemd timer
+  template:
+    src: ghost-autohealth.timer
+    dest: /etc/systemd/system/ghost-autohealth.timer
+
+- name: Start and enable autohealth timer
+  systemd:
+    daemon_reload: yes
+    name: ghost-autohealth.timer
+    state: started
+    enabled: yes
 # vi:ft=yaml.ansible
