@@ -62,7 +62,7 @@
       tags_intersect:
       tags_union:
         - nextcloud
-      keep_daily: 10
+      keep_daily: 90
       keep_weekly: 4
       prune: true
 
