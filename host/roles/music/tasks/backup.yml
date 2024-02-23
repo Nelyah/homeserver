@@ -11,6 +11,7 @@
       path:
         - '{{ music_env.path_library }}'
         - '{{ music_env.path_beet_library }}'
+        - '{{ music_env.path_library_mum }}'
       volumes:
       tags:
         - music

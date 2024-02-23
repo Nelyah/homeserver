@@ -131,6 +131,11 @@ wiki.nelyah.eu {
 	reverse_proxy bookstack
 }
 
+music-mum.nelyah.eu {
+	import security_headers
+	reverse_proxy navidrome_mum:8080
+}
+
 music.nelyah.eu {
 	import security_headers
 	reverse_proxy navidrome

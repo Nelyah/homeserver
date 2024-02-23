@@ -9,6 +9,7 @@
     name: '{{ docker_volumes }}'
   loop:
     - navidrome_data
+    - navidrome_mum_data
   loop_control:
     loop_var: docker_volumes
 

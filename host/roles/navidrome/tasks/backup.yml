@@ -11,6 +11,7 @@
       path:
       volumes:
         - navidrome_data
+        - navidrome_mum_data
       tags:
         - navidrome
       ignore_patterns:
