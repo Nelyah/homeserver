@@ -9,7 +9,7 @@ services:
     volumes:
       - influxdb_data:/var/lib/influxdb2:rw
     networks:
-      - influxdb
+      - grafana
     environment: 
       - DOCKER_INFLUXDB_INIT_MODE=${DOCKER_INFLUXDB_INIT_MODE}
       - DOCKER_INFLUXDB_INIT_USERNAME=${DOCKER_INFLUXDB_INIT_USERNAME}
@@ -23,5 +23,5 @@ volumes:
     external: true
 
 networks:
-  influxdb:
+  grafana:
     external: true

@@ -2,7 +2,7 @@
 
 - name: Create required docker networks
   community.docker.docker_network:
-    name: influxdb
+    name: grafana
 
 - name: Create required docker volumes
   community.docker.docker_volume:

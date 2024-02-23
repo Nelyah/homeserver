@@ -12,7 +12,7 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     networks:
-      - prometheus
+      - grafana
 
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
@@ -25,7 +25,7 @@ services:
       # to avoid having the process fail on repeat
       - '--no-collector.thermal_zone'
     networks:
-      - prometheus
+      - grafana
     pid: host
     restart: unless-stopped
     volumes:
@@ -38,7 +38,7 @@ services:
     container_name: cadvisor
     stop_grace_period: 1m
     networks:
-      - prometheus
+      - grafana
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -68,7 +68,7 @@ services:
     environment:
       SMART_DEVICES: /dev/sda:/dev/sdb:/dev/sdc
     networks:
-      - prometheus
+      - grafana
     volumes:
       - /dev:/dev:ro
 
@@ -80,5 +80,5 @@ volumes:
     external: true
 
 networks:
-  prometheus:
+  grafana:
     external: true
