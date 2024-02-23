@@ -6,6 +6,7 @@
       - ca-certificates
       - cmake
       - curl
+      - ethtool # Used to inspect network interfaces
       - gdb
       - git
       - gnupg
