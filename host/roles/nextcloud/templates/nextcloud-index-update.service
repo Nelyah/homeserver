@@ -1,0 +1,8 @@
+[Unit]
+Description=Update Nextcloud database indexes
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/docker exec -u www-data nextcloud php /var/www/html/occ db:add-missing-indices

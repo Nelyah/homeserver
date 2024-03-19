@@ -14,4 +14,20 @@
   loop_control:
     loop_var: docker_volumes
 
+- name: Deploy systemd service
+  template:
+    src: nextcloud-index-update.service
+    dest: /etc/systemd/system/nextcloud-index-update.service
+
+- name: Deploy systemd timer
+  template:
+    src: nextcloud-index-update.timer
+    dest: /etc/systemd/system/nextcloud-index-update.timer
+
+- name: Start and enable autohealth timer
+  systemd:
+    daemon_reload: yes
+    name: nextcloud-index-update.timer
+    state: started
+    enabled: yes
 # vi:ft=yaml.ansible
