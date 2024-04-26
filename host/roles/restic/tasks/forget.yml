@@ -46,7 +46,6 @@
   loop: '{{ restic_repos | dict2items }}'
   loop_control:
     loop_var: repo_keys
-  when: 'repo_keys.value.path is exists'
   vars:
     keep_hourly:  '{{ "--keep-hourly "  + restic_forget_data.keep_hourly  | string if "keep_hourly"  in restic_forget_data else "" }}'
     keep_daily:   '{{ "--keep-daily "   + restic_forget_data.keep_daily   | string if "keep_daily"   in restic_forget_data else "" }}'

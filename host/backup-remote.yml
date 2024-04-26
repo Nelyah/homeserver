@@ -7,6 +7,6 @@
     - role: backup
       vars:
         restic_repos: 
-          backup_drive: '{{ vault_restic_repos.backup_drive }}'
+          remote_drive: '{{ vault_restic_repos.remote_drive }}'
 
 # vi:ft=yaml.ansible

@@ -41,7 +41,6 @@
   loop: '{{ restic_repos | dict2items }}'
   loop_control:
     loop_var: repo_keys
-  when: 'repo_keys.value.path is exists'
   vars:
     docker_volume_prefix: '{{ restic_backup_data.docker_data_dir | default("/var/lib/docker") }}/volumes'
     volumes_to_backup: '{{ restic_backup_data.volumes | default([]) }}'
