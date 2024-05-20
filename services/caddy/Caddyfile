@@ -151,6 +151,10 @@ grafana.nelyah.eu {
 	import security_headers
 	reverse_proxy grafana:3000
 	import authelia_sso_if_not_lan
+
+emby.nelyah.eu {
+	import security_headers
+	reverse_proxy emby:8096
 }
 
 cinema.nelyah.eu {
