@@ -42,11 +42,11 @@
 	}
 }
 
-(authelia_sso_if_not_lan) {
-	@is_not_lan {
+(authelia_sso_if_not_whitelist) {
+	@is_not_whitelist {
 		not remote_ip private_ranges
 	}
-	forward_auth @is_not_lan authelia:9091 {
+	forward_auth @is_not_whitelist authelia:9091 {
 		uri /api/verify?rd=https://auth.nelyah.eu
 		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
 	}
@@ -93,13 +93,13 @@ cloud.nelyah.eu {
 pihole.nelyah.eu {
 	import security_headers
 	reverse_proxy pihole
-	import authelia_sso_if_not_lan
+	import authelia_sso_if_not_whitelist
 }
 
 gitea.nelyah.eu {
 	import security_headers
 	reverse_proxy gitea:3000
-	import authelia_sso_if_not_lan
+	import authelia_sso_if_not_whitelist
 }
 
 blog.nelyah.eu {
@@ -123,7 +123,7 @@ wheelingtheworld.eu {
 influxdb.nelyah.eu {
 	import security_headers
 	reverse_proxy influxdb:8086
-	import authelia_sso_if_not_lan
+	import authelia_sso_if_not_whitelist
 }
 
 wiki.nelyah.eu {
@@ -144,13 +144,14 @@ music.nelyah.eu {
 prometheus.nelyah.eu {
 	import security_headers
 	reverse_proxy prometheus:9090
-	import authelia_sso_if_not_lan
+	import authelia_sso_if_not_whitelist
 }
 
 grafana.nelyah.eu {
 	import security_headers
 	reverse_proxy grafana:3000
-	import authelia_sso_if_not_lan
+	import authelia_sso_if_not_whitelist
+}
 
 emby.nelyah.eu {
 	import security_headers
@@ -165,7 +166,7 @@ cinema.nelyah.eu {
 photos.nelyah.eu {
 	import security_headers
 	reverse_proxy photoprism:2342
-	import authelia_sso_if_not_lan
+	import authelia_sso_if_not_whitelist
 }
 
 watchtower.nelyah.eu {
@@ -206,5 +207,5 @@ home.nelyah.eu {
 homebox.nelyah.eu {
 	import security_headers
 	reverse_proxy homebox:7745
-	import authelia_sso_if_not_lan
+	import authelia_sso_if_not_whitelist
 }
