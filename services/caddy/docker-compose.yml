@@ -11,6 +11,7 @@ services:
       - 80:80
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./whitelist_ips.caddy:/etc/caddy/whitelist_ips
       - caddy_data:/data
       - nextcloud_site:/php-fpm-root/nextcloud/
     networks:

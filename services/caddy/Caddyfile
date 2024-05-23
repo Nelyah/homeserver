@@ -45,6 +45,10 @@
 (authelia_sso_if_not_whitelist) {
 	@is_not_whitelist {
 		not remote_ip private_ranges
+		# Except that file to be present
+		# The file should be a list of lines in the form
+		# not remote_ip XXX.XXX.XXX.XXX
+		import whitelist_ips
 	}
 	forward_auth @is_not_whitelist authelia:9091 {
 		uri /api/verify?rd=https://auth.nelyah.eu
@@ -69,8 +73,8 @@ cloud.nelyah.eu {
 		env modHeadersAvailable true
 	}
 
-	redir /.well-known/carddav /remote.php/dav permanent
-	redir /.well-known/caldav /remote.php/dav permanent
+	redir /.well-known/carddav /remote.php/dav 301 permanent
+	redir /.well-known/caldav /remote.php/dav 301 permanent
 
 	@forbidden {
 		path /.htaccess
