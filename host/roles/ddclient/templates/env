@@ -1,0 +1,6 @@
+DOMAIN1_LOGIN={{response.secret.DOMAIN1_LOGIN}}
+DOMAIN1_PASSWORD={{response.secret.DOMAIN1_PASSWORD}}
+DOMAIN1_FILE_LIST=./domains_list_nelyah-eu
+DOMAIN2_LOGIN={{response.secret.DOMAIN2_LOGIN}}
+DOMAIN2_PASSWORD={{response.secret.DOMAIN2_PASSWORD}}
+DOMAIN2_FILE_LIST=./domains_list_wheelingtheworld-eu

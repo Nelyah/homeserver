@@ -5,6 +5,7 @@ docker_services:
   - authelia
   - bookstack
   - caddy
+  - ddclient
   - emby
   - ghost
   - gitea
