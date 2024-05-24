@@ -13,4 +13,19 @@
   loop_control:
     loop_var: docker_volumes
 
+- block:
+  - name: Read values from vault
+    community.hashi_vault.vault_kv2_get:
+      url: '{{ vault.url }}'
+      path: wordpress
+      engine_mount_point: homeserver_secrets
+      auth_method: token
+      token_path: '{{ homeserver_repo_dir }}/host/'
+    register: response
+
+  - name: Deploy docker env file
+    template:
+      src: env
+      dest: '{{ homeserver_repo_dir }}/services/wordpress/.env'
+
 # vi:ft=yaml.ansible

@@ -11,7 +11,7 @@ services:
     environment:
       - MARIADB_AUTO_UPGRADE="1"
       - MARIADB_INITDB_SKIP_TZINFO="1"
-      - MYSQL_DATABASE=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
@@ -25,10 +25,10 @@ services:
     stop_grace_period: 1m
     restart: unless-stopped
     environment:
-      - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}
-      - WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME}
-      - WORDPRESS_DB_USER=${WORDPRESS_DB_USER}
-      - WORDPRESS_DB_HOST=${WORDPRESS_DB_HOST}
+      - WORDPRESS_DB_PASSWORD=${MYSQL_PASSWORD}
+      - WORDPRESS_DB_NAME=${MYSQL_DATABASE}
+      - WORDPRESS_DB_USER=${MYSQL_USER}
+      - WORDPRESS_DB_HOST=mariadb-wp
     volumes: 
       - wordpress_site:/var/www/html/
       - ./apache-config:/etc/apache2
