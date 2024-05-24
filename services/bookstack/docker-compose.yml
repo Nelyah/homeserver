@@ -5,13 +5,13 @@ services:
     container_name: bookstack
     stop_grace_period: 1m
     environment:
-      - PUID=${app_PUID}
-      - PGID=${app_PGID}
-      - DB_HOST=${DB_HOST}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
-      - DB_DATABASE=${DB_NAME}
-      - APP_URL=${APP_URL}
+      - PUID=1000
+      - PGID=1000
+      - DB_HOST=bookstack_db
+      - DB_USER=${MYSQL_USER}
+      - DB_PASS=${MYSQL_PASSWORD}
+      - DB_DATABASE=${MYSQL_DATABASE}
+      - APP_URL="https://wiki.nelyah.eu"
     ports:
       - 6875:80
     volumes:
@@ -28,13 +28,13 @@ services:
     container_name: bookstack_db
     stop_grace_period: 1m
     environment:
-      - PUID=${db_PUID}
-      - PGID=${db_PGID}
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS}
+      - PUID=1000
+      - PGID=1000
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - TZ=${TIME_ZONE}
-      - MYSQL_DATABASE=${DB_NAME}
-      - MYSQL_USER=${DB_USER}
-      - MYSQL_PASSWORD=${DB_PASS}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
       - bookstack_db:/config/
     restart: unless-stopped

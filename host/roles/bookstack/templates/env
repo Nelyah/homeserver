@@ -1,0 +1,5 @@
+MYSQL_USER=bookstack
+MYSQL_PASSWORD={{response.secret.MYSQL_PASSWORD}}
+MYSQL_DATABASE=bookstackapp
+MYSQL_ROOT_PASSWORD={{response.secret.MYSQL_ROOT_PASSWORD}}
+TIME_ZONE=Europe/London
