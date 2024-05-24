@@ -1,5 +1,3 @@
----
-
 - name: Create required docker networks
   community.docker.docker_network:
     name: nextcloud
@@ -30,4 +28,20 @@
     name: nextcloud-index-update.timer
     state: started
     enabled: yes
+
+- block:
+  - name: Read values from vault
+    community.hashi_vault.vault_kv2_get:
+      url: '{{ vault.url }}'
+      path: nextcloud
+      engine_mount_point: homeserver_secrets
+      auth_method: token
+      token_path: '{{ homeserver_repo_dir }}/host/'
+    register: response
+
+  - name: Deploy docker env file
+    template:
+      src: env
+      dest: '{{ homeserver_repo_dir }}/services/nextcloud/.env'
+
 # vi:ft=yaml.ansible

@@ -10,10 +10,10 @@ services:
       - nextcloud_mariadb:/var/lib/mysql
       - ./mariadb.conf:/etc/mysql/my.cnf
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS}
-      - MYSQL_DATABASE=${DB_NAME}
-      - MYSQL_USER=${DB_USER}
-      - MYSQL_PASSWORD=${DB_PASS}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     networks:
       - nextcloud
 
@@ -26,10 +26,10 @@ services:
       - redis
     restart: unless-stopped
     environment:
-      - MYSQL_HOST=${DB_HOST}
-      - MYSQL_DATABASE=${DB_NAME}
-      - MYSQL_USER=${DB_USER}
-      - MYSQL_PASSWORD=${DB_PASS}
+      - MYSQL_HOST=mariadb-nc
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - NEXTCLOUD_DATA_DIR=${NC_DATA_DIR}
     volumes:
       - nextcloud_site:${NC_WEBSITE_DIR}
