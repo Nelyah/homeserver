@@ -4,4 +4,19 @@
   community.docker.docker_network:
     name: watchtower
 
+- block:
+  - name: Read values from vault
+    community.hashi_vault.vault_kv2_get:
+      url: '{{ vault.url }}'
+      path: watchtower
+      engine_mount_point: homeserver_secrets
+      auth_method: token
+      token_path: '{{ homeserver_repo_dir }}/host/'
+    register: response
+
+  - name: Deploy docker env file
+    template:
+      src: env
+      dest: '{{ homeserver_repo_dir }}/services/watchtower/.env'
+
 # vi:ft=yaml.ansible
