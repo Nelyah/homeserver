@@ -18,6 +18,7 @@ docker_services:
   - pihole
   - prometheus
   - syncthing
+  - vault
   - watchtower
   - wordpress
 
@@ -42,6 +43,7 @@ backup_services:
   - pihole
   - prometheus
   - syncthing
+  - vault
   - wordpress
 
 # vi:ft=yaml.ansible

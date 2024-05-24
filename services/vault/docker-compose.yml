@@ -1,0 +1,22 @@
+services:
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    cap_add:
+      - IPC_LOCK # Required for mlock
+    # environment:
+      # VAULT_CAPATH: /etc/vault/ca.crt
+    volumes:
+      - vault_data:/vault/file:rw
+      - ./config:/etc/vault/:ro
+    networks:
+      - internal
+    entrypoint: vault server -config=/etc/vault/config.hcl
+
+volumes:
+  vault_data:
+    external: true
+
+networks:
+  internal:
+    external: true

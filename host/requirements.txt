@@ -4,3 +4,4 @@ docker<5
 jinja2
 jmespath
 selinux
+hvac

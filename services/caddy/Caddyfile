@@ -213,3 +213,9 @@ homebox.nelyah.eu {
 	reverse_proxy homebox:7745
 	import authelia_sso_if_not_whitelist
 }
+
+vault.nelyah.eu {
+	import security_headers
+	reverse_proxy vault:8200
+	import authelia_sso_if_not_whitelist
+}
