@@ -1,0 +1,1 @@
+MYSQL_ROOT_PASSWORD={{response.secret.MYSQL_ROOT_PASSWORD}}

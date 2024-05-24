@@ -21,12 +21,12 @@
     "transport": "SMTP",
     "options": {
       "service": "Mailgun",
-      "host": "{{ ghost_env.mail.host }}",
+      "host": "smtp.eu.mailgun.org",
       "port": 587,
       "secure": false,
       "auth": {
-        "user": "{{ ghost_env.mail.user }}",
-        "pass": "{{ ghost_env.mail.pass }}"
+        "user": "{{response.secret.MAILGUN_USER}}",
+        "pass": "{{response.secret.MAILGUN_PASSWORD}}"
       }
     }
   }
