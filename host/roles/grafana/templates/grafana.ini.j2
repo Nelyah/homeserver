@@ -685,15 +685,15 @@
 #################################### SMTP / Emailing ##########################
 [smtp]
 enabled = true
-host = {{ email.smtp_server }}:{{ email.smtp_port }}
-user = {{ email.smtp_user }}
+host = {{response.secret.SMTP_SERVER}}:587
+user = {{response.secret.SMTP_USER}}
 # If the password contains # or ; you have to wrap it with triple quotes. Ex """#password;"""
-password = """{{ email.smtp_password }}"""
+password = """{{response.secret.SMTP_PASSWORD}}"""
 ;cert_file =
 ;key_file =
 ;skip_verify = false
-from_address = {{ email.from_address }}
-from_name = {{ email.from_name }}
+from_address = {{response.secret.FROM_ADDRESS}}
+from_name = Home server
 # EHLO identity in SMTP dialog (defaults to instance_name)
 ;ehlo_identity = dashboard.example.com
 # SMTP startTLS policy (defaults to 'OpportunisticStartTLS')

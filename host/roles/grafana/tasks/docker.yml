@@ -12,6 +12,15 @@
   loop_control:
     loop_var: docker_volumes
 
+- name: Read values from vault
+  community.hashi_vault.vault_kv2_get:
+    url: '{{ vault.url }}'
+    path: email
+    engine_mount_point: homeserver_secrets
+    auth_method: token
+    token_path: '{{ homeserver_repo_dir }}/host/'
+  register: response
+
 - name: Install the Grafana config file
   template:
     src: grafana.ini.j2
