@@ -1,0 +1,10 @@
+GITEA__database__DB_TYPE=mysql
+GITEA__database__HOST=gitea_db:3306
+GITEA__database__NAME=gitea
+GITEA__database__USER=gitea
+GITEA__database__PASSWD={{response.secret.MYSQL_PASSWORD}}
+
+MYSQL_ROOT_PASSWORD={{response.secret.MYSQL_ROOT_PASSWORD}}
+MYSQL_USER=gitea
+MYSQL_PASSWORD={{response.secret.MYSQL_PASSWORD}}
+MYSQL_DATABASE=gitea
