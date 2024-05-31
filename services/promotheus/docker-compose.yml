@@ -34,7 +34,7 @@ services:
 
   cadvisor:
     # TODO: latest tag is not updated, check latest release https://github.com/google/cadvisor/releases
-    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: cadvisor
     stop_grace_period: 1m
     networks:
