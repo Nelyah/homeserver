@@ -1,4 +1,3 @@
-./.env
 ./certbot/domain_list
 ./certbot/ovh-credentials
 ./host/group_vars/all/service_env.yml
@@ -9,15 +8,3 @@
 ./host/roles/server/files/https-key.pem
 ./host/roles/server/files/key.pem
 ./host/roles/server/vars/syncthing.yml
-./services/bookstack/.env
-./services/ddclient/.env
-./services/deprecated/minimserver/.env
-./services/deprecated/mpd/.env
-./services/influxdb/.env
-./services/navidrome/.env
-./services/nextcloud/.env
-./services/deprecated/nginx/.env
-./services/pihole/.env
-./services/syncthing/.env
-./services/wordpress/.env
-./services/watchtower/.env
