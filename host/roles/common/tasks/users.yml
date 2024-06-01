@@ -50,7 +50,6 @@
     mode: '0700'
   loop: '{{ users }}'
   when:
-    - 'item.active is not defined or item.active'
-    - 'item.ssh_config'
+    - 'item.active is defined and item.active'
 
 # vi:ft=yaml.ansible
