@@ -1,0 +1,22 @@
+- name: Enable and start the ufw systemd service
+  systemd:
+    daemon_reload: yes
+    name: ufw
+    state: started
+    enabled: yes
+
+- name: Set rules to open ports
+  community.general.ufw:
+    rule: allow
+    port: '{{ item }}'
+    proto: any
+  loop:
+    - 80
+    - 443
+    - 53 # DNS port
+    - '{{ ssh_server_port }}'
+    - '{{ sshd_port_gitea }}'
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled

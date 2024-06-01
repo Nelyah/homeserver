@@ -1,0 +1,46 @@
+ssh_server_port: 2541
+sshd_port_gitea: 2542
+
+users:
+  - login: chloe
+    groups:
+      - chloe
+      - data
+      - docker
+    can_ssh: true
+    can_sudo: true
+    shell: /bin/zsh
+
+drives:
+  main:
+    uuid: 22850f9c-53cf-44d5-9539-cbee47852b16
+    mount: /data
+    mount_file_dest: /etc/systemd/system/data.mount
+    type: ext4
+  backup:
+    uuid: c51e82c3-e726-4d66-ac21-9425c0c7520b
+    mount: /data2
+    mount_file_dest: /etc/systemd/system/data2.mount
+    automount_file_dest: /etc/systemd/system/data2.automount
+    type: ext4
+  remote_backup:
+    uuid: e3fcbb9a-9f24-4b95-896e-39e583b10bea
+    mount: /remote_backup
+    mount_file_dest: /etc/systemd/system/remote_backup.mount
+    automount_file_dest: /etc/systemd/system/remote_backup.automount
+    type: ext4
+
+docker_data_dir: '{{ drives.main.mount }}/docker-data'
+homeserver_repo_dir: '{{ drives.main.mount }}/homeserver'
+
+vault_restic_repos:
+  backup_drive:
+    password: '{{ restic_secrets.secret.LOCAL_PASSWD }}'
+    path: '{{ drives.backup.mount }}/backups'
+    init: true
+  remote_drive:
+    password: '{{ restic_secrets.secret.REMOTE_PASSWD }}'
+    path: '{{ restic_secrets.secret.REMOTE_ADDR }}:/home/chloe/USB/backups'
+    init: true
+
+# vi:ft=yaml.ansible

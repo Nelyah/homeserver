@@ -9,10 +9,19 @@
 
 - name: Do bookstack backup
   block:
+    - name: Fetch secrets from vault
+      community.hashi_vault.vault_kv2_get:
+        url: '{{ vault.url }}'
+        path: bookstack
+        engine_mount_point: homeserver_secrets
+        auth_method: token
+        token_path: '{{ homeserver_repo_dir }}/host/'
+      register: response
+
     - name: Do Bookstack database dump
       shell: >
         docker exec bookstack_db 
-        sh -c "exec mysqldump -u root -p{{ bookstack_env.db_root_pass }}
+        sh -c "exec mysqldump -u root -p{{ response.secret.MYSQL_ROOT_PASSWORD }}
         --single-transaction {{ bookstack_env.db_name }}" > {{ database }}
 
     - name: Perform backup with restic

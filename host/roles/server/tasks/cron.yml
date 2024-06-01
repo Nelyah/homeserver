@@ -5,7 +5,7 @@
     name: Do the DNS update maintenance
     minute: '*/10'
     job: '{{ homeserver_repo_dir }}/bin/do-maintenance --dns-update'
-    user: '{{ crontab_user }}'
+    user: root
 
 - name: Add backup and docker image update cronjob
   cron:
@@ -13,4 +13,4 @@
     minute: '0'
     hour: '3'
     job: '{{ homeserver_repo_dir }}/bin/do-maintenance --image-cleanup'
-    user: '{{ crontab_user }}'
+    user: root

@@ -40,12 +40,6 @@
     group: root
     mode: '0700'
 
-- name: Deploy ssh config for root
-  copy:
-    src: ssh_config
-    dest: /root/.ssh/config
-    mode: '0600'
-
 - name: Create ssh directory for users
   no_log: true
   file:
@@ -54,19 +48,6 @@
     owner: '{{ item.login }}'
     group: '{{ item.login }}'
     mode: '0700'
-  loop: '{{ users }}'
-  when:
-    - 'item.active is not defined or item.active'
-    - 'item.ssh_config'
-
-- name: Deploy ssh config for users
-  no_log: true
-  copy:
-    src: ssh_config
-    dest: /home/{{ item.login }}/.ssh/config
-    owner: '{{ item.login }}'
-    group: '{{ item.login }}'
-    mode: '0600'
   loop: '{{ users }}'
   when:
     - 'item.active is not defined or item.active'

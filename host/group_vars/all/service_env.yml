@@ -1,0 +1,17 @@
+bookstack_env:
+  db_name: bookstackapp
+
+nextcloud_env:
+  db_name: nextcloud
+
+music_env:
+  path: '{{ drives.main.mount }}/music'
+  path_library: '{{ drives.main.mount }}/music/library'
+  path_beet_library: '{{ drives.main.mount }}/music/beets-library.db'
+  path_library_mum: '{{ drives.main.mount }}/music/library_mum'
+
+audiobook_env:
+  path_library: '{{ drives.main.mount }}/audiobooks'
+
+pictures_env:
+  path: '{{ drives.main.mount }}/pictures'

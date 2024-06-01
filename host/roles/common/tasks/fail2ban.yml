@@ -7,6 +7,12 @@
     state: present
     update_cache: true
 
+- name: Define fail2ban variables
+  set_fact:
+    fail2ban_ssh_ports:
+      - '{{ssh_server_port}}'
+      - '{{sshd_port_gitea}}'
+
 - name: Apply fail2ban common config
   template:
     src: fail2ban.conf.j2
