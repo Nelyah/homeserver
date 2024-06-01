@@ -1,5 +1,16 @@
 ---
 
+- name: Read restic secrets from vault
+  tags:
+    - always
+  community.hashi_vault.vault_kv2_get:
+    url: '{{ vault.url }}'
+    path: restic
+    engine_mount_point: homeserver_secrets
+    auth_method: token
+    token_path: '{{ homeserver_repo_dir }}/host/'
+  register: restic_secrets
+
 - name: Initialise restic repositories
   import_role:
     name: restic
