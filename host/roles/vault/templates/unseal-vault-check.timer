@@ -1,0 +1,9 @@
+[Unit]
+Description=Check if vault needs unsealing
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=10min
+
+[Install]
+WantedBy=timers.target

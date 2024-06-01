@@ -1,0 +1,8 @@
+[Unit]
+Description=Check if vault needs unsealing
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/unseal-vault

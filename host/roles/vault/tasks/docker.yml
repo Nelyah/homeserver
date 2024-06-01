@@ -12,4 +12,40 @@
   loop_control:
     loop_var: docker_volumes
 
+- name: Read values from vault
+  community.hashi_vault.vault_kv2_get:
+    url: '{{ vault.url }}'
+    path: vault
+    engine_mount_point: homeserver_secrets
+    auth_method: token
+    token_path: '{{ homeserver_repo_dir }}/host/'
+  register: response
+
+- name: Deploy docker unseal script
+  template:
+    mode: '700'
+    owner: root
+    src: unseal.sh.j2
+    dest: '/usr/bin/unseal-vault'
+
+- name: name the two unseal-vault-check scripts
+  set_fact:
+    vault_systemd_services:
+      - unseal-vault-check.service
+      - unseal-vault-check.timer
+
+- name: Deploy systemd service
+  template:
+    src: '{{ item }}'
+    dest: '/etc/systemd/system/{{ item }}'
+  loop: '{{ vault_systemd_services }}'
+
+- name: Start and enable autohealth timer
+  systemd:
+    daemon_reload: yes
+    name: '{{ item }}'
+    state: started
+    enabled: yes
+  loop: '{{ vault_systemd_services }}'
+
 # vi:ft=yaml.ansible
