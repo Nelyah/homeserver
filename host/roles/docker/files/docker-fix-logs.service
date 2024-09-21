@@ -1,0 +1,9 @@
+
+[Unit]
+Description=Check for corrupted docker logs and remove them
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/docker-fix-logs

@@ -1,0 +1,9 @@
+[Unit]
+Description=Check for corrupted docker logs and remove them every 10min
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=10min
+
+[Install]
+WantedBy=timers.target

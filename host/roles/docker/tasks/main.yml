@@ -1,5 +1,35 @@
 ---
 
+- name: Set up docker log corruption monitoring and fix
+  tags:
+    - docker_setup
+  block:
+  - name: Copy the docker-fix-logs script
+    copy:
+      src: docker-fix-logs.sh
+      dest: '/usr/local/bin/docker-fix-logs'
+      owner: 'root'
+      group: 'root'
+      mode: '0755'
+
+  - name: Copy the docker-fix-logs systemd files
+    copy:
+      src: '{{ item }}'
+      dest: '/etc/systemd/system/{{ item }}'
+      owner: 'root'
+      group: 'root'
+      mode: '0644'
+    loop:
+      - docker-fix-logs.service
+      - docker-fix-logs.timer
+
+  - name: Start and enable backup timers
+    systemd:
+      daemon_reload: yes
+      name: docker-fix-logs.timer
+      state: started
+      enabled: yes
+
 - name: Do the Docker setup for each service
   include_role:
     name: '{{ item }}'
