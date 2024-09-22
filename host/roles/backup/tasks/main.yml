@@ -20,7 +20,7 @@
 
 - name: Do the backup
   include_role:
-    name: '{{ backup_service }}'
+    name: 'services/{{ backup_service }}'
     tasks_from: backup
     apply:
       tags:

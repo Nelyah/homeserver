@@ -32,7 +32,7 @@
 
 - name: Do the Docker setup for each service
   include_role:
-    name: '{{ item }}'
+    name: 'services/{{ item }}'
     tasks_from: docker
     apply:
       tags:
