@@ -15,6 +15,7 @@ docker_services:
   - influxdb
   - navidrome
   - nextcloud
+  - ovh_dyndns_updater
   - photoprism
   - pihole
   - prometheus

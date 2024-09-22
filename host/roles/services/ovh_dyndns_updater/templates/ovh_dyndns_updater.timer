@@ -1,0 +1,9 @@
+[Unit]
+Description=Updates OVH DynDNS record every 10min
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=10min
+
+[Install]
+WantedBy=timers.target
