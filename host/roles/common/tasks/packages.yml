@@ -13,6 +13,7 @@
       - htop
       - isync
       - jq
+      - yq
       - msmtp
       - ncdu
       - neovim
@@ -57,11 +58,3 @@
     state: present
     update_cache: true
   when: ansible_facts['os_family'] == "RedHat"
-
-- name: Install RedHat 7 packages
-  package:
-    name:
-      - redhat-lsb-core
-    state: present
-    update_cache: true
-  when: ansible_facts['os_family'] == 'RedHat' and ansible_facts ['distribution_major_version'] == '7'
