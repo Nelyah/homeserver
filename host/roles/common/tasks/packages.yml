@@ -3,17 +3,20 @@
 - name: Install packages
   package:
     name:
+      - bat
+      - beets
       - ca-certificates
       - cmake
       - curl
+      - davfs2
       - ethtool # Used to inspect network interfaces
       - gdb
       - git
       - gnupg
       - htop
+      - imagemagick
       - isync
       - jq
-      - yq
       - msmtp
       - ncdu
       - neovim
@@ -21,16 +24,14 @@
       - python3
       - ripgrep
       - rsync
+      - smartmontools
       - syncthing
       - tmux
+      - ufw
       - wget
       - youtube-dl
+      - yq
       - zsh
-      - smartmontools
-      - beets
-      - ufw
-      - imagemagick
-      - davfs2
     state: present
     update_cache: true
 
