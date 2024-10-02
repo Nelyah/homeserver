@@ -17,6 +17,8 @@
 
 - name: Set users
   import_tasks: 'users.yml'
+  tags:
+    - users
 
 - name: Set firewall rules
   import_tasks: 'firewall.yml'
