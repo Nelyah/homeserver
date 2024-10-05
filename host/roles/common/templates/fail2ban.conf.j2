@@ -13,5 +13,6 @@ bantime = -1
 enabled = true
 port    = {{ fail2ban_ssh_ports | join(",") }}
 maxretry = 1
+ignoreip = 127.0.0.1/8 ::1 192.168.1.0/24
 
 # vim: syntax=conf
