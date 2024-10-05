@@ -5,4 +5,4 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/docker-compose -f {{ homeserver_repo_dir }}/services/ovh_dyndns_updater/docker-compose.yml run --rm ovh-dyndns-updater
+ExecStart=/bin/bash -c "/bin/docker-compose -f {{ homeserver_repo_dir }}/services/ovh_dyndns_updater/docker-compose.yml build && /bin/docker-compose -f {{ homeserver_repo_dir }}/services/ovh_dyndns_updater/docker-compose.yml run --rm ovh-dyndns-updater"
