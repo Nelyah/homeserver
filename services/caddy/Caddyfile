@@ -49,10 +49,6 @@
 		not remote_ip private_ranges
 		# Allowing tailscale subnet
 		not remote_ip 100.64.0.0/10
-		# Expect that file to be present
-		# The file should be a list of lines in the form
-		# not remote_ip XXX.XXX.XXX.XXX
-		import whitelist_ips
 	}
 	forward_auth @is_not_whitelist authelia:9091 {
 		uri /api/verify?rd=https://auth.nelyah.eu
