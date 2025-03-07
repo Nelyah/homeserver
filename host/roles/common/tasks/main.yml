@@ -5,9 +5,13 @@
     manager: auto
 
 - name: Add appropriate repos
+  tags:
+    - repos
   import_tasks: 'repos.yml'
 
 - name: Install required packages
+  tags:
+    - packages
   import_tasks: 'packages.yml'
 
 - name: Setup fail2ban

@@ -1,21 +1,3 @@
 ---
 
-- name: Add RipGrep repository
-  get_url:
-    url: https://copr.fedorainfracloud.org/coprs/carlwgeorge/ripgrep/repo/epel-7/carlwgeorge-ripgrep-epel-7.repo
-    dest: /etc/yum.repos.d/copr_ripgrep.repo
 
-  when: ansible_facts['os_family'] == "RedHat"
-
-- name: Add Syncthing repository
-  get_url:
-    url: https://copr.fedorainfracloud.org/coprs/daftaupe/syncthing/repo/epel-7/daftaupe-syncthing-epel-7.repo
-    dest: /etc/yum.repos.d/copr_syncthing.repo
-
-  when: ansible_facts['os_family'] == "RedHat"
-
-- name: Enable EPEL Repository on CentOS 7
-  package:
-    name: epel-release
-    state: present
-  when: ansible_facts['os_family'] == 'RedHat' and ansible_facts ['distribution_major_version'] == '7'
