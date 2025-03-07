@@ -26,7 +26,7 @@
     - name: Do Nextcloud database dump
       shell: >
         docker exec mariadb-nc
-        sh -c "exec mysqldump -u root -p{{ response.secret.MYSQL_ROOT_PASSWORD }} --single-transaction {{ nextcloud_env.db_name }}" > {{ database }}
+        sh -c "exec mariadb-dump -u root -p{{ response.secret.MYSQL_ROOT_PASSWORD }} --single-transaction {{ nextcloud_env.db_name }}" > {{ database }}
 
     - name: Perform backup with restic
       tags:
