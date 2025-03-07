@@ -22,6 +22,8 @@
 	@restricted_location {
 		path /*
 		not remote_ip private_ranges
+		# Allowing tailscale subnet
+		not remote_ip 100.64.0.0/10
 	}
 	respond @restricted_location "Access Denied" 403 {
 		close
@@ -45,7 +47,9 @@
 (authelia_sso_if_not_whitelist) {
 	@is_not_whitelist {
 		not remote_ip private_ranges
-		# Except that file to be present
+		# Allowing tailscale subnet
+		not remote_ip 100.64.0.0/10
+		# Expect that file to be present
 		# The file should be a list of lines in the form
 		# not remote_ip XXX.XXX.XXX.XXX
 		import whitelist_ips
@@ -118,6 +122,8 @@ wheelingtheworld.eu {
 		path /wp-admin/*
 		path /wp-login.php
 		not remote_ip private_ranges
+		# Allowing tailscale subnet
+		not remote_ip 100.64.0.0/10
 	}
 	respond @restricted_location "Access Denied" 403 {
 		close
