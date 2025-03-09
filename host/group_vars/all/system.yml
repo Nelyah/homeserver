@@ -1,5 +1,4 @@
 ssh_server_port: 2541
-sshd_port_gitea: 2542
 
 users:
   - login: chloe

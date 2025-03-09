@@ -8,7 +8,6 @@ docker_services:
   - caddy
   - emby
   - ghost
-  - gitea
   - grafana
   - homebox
   - homepage
@@ -33,7 +32,6 @@ backup_services:
   - caddy
   - emby
   - ghost
-  - gitea
   - grafana
   - homebox
   - homepage

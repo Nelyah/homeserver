@@ -15,7 +15,6 @@
     - 443
     - 53 # DNS port
     - '{{ ssh_server_port }}'
-    - '{{ sshd_port_gitea }}'
 
 - name: Enable ufw
   community.general.ufw:
