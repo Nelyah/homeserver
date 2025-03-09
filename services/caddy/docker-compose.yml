@@ -13,7 +13,6 @@ services:
       - nextcloud_site:/php-fpm-root/nextcloud/
     networks:
       - audiobookshelf
-      - authelia
       - frontend
       - emby
       - grafana
@@ -44,8 +43,6 @@ networks:
   audiobookshelf:
     external: true
   frontend:
-    external: true
-  authelia:
     external: true
   nextcloud:
     external: true
