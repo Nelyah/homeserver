@@ -9,7 +9,6 @@ docker_services:
   - emby
   - ghost
   - grafana
-  - homebox
   - influxdb
   - navidrome
   - nextcloud
@@ -32,7 +31,6 @@ backup_services:
   - emby
   - ghost
   - grafana
-  - homebox
   - influxdb
   - music
   - navidrome
