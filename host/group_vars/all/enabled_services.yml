@@ -3,6 +3,7 @@
 docker_services:
   - audiobookshelf
   - authelia
+  - authentik
   - bookstack
   - caddy
   - emby
@@ -27,6 +28,7 @@ backup_services:
   - audiobook
   - audiobookshelf
   - authelia
+  - authentik
   - bookstack
   - caddy
   - emby

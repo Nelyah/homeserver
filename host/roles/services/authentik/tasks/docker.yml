@@ -1,0 +1,30 @@
+---
+
+- name: Create required docker volumes
+  community.docker.docker_volume:
+    name: '{{ docker_volumes }}'
+  loop:
+    - authentik_db
+    - authentik_redis
+    - authentik_templates
+    - authentik_certs
+    - authentik_media
+  loop_control:
+    loop_var: docker_volumes
+
+- block:
+  - name: Fetch secrets from vault
+    community.hashi_vault.vault_kv2_get:
+      url: '{{ vault.url }}'
+      path: authentik
+      engine_mount_point: homeserver_secrets
+      auth_method: token
+      token_path: '{{ homeserver_repo_dir }}/host/'
+    register: response
+
+  - name: Deploy docker env file
+    template:
+      src: env
+      dest: '{{ homeserver_repo_dir }}/services/authentik/.env'
+
+# vi:ft=yaml.ansible

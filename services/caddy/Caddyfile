@@ -18,41 +18,62 @@
 	}
 }
 
-(restrict_lan) {
+(is_not_whitelist) {
+	not remote_ip private_ranges
+	# Allowing Tailscale subnet
+	not remote_ip 100.64.0.0/10
+}
+
+(restrict_to_lan) {
 	@restricted_location {
 		path /*
-		not remote_ip private_ranges
-		# Allowing tailscale subnet
-		not remote_ip 100.64.0.0/10
+		import is_not_whitelist
 	}
 	respond @restricted_location "Access Denied" 403 {
 		close
 	}
 }
 
-(authelia_sso) {
-	forward_auth authelia:9091 {
-		uri /api/verify?rd=https://auth.nelyah.eu
-		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+# Define reusable snippet for authentication forwarding
+(auth_forward) {
+	uri /outpost.goauthentik.io/auth/caddy
+
+	# Capitalization of the headers is important, otherwise they will be empty
+	copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Entitlements X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+
+	# Optional, trust all private ranges (should be restricted to the outpost’s IP)
+	trusted_proxies private_ranges
+	trusted_proxies 100.64.0.0/10
+}
+
+# Define reusable snippet for reverse proxy to the outpost
+(reverse_proxy_outpost) {
+	reverse_proxy /outpost.goauthentik.io/* authentik_server:9000 {
+		header_up Host {http.reverse_proxy.upstream.hostport}
 	}
 }
 
-(authelia_sso_location) {
-	forward_auth {args[0]} authelia:9091 {
-		uri /api/verify?rd=https://auth.nelyah.eu
-		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
-	}
-}
+(sso_at_location) {
+	import reverse_proxy_outpost
 
-(authelia_sso_if_not_whitelist) {
 	@is_not_whitelist {
-		not remote_ip private_ranges
-		# Allowing tailscale subnet
-		not remote_ip 100.64.0.0/10
+		import is_not_whitelist
 	}
-	forward_auth @is_not_whitelist authelia:9091 {
-		uri /api/verify?rd=https://auth.nelyah.eu
-		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+
+	forward_auth {args[0]} authentik_server:9000 {
+		import auth_forward
+	}
+}
+
+(sso_if_not_whitelist) {
+	@is_not_whitelist {
+		import is_not_whitelist
+	}
+
+	import reverse_proxy_outpost
+
+	forward_auth @is_not_whitelist authentik_server:9000 {
+		import auth_forward
 	}
 }
 
@@ -97,13 +118,13 @@ cloud.nelyah.eu {
 pihole.nelyah.eu {
 	import security_headers
 	reverse_proxy pihole
-	import authelia_sso_if_not_whitelist
+	import sso_if_not_whitelist
 }
 
 gitea.nelyah.eu {
 	import security_headers
 	reverse_proxy gitea:3000
-	import authelia_sso_if_not_whitelist
+	import sso_if_not_whitelist
 }
 
 blog.nelyah.eu {
@@ -129,7 +150,7 @@ wheelingtheworld.eu {
 influxdb.nelyah.eu {
 	import security_headers
 	reverse_proxy influxdb:8086
-	import authelia_sso_if_not_whitelist
+	import sso_if_not_whitelist
 }
 
 wiki.nelyah.eu {
@@ -150,13 +171,15 @@ music.nelyah.eu {
 prometheus.nelyah.eu {
 	import security_headers
 	reverse_proxy prometheus:9090
-	import authelia_sso_if_not_whitelist
+	import sso_if_not_whitelist
 }
 
 grafana.nelyah.eu {
 	import security_headers
+	import sso_if_not_whitelist
+
+	# Actual site configuration below, for example
 	reverse_proxy grafana:3000
-	import authelia_sso_if_not_whitelist
 }
 
 emby.nelyah.eu {
@@ -172,12 +195,12 @@ cinema.nelyah.eu {
 photos.nelyah.eu {
 	import security_headers
 	reverse_proxy photoprism:2342
-	import authelia_sso_if_not_whitelist
+	import sso_if_not_whitelist
 }
 
 watchtower.nelyah.eu {
 	import security_headers
-	import restrict_lan
+	import restrict_to_lan
 	reverse_proxy watchtower:8080
 }
 
@@ -198,26 +221,15 @@ stories.nelyah.eu {
 		not path /ghost/api*
 	}
 
-	import authelia_sso_location @restricted
+	import sso_at_location @restricted
 }
 
 auth.nelyah.eu {
-	reverse_proxy authelia:9091
-}
-
-home.nelyah.eu {
-	reverse_proxy homepage:3000
-	import authelia_sso
-}
-
-homebox.nelyah.eu {
-	import security_headers
-	reverse_proxy homebox:7745
-	import authelia_sso_if_not_whitelist
+	reverse_proxy authentik_server:9000
 }
 
 vault.nelyah.eu {
 	import security_headers
 	reverse_proxy vault:8200
-	import authelia_sso_if_not_whitelist
+	import sso_if_not_whitelist
 }

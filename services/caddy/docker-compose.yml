@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   caddy:
     image: caddy:2-alpine
@@ -16,6 +14,7 @@ services:
     networks:
       - audiobookshelf
       - authelia
+      - frontend
       - emby
       - grafana
       - homebox
@@ -43,6 +42,8 @@ volumes:
 
 networks:
   audiobookshelf:
+    external: true
+  frontend:
     external: true
   authelia:
     external: true
