@@ -9,6 +9,7 @@
       - cmake
       - curl
       - davfs2
+      - duf # Good view for disk usage
       - ethtool # Used to inspect network interfaces
       - flac # to convert audio files to flac
       - gdb
@@ -28,8 +29,10 @@
       - rsync
       - smartmontools
       - syncthing
+      - tig
       - tmux
       - ufw
+      - unzip
       - wget
       - youtube-dl
       - yq

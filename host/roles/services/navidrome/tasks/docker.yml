@@ -13,4 +13,9 @@
   loop_control:
     loop_var: docker_volumes
 
+- name: Deploy docker env file
+  template:
+    src: env
+    dest: '{{ homeserver_repo_dir }}/services/navidrome/.env'
+
 # vi:ft=yaml.ansible

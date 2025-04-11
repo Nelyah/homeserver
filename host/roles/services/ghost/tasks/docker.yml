@@ -39,7 +39,7 @@
     dest: /usr/bin/ghost-autohealth.sh
     mode: '0744'
     owner: root
-    group: wheel
+    group: sudo
 
 - name: Deploy systemd service
   template:

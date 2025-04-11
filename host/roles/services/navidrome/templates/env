@@ -1,0 +1,2 @@
+MUSIC_LIBRARY={{ music_env.path_library }}
+MUSIC_LIBRARY_MUM={{ music_env.path_library_mum }}
