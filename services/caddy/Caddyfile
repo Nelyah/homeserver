@@ -1,6 +1,30 @@
 {
 	servers {
 		trusted_proxies static private_ranges
+		listener_wrappers {
+			# The proxy_protocol wrapper tells Caddy to expect a PROXY header
+			# (which carries the real client IP) from upstream proxies.
+			proxy_protocol {
+				# Set a timeout of 2 seconds for receiving the PROXY header.
+				# This ensures that Caddy won’t wait indefinitely if the header isn’t sent.
+				timeout 2s
+
+				# Allow connections from the 100.64.0.0/10 IP range.
+				# This is typically the range used by the upstream proxy (e.g. FRP server)
+				# that sends the correct PROXY header; it prevents headers from untrusted sources.
+				# In this case, this includes any address from my tailnet
+				allow 100.64.0.0/10
+
+				# Set fallback_policy to "use".
+				# With this policy, if a valid PROXY header is present, Caddy will use its values (e.g. the client's real IP).
+				# If the header isn’t present, Caddy will simply use the connection’s original remote address.
+				# This provides flexibility, ensuring that connections without the header are still processed.
+				fallback_policy use
+			}
+			# The tls wrapper follows, ensuring that after handling the PROXY header,
+			# Caddy proceeds with the TLS handshake (i.e. it wraps the connection in TLS).
+			tls
+		}
 	}
 }
 
