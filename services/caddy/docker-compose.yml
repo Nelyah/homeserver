@@ -16,17 +16,12 @@ services:
       - frontend
       - emby
       - grafana
-      - homebox
-      - homepage
       - ghost
-      - gitea
-      - influxdb
       - internal
       - nextcloud
       - navidrome
       - photoprism
       - pihole
-      - prometheus
       - bookstack
       - watchtower
       - wordpress
@@ -50,15 +45,7 @@ networks:
     external: true
   ghost:
     external: true
-  gitea:
-    external: true
-  influxdb:
-    external: true
   internal:
-    external: true
-  homebox:
-    external: true
-  homepage:
     external: true
   wordpress:
     external: true
@@ -69,8 +56,6 @@ networks:
   photoprism:
     external: true
   pihole:
-    external: true
-  prometheus:
     external: true
   grafana:
     external: true
