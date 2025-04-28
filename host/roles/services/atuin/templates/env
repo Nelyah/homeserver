@@ -1,0 +1,3 @@
+ATUIN_DB_NAME=atuin
+ATUIN_DB_USERNAME=atuin
+ATUIN_DB_PASSWORD={{response.secret.DB_PASSWORD}}

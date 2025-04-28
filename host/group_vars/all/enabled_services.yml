@@ -1,6 +1,7 @@
 ---
 
 docker_services:
+  - atuin
   - audiobookshelf
   - authentik
   - bookstack
@@ -21,6 +22,7 @@ docker_services:
   - wordpress
 
 backup_services:
+  - atuin
   - audiobook
   - audiobookshelf
   - authentik

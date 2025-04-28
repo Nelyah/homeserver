@@ -1,0 +1,62 @@
+---
+
+- name: Set facts
+  set_fact:
+    # Do not set the date in the database name. If restic gets a file with a different
+    # name as argument input, it will re-read everything
+    # https://forum.restic.net/t/restic-never-finds-a-parent-snapshot/3938/4
+    database_file: /tmp/atuin_db.sql
+
+- name: Do Atuin backup
+  block:
+    - name: Fetch secrets from vault
+      community.hashi_vault.vault_kv2_get:
+        url: '{{ vault.url }}'
+        path: atuin
+        engine_mount_point: homeserver_secrets
+        auth_method: token
+        token_path: '{{ homeserver_repo_dir }}/host/'
+      register: response
+
+    - name: Do Atuin database dump
+      shell: >
+        docker exec atuin_db
+        sh -c "pg_dump -U atuin" > {{ database_file }}
+
+    - name: Perform backup with restic
+      tags:
+        - backup
+      include_role:
+        name: restic
+        tasks_from: backup
+      vars:
+        restic_backup_data:
+          path:
+            - '{{ database_file }}'
+          volumes:
+            - atuin_db
+            - atuin_redis
+          tags:
+            - atuin
+          ignore_patterns:
+          docker_data_dir: '{{ docker_data_dir }}'
+  always:
+    - name: Remove database temporary file
+      file:
+        name: '{{ database_file }}'
+        state: absent
+
+- name: Prune Atuin snapshots
+  include_role:
+    name: restic
+    tasks_from: forget
+  vars:
+    restic_forget_data:
+      tags_intersect:
+      tags_union:
+        - atuin
+      keep_daily: 10
+      keep_weekly: 52
+      prune: true
+
+# vi:ft=yaml.ansible
