@@ -21,6 +21,8 @@
       - jq
       - lnav # to explore the logs
       - msmtp
+      - nodejs
+      - npm
       - ncdu
       - neovim
       - net-tools
@@ -30,6 +32,7 @@
       - smartmontools
       - syncthing
       - tig
+      - tailscale
       - tmux
       - ufw
       - unzip
