@@ -1,10 +1,13 @@
 #! /bin/bash
 
-is_sealed="$(docker exec -e 'VAULT_ADDR={{ vault.url }}' vault vault status -format=json | jq -r .sealed)"
+is_sealed="$(curl -s {{ vault.url }}/v1/sys/health | jq -r .sealed)"
 
 if [ "$is_sealed" = "true" ]; then
     echo "Vault was sealed. Unsealing..."
-    docker exec -e 'VAULT_ADDR={{ vault.url }}' vault vault operator unseal "{{ response.secret.UNSEAL_TOKEN }}"
+    curl -s --request PUT \
+        --header "Content-Type: application/json" \
+        --data '{"key": "{{ response.secret.UNSEAL_TOKEN }}"}' \
+        {{ vault.url }}/v1/sys/unseal
 
     # shellcheck disable=SC2181
     if [ $? -ne 0 ]; then
