@@ -151,8 +151,9 @@ gitea.nelyah.eu {
 	import sso_if_not_whitelist
 }
 
-blog.nelyah.eu {
-	redir https://wheelingtheworld.eu{uri} permanent
+chloe.dequeker.me, blog.nelyah.eu {
+	import security_headers
+	reverse_proxy hugo_website:1313
 }
 
 wheelingtheworld.eu {
