@@ -4,7 +4,6 @@ docker_services:
   - atuin
   - audiobookshelf
   - authentik
-  - bookstack
   - caddy
   - emby
   - ghost
@@ -14,7 +13,6 @@ docker_services:
   - nextcloud
   - ovh_dyndns_updater
   - photoprism
-  - pihole
   - prometheus
   - syncthing
   - vault
@@ -26,7 +24,6 @@ backup_services:
   - audiobook
   - audiobookshelf
   - authentik
-  - bookstack
   - caddy
   - emby
   - ghost
@@ -37,7 +34,6 @@ backup_services:
   - nextcloud
   - photoprism
   - pictures
-  - pihole
   - prometheus
   - syncthing
   - vault

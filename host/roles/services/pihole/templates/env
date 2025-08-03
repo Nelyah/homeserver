@@ -1,4 +1,0 @@
-FTLCONF_REPLY_ADDR4={{response.secret.FTLCONF_REPLY_ADDR4}}
-WEBPASSWORD={{response.secret.WEBPASSWORD}}
-VIRTUAL_HOST=pihole.nelyah.eu
-VIRTUAL_PORT=80
