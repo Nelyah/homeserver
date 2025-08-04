@@ -15,3 +15,7 @@ audiobook_env:
 
 pictures_env:
   path: '{{ drives.main.mount }}/pictures'
+
+movies_env:
+  path_movies: '{{ drives.main.mount }}/Movies'
+  path_tvshows: '{{ drives.main.mount }}/TvShows'

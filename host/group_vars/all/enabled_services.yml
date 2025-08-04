@@ -9,6 +9,7 @@ docker_services:
   - ghost
   - grafana
   - influxdb
+  - jellyfin
   - navidrome
   - nextcloud
   - ovh_dyndns_updater
@@ -29,6 +30,7 @@ backup_services:
   - ghost
   - grafana
   - influxdb
+  - jellyfin
   - music
   - navidrome
   - nextcloud
