@@ -13,3 +13,5 @@
 
 - name: Setup the hard drives
   import_tasks: hard_drives.yml
+  tags:
+    - hard_drives

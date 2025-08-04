@@ -12,7 +12,7 @@ users:
 
 drives:
   main:
-    uuid: 22850f9c-53cf-44d5-9539-cbee47852b16
+    uuid: 52154ddd-f269-459e-88d9-19b7dbfc2c65
     mount: /data
     mount_file_dest: /etc/systemd/system/data.mount
     type: ext4
