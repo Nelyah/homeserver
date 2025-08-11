@@ -1,0 +1,17 @@
+services:
+  uptime_kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime_kuma
+    restart: always
+    networks:
+      - internal
+    volumes:
+      - uptime_kuma_data:/app/data
+
+volumes:
+  uptime_kuma_data:
+    external: true
+
+networks:
+  internal:
+    external: true

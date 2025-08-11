@@ -1,0 +1,15 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: internal
+
+- name: Create required docker volumes
+  community.docker.docker_volume:
+    name: '{{ docker_volumes }}'
+  loop:
+    - signal_api_data
+  loop_control:
+    loop_var: docker_volumes
+
+# vi:ft=yaml.ansible

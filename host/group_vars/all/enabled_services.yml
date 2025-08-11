@@ -15,7 +15,9 @@ docker_services:
   - ovh_dyndns_updater
   - photoprism
   - prometheus
+  - signal_api
   - syncthing
+  - uptime_kuma
   - vault
   - watchtower
   - wordpress
@@ -38,6 +40,7 @@ backup_services:
   - pictures
   - prometheus
   - syncthing
+  - uptime_kuma
   - vault
   - wordpress
 

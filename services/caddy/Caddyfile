@@ -258,3 +258,16 @@ atuin.nelyah.eu {
 	import security_headers
 	reverse_proxy atuin:8888
 }
+
+uptime-kuma.nelyah.eu {
+	import security_headers
+	reverse_proxy uptime_kuma:3001
+	import sso_if_not_whitelist
+}
+
+
+signal-api.nelyah.eu {
+	import security_headers
+	reverse_proxy signal_api:8080
+	import sso_if_not_whitelist
+}

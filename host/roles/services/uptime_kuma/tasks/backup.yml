@@ -1,0 +1,33 @@
+---
+
+- name: Do Uptime Kuma backup
+  tags:
+    - backup
+  include_role:
+    name: restic
+    tasks_from: backup
+  vars:
+    restic_backup_data:
+      path:
+      volumes:
+        - uptime_kuma_data
+      tags:
+        - uptime_kuma
+      ignore_patterns:
+      docker_data_dir: '{{ docker_data_dir }}'
+
+- name: Prune Uptime Kuma snapshots
+  include_role:
+    name: restic
+    tasks_from: forget
+  vars:
+    restic_forget_data:
+      tags_intersect:
+      tags_union:
+        - uptime_kuma
+      keep_daily: 10
+      keep_weekly: 25
+      keep_monthly: 12
+      prune: true
+
+# vi:ft=yaml.ansible
