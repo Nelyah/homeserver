@@ -45,3 +45,8 @@
 
 - name: Install required packages
   import_tasks: 'docker.yml'
+
+- name: Set unattended upgrades
+  import_tasks: 'unattended-upgrades.yml'
+  tags:
+    - unattended-upgrades
