@@ -5,8 +5,6 @@ docker_services:
   - audiobookshelf
   - authentik
   - caddy
-  - emby
-  - ghost
   - grafana
   - influxdb
   - jellyfin
@@ -15,12 +13,10 @@ docker_services:
   - ovh_dyndns_updater
   - photoprism
   - prometheus
-  - signal_api
   - syncthing
   - uptime_kuma
   - vault
   - watchtower
-  - wordpress
 
 backup_services:
   - atuin
@@ -28,8 +24,6 @@ backup_services:
   - audiobookshelf
   - authentik
   - caddy
-  - emby
-  - ghost
   - grafana
   - influxdb
   - jellyfin
@@ -42,6 +36,5 @@ backup_services:
   - syncthing
   - uptime_kuma
   - vault
-  - wordpress
 
 # vi:ft=yaml.ansible

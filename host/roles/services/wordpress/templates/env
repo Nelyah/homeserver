@@ -1,4 +1,0 @@
-MYSQL_DATABASE={{response.secret.MYSQL_DATABASE}}
-MYSQL_ROOT_PASSWORD={{response.secret.MYSQL_ROOT_PASSWORD}}
-MYSQL_USER={{response.secret.MYSQL_USER}}
-MYSQL_PASSWORD={{response.secret.MYSQL_PASSWORD}}

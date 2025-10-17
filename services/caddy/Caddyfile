@@ -156,22 +156,6 @@ chloe.dequeker.me, blog.nelyah.eu {
 	reverse_proxy hugo_website:1313
 }
 
-wheelingtheworld.eu {
-	import security_headers
-	reverse_proxy wordpress
-
-	@restricted_location {
-		path /wp-admin/*
-		path /wp-login.php
-		not remote_ip private_ranges
-		# Allowing tailscale subnet
-		not remote_ip 100.64.0.0/10
-	}
-	respond @restricted_location "Access Denied" 403 {
-		close
-	}
-}
-
 influxdb.nelyah.eu {
 	import security_headers
 	reverse_proxy influxdb:8086
@@ -229,21 +213,6 @@ audiobookshelf.nelyah.eu {
 	reverse_proxy audiobookshelf
 }
 
-ghost.nelyah.eu {
-	redir https://stories.nelyah.eu{uri} permanent
-}
-
-stories.nelyah.eu {
-	import security_headers
-	reverse_proxy ghost:2368
-	@restricted {
-		path /ghost*
-		not path /ghost/api*
-	}
-
-	import sso_at_location @restricted
-}
-
 auth.nelyah.eu {
 	reverse_proxy authentik_server:9000
 }
@@ -262,12 +231,5 @@ atuin.nelyah.eu {
 uptime-kuma.nelyah.eu {
 	import security_headers
 	reverse_proxy uptime_kuma:3001
-	import sso_if_not_whitelist
-}
-
-
-signal-api.nelyah.eu {
-	import security_headers
-	reverse_proxy signal_api:8080
 	import sso_if_not_whitelist
 }
