@@ -27,6 +27,7 @@
       - neovim
       - net-tools
       - python3
+      - python3-pip
       - restic
       - ripgrep
       - rsync
