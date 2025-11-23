@@ -6,6 +6,7 @@ docker_services:
   - authentik
   - caddy
   - grafana
+  - hugo_blog
   - influxdb
   - jellyfin
   - navidrome

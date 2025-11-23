@@ -4,8 +4,13 @@ services:
     container_name: hugo_website
     image: hugo_website
     restart: unless-stopped
+    volumes:
+      - ./hugo-github-deploy-key:/home/app/.ssh/deploy_key:ro
+      - ./ssh_config:/home/app/.ssh/config:ro
     networks:
       - frontend
+    environment:
+      API_TOKEN: ${API_TOKEN}
 
 networks:
   frontend:

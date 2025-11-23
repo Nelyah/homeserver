@@ -156,6 +156,13 @@ chloe.dequeker.me, blog.nelyah.eu {
 	reverse_proxy hugo_website:1313
 }
 
+api.blog.nelyah.eu {
+	import security_headers
+
+	import sso_if_not_whitelist
+	reverse_proxy hugo_website:8000
+}
+
 influxdb.nelyah.eu {
 	import security_headers
 	reverse_proxy influxdb:8086

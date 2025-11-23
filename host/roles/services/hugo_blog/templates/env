@@ -1,0 +1,1 @@
+API_TOKEN={{ response.secret.HUGO_API_TOKEN }}
