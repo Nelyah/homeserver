@@ -5,6 +5,10 @@
     name: 'fail2ban'
     state: 'reloaded'
 
+- name: systemd_daemon_reload
+  systemd:
+    daemon_reload: yes
+
 - name: 'reload sshd'
   service:
     name: 'sshd'

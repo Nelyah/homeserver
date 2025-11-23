@@ -43,10 +43,10 @@
     loop_var: repo_keys
   vars:
     docker_volume_prefix: '{{ restic_backup_data.docker_data_dir | default("/var/lib/docker") }}/volumes'
-    volumes_to_backup: '{{ restic_backup_data.volumes | default([]) }}'
-    files_to_backup: '{{ restic_backup_data.path | default([]) }}'
-    patterns_to_ignore: '{{ restic_backup_data.ignore_patterns | default([]) }}'
-    tags_to_apply: '{{ restic_backup_data.tags | default([]) }}'
+    volumes_to_backup: '{{ restic_backup_data.volumes | default([], true) }}'
+    files_to_backup: '{{ restic_backup_data.path | default([], true) }}'
+    patterns_to_ignore: '{{ restic_backup_data.ignore_patterns | default([], true) }}'
+    tags_to_apply: '{{ restic_backup_data.tags | default([], true) }}'
   register: restic_backup
   changed_when: "'Added to the repo: 0 B' not in restic_backup.stderr"
   failed_when:

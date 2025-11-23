@@ -1,26 +1,22 @@
 ---
 
-- name: Install backup service
+- name: Install local backup service
   template:
-    src: backup@.service.j2
-    dest: /etc/systemd/system/backup@.service
+    src: backup.service.j2
+    dest: '{{ systemd_destination }}/ansible-backup.service'
 
-- name: Install backup timer
+- name: Install local backup timer
   template:
     src: backup_service.timer.j2
-    dest: /etc/systemd/system/backup-{{ backup_service }}.timer
-  loop_control:
-    loop_var: backup_service
-  loop: '{{ backup_services }}'
+    dest: '{{ systemd_destination }}/ansible-backup.timer'
 
-- name: Start and enable backup timers
-  systemd:
-    daemon_reload: yes
-    name: backup-{{ backup_service }}.timer
-    state: started
-    enabled: yes
-  loop_control:
-    loop_var: backup_service
-  loop: '{{ backup_services }}'
+- name: Install remote backup service
+  template:
+    src: backup-remote.service.j2
+    dest: '{{ systemd_destination }}/ansible-backup-remote.service'
 
+- name: Install remote backup timer
+  template:
+    src: backup-remote-service.timer.j2
+    dest: '{{ systemd_destination }}/ansible-backup-remote.timer'
 # vi:ft=yaml.ansible

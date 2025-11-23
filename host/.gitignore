@@ -7,3 +7,5 @@ roles/server/files/https-key.pem
 roles/server/vars/syncthing.yml
 .cache
 .vault-token
+
+build

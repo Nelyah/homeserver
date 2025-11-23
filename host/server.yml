@@ -3,6 +3,9 @@
 - hosts: localhost
   connection: local
 
+  pre_tasks:
+    - import_tasks: roles/common/tasks/clean_build.yml
+
   roles:
     - role: common
       become: yes
@@ -23,3 +26,12 @@
         name: backup
         tasks_from: setup_services
 
+  post_tasks:
+    - import_tasks: roles/common/tasks/sync.yml
+      tags:
+        - always
+      become: true
+    - import_tasks: roles/common/tasks/systemd_enable_ansible.yml
+      become: true
+      tags:
+        - always

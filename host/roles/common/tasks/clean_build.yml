@@ -1,0 +1,18 @@
+---
+
+- name: Remove existing build directories
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ systemd_destination }}"
+    - "{{ cron_destination }}"
+
+- name: Recreate build directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ systemd_destination }}"
+    - "{{ cron_destination }}"

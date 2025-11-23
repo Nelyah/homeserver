@@ -1,0 +1,70 @@
+---
+
+- name: Find managed timers
+  find:
+    paths: /etc/systemd/system
+    patterns: "ansible-*.timer"
+    file_type: file
+  register: ansible_timers
+
+- name: Ensure systemd is reloaded after sync
+  meta: flush_handlers
+
+- name: Start and enable managed timers
+  systemd:
+    name: "{{ item.path | basename }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  loop: "{{ ansible_timers.files }}"
+  when: ansible_timers.matched > 0
+
+- name: Find managed mount units
+  find:
+    paths: /etc/systemd/system
+    patterns: "*.mount"
+    file_type: file
+  register: ansible_mounts
+
+- name: Start and enable managed mount units
+  systemd:
+    name: "{{ item.path | basename }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  loop: "{{ ansible_mounts.files }}"
+  when: ansible_mounts.matched > 0
+
+- name: Find managed automount units
+  find:
+    paths: /etc/systemd/system
+    patterns: "*.automount"
+    file_type: file
+  register: ansible_automounts
+
+- name: Start and enable managed automount units
+  systemd:
+    name: "{{ item.path | basename }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  loop: "{{ ansible_automounts.files }}"
+  when: ansible_automounts.matched > 0
+  failed_when: false
+  register: automount_results
+
+- name: Warn about automount start failures
+  debug:
+    msg: "Automount {{ item.item.path | basename }} failed to start: {{ item.msg }}"
+  loop: "{{ automount_results.results | default([]) }}"
+  when:
+    - automount_results is defined
+    - item.failed | default(false)
+
+- name: Start and enable syncthing instance
+  systemd:
+    name: "ansible-syncthing@{{ syncthing_user }}.service"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  when: syncthing_user is defined

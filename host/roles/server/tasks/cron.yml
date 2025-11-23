@@ -1,9 +1,9 @@
 ---
 
-- name: Add backup and docker image update cronjob
-  cron:
-    name: Do the backup and docker image update maintenance
-    minute: '0'
-    hour: '3'
-    job: '{{ homeserver_repo_dir }}/bin/docker-images-cleanup'
-    user: root
+- name: Deploy cron.d entry
+  copy:
+    dest: '{{ cron_destination }}/ansible-backup-and-docker-images'
+    mode: '0644'
+    content: |
+      # Ansible managed: backup and docker image maintenance
+      0 3 * * * root {{ homeserver_repo_dir }}/bin/docker-images-cleanup

@@ -1,0 +1,46 @@
+---
+
+# Sync managed directories to the host with delete semantics, scoped to ansible-* where appropriate.
+
+- name: Ensure build directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ systemd_destination }}"
+    - "{{ cron_destination }}"
+
+- name: Ensure managed target directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/systemd/system
+    - /etc/cron.d/ansible
+
+- name: Sync systemd units
+  ansible.posix.synchronize:
+    src: "{{ systemd_destination }}/"
+    dest: /etc/systemd/system/
+    archive: yes
+    delete: yes
+    rsync_opts:
+      - "--include=ansible-*"
+      - "--include=*.mount"
+      - "--include=*.automount"
+      - "--exclude=*"
+      - "--chown=root:root"
+  notify: systemd_daemon_reload
+
+- name: Sync cron.d entries
+  ansible.posix.synchronize:
+    src: "{{ cron_destination }}/"
+    dest: /etc/cron.d/ansible/
+    delete: yes
+    rsync_opts:
+      - "--chown=root:root"
+      - "--chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r"

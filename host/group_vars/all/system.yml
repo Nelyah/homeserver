@@ -31,6 +31,9 @@ drives:
 
 docker_data_dir: '{{ drives.main.mount }}/docker-data'
 homeserver_repo_dir: '{{ drives.main.mount }}/homeserver'
+ansible_stage_area: '{{ homeserver_repo_dir }}/host/build'
+systemd_destination: '{{ ansible_stage_area }}/systemd'
+cron_destination: '{{ ansible_stage_area }}/cron'
 
 vault_restic_repos:
   backup_drive:

@@ -16,17 +16,11 @@
 - name: Deploy systemd service
   template:
     src: ovh_dyndns_updater.service.j2
-    dest: /etc/systemd/system/ovh_dyndns_updater.service
+    dest: '{{ systemd_destination }}/ansible-ovh_dyndns_updater.service'
 
 - name: Deploy systemd timer
   template:
     src: ovh_dyndns_updater.timer
-    dest: /etc/systemd/system/ovh_dyndns_updater.timer
+    dest: '{{ systemd_destination }}/ansible-ovh_dyndns_updater.timer'
 
-- name: Start and enable autohealth timer
-  systemd:
-    daemon_reload: yes
-    name: ovh_dyndns_updater.timer
-    state: started
-    enabled: yes
 # vi:ft=yaml.ansible

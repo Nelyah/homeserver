@@ -36,16 +36,10 @@
 
 - name: Deploy systemd service
   template:
-    src: '{{ item }}'
-    dest: '/etc/systemd/system/{{ item }}'
+    src: '{{ vault_service }}'
+    dest: '{{ systemd_destination }}/ansible-{{ vault_service }}'
   loop: '{{ vault_systemd_services }}'
-
-- name: Start and enable autohealth timer
-  systemd:
-    daemon_reload: yes
-    name: '{{ item }}'
-    state: started
-    enabled: yes
-  loop: '{{ vault_systemd_services }}'
+  loop_control:
+    loop_var: vault_service
 
 # vi:ft=yaml.ansible

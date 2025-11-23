@@ -16,6 +16,9 @@ if [ "$1" != "local" ] && [ "$1" != "remote" ]; then
     exit 1
 fi
 
+script_dir="$(dirname "$0")"
+pushd "$script_dir" &> /dev/null
+
 playbook_file="backup.yml"
 if [ "$1" = "remote" ]; then
     playbook_file="backup-remote.yml"
@@ -41,3 +44,5 @@ fi
 for service_name in $(yq -r '.backup_services[]' group_vars/all/enabled_services.yml); do
     ansible-playbook "$playbook_file" --tags "backup,${service_name}"
 done
+
+popd &> /dev/null

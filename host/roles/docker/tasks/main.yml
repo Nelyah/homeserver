@@ -15,20 +15,13 @@
   - name: Copy the docker-fix-logs systemd files
     copy:
       src: '{{ item }}'
-      dest: '/etc/systemd/system/{{ item }}'
+      dest: '{{systemd_destination}}/ansible-{{ item }}'
       owner: 'root'
       group: 'root'
       mode: '0644'
     loop:
       - docker-fix-logs.service
       - docker-fix-logs.timer
-
-  - name: Start and enable backup timers
-    systemd:
-      daemon_reload: yes
-      name: docker-fix-logs.timer
-      state: started
-      enabled: yes
 
 - name: Do the Docker setup for each service
   include_role:

@@ -4,6 +4,11 @@
   include_vars:
     file: syncthing.yml
 
+- name: Render Syncthing systemd unit
+  template:
+    src: syncthing_systemd.service
+    dest: '{{ systemd_destination }}/ansible-syncthing@.service'
+
 - name: Task name
   stat:
     path: /home/{{ syncthing_user }}/.config/syncthing
@@ -20,11 +25,6 @@
         mode: '0700'
       loop:
         - /home/{{ syncthing_user }}/.config/syncthing
-
-    - name: Deploy the unit file for syncthing
-      template:
-        src: syncthing_systemd.service
-        dest: /etc/systemd/system/syncthing@.service
 
     - name: Deploy keys for Syncthing
       copy:
@@ -55,11 +55,6 @@
         owner: '{{ syncthing_user }}'
         group: '{{ syncthing_user }}'
 
-    - name: Enable and start systemd unit
-      systemd:
-        state: started
-        enabled: yes
-        name: 'syncthing@{{ syncthing_user }}.service'
   when: not syncthing_config_file.stat.exists
 
 # vi:ft=yaml.ansible

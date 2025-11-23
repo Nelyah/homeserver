@@ -14,14 +14,7 @@
 - name: Setup the main drive
   template:
     src: main_drive.mount.j2
-    dest: '{{ drives.main.mount_file_dest }}'
-
-- name: Start and enable main drive
-  systemd:
-    daemon_reload: yes
-    name: '{{ drives.main.mount_file_dest | basename }}'
-    state: started
-    enabled: yes
+    dest: '{{ systemd_destination }}/{{ drives.main.mount_file_dest | basename }}'
 
 # Second drive setup (backup drive)
 
@@ -37,44 +30,11 @@
 - name: Setup the second drive
   template:
     src: second_drive.mount.j2
-    dest: '{{ drives.backup.mount_file_dest }}'
+    dest: '{{ systemd_destination }}/{{ drives.backup.mount_file_dest | basename }}'
 
 - name: Setup the second drive automount
   template:
     src: second_drive.automount.j2
-    dest: '{{ drives.backup.automount_file_dest }}'
-
-- name: Start and enable second drive
-  systemd:
-    daemon_reload: yes
-    name: '{{ drives.backup.mount_file_dest | basename }}'
-    state: started
-    enabled: yes
-
-- name: Start and enable second drive automount
-  systemd:
-    daemon_reload: yes
-    name: '{{ drives.backup.automount_file_dest | basename }}'
-    state: started
-    enabled: yes
-
-# Third drive setup (external drive)
-
-- name: Setup the third drive
-  template:
-    src: remote_backup.mount.j2
-    dest: '{{ drives.remote_backup.mount_file_dest }}'
-
-- name: Setup the third drive automount
-  template:
-    src: remote_backup.automount.j2
-    dest: '{{ drives.remote_backup.automount_file_dest }}'
-
-- name: Start and enable third drive automount
-  systemd:
-    daemon_reload: yes
-    name: '{{ drives.remote_backup.automount_file_dest | basename }}'
-    state: started
-    enabled: no
+    dest: '{{ systemd_destination }}/{{ drives.backup.automount_file_dest | basename }}'
 
 # vi:ft=yaml.ansible
