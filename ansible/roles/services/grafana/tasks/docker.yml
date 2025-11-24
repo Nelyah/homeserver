@@ -1,0 +1,29 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: grafana
+
+- name: Create required docker volumes
+  community.docker.docker_volume:
+    name: '{{ docker_volumes }}'
+  loop:
+    - grafana_data
+  loop_control:
+    loop_var: docker_volumes
+
+- name: Read values from vault
+  community.hashi_vault.vault_kv2_get:
+    url: '{{ vault.url }}'
+    path: email
+    engine_mount_point: homeserver_secrets
+    auth_method: token
+    token_path: '{{ homeserver_repo_dir }}/ansible/'
+  register: response
+
+- name: Install the Grafana config file
+  template:
+    src: grafana.ini.j2
+    dest: '{{ homeserver_repo_dir }}/services/grafana/grafana.ini'
+
+# vi:ft=yaml.ansible

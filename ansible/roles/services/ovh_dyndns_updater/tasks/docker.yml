@@ -1,0 +1,26 @@
+- block:
+  - name: Fetch secrets from vault
+    community.hashi_vault.vault_kv2_get:
+      url: '{{ vault.url }}'
+      path: ovh_api
+      engine_mount_point: homeserver_secrets
+      auth_method: token
+      token_path: '{{ homeserver_repo_dir }}/ansible/'
+    register: response
+
+  - name: Deploy docker env file
+    template:
+      src: env
+      dest: '{{ homeserver_repo_dir }}/services/ovh_dyndns_updater/.env'
+
+- name: Deploy systemd service
+  template:
+    src: ovh_dyndns_updater.service.j2
+    dest: '{{ systemd_destination }}/ansible-ovh_dyndns_updater.service'
+
+- name: Deploy systemd timer
+  template:
+    src: ovh_dyndns_updater.timer
+    dest: '{{ systemd_destination }}/ansible-ovh_dyndns_updater.timer'
+
+# vi:ft=yaml.ansible

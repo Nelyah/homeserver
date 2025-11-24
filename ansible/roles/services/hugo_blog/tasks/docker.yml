@@ -1,0 +1,32 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: frontend
+
+- block:
+  - name: Fetch secrets from vault
+    community.hashi_vault.vault_kv2_get:
+      url: '{{ vault.url }}'
+      path: hugo_blog
+      engine_mount_point: homeserver_secrets
+      auth_method: token
+      token_path: '{{ homeserver_repo_dir }}/ansible/'
+    register: response
+
+  - name: Deploy docker env file
+    template:
+      src: env
+      dest: '{{ homeserver_repo_dir }}/services/blog_hugo/.env'
+
+  - name: Deploy private deploy key
+    template:
+      src: private_github_deploy_key
+      dest: '{{ homeserver_repo_dir }}/services/blog_hugo/hugo-github-deploy-key'
+
+  - name: Deploy public deploy key
+    template:
+      src: public_github_deploy_key
+      dest: '{{ homeserver_repo_dir }}/services/blog_hugo/hugo-github-deploy-key.pub'
+
+# vi:ft=yaml.ansible

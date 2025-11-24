@@ -1,0 +1,31 @@
+---
+
+- name: Create required docker networks
+  community.docker.docker_network:
+    name: photoprism
+
+- name: Create required docker volumes
+  community.docker.docker_volume:
+    name: '{{ docker_volumes }}'
+  loop:
+    - photoprism_data
+    - photoprism_db
+  loop_control:
+    loop_var: docker_volumes
+
+- block:
+  - name: Fetch secrets from vault
+    community.hashi_vault.vault_kv2_get:
+      url: '{{ vault.url }}'
+      path: photoprism
+      engine_mount_point: homeserver_secrets
+      auth_method: token
+      token_path: '{{ homeserver_repo_dir }}/ansible/'
+    register: response
+
+  - name: Deploy docker env file
+    template:
+      src: env
+      dest: '{{ homeserver_repo_dir }}/services/photoprism/.env'
+
+# vi:ft=yaml.ansible

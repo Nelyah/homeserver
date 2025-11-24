@@ -1,0 +1,6 @@
+[Unit]
+Description=Perform weekly remote backups
+
+[Service]
+Type=oneshot
+ExecStart={{ homeserver_repo_dir }}/ansible/backup.sh remote all

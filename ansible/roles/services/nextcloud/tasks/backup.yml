@@ -1,0 +1,78 @@
+---
+
+- name: Set facts
+  set_fact:
+    # Do not set the date in the database name. If restic gets a file with a different
+    # name as argument input, it will re-read everything
+    # https://forum.restic.net/t/restic-never-finds-a-parent-snapshot/3938/4
+    database: /tmp/nextcloud_db.sql
+
+- name: Do nextcloud backup
+  block:
+    - name: Fetch secrets from vault
+      community.hashi_vault.vault_kv2_get:
+        url: '{{ vault.url }}'
+        path: nextcloud
+        engine_mount_point: homeserver_secrets
+        auth_method: token
+        token_path: '{{ homeserver_repo_dir }}/ansible/'
+      register: response
+
+    - name: Enable maintenance mode
+      command: >
+        docker exec -u www-data -i nextcloud
+        php /var/www/html/occ maintenance:mode --on
+
+    - name: Do Nextcloud database dump
+      shell: >
+        docker exec mariadb-nc
+        sh -c "exec mariadb-dump -u root -p{{ response.secret.MYSQL_ROOT_PASSWORD }} --single-transaction {{ nextcloud_env.db_name }}" > {{ database }}
+
+    - name: Perform backup with restic
+      tags:
+        - backup
+      include_role:
+        name: restic
+        tasks_from: backup
+      vars:
+        restic_backup_data:
+          path:
+            - '{{ database }}'
+          volumes:
+            - nextcloud_mariadb
+            - nextcloud_data
+            - nextcloud_site
+          tags:
+            - nextcloud
+          ignore_patterns:
+            - .opcache
+            - access.log
+            - error.log
+            - nextcloud.log
+            - ncp-update-backups
+          docker_data_dir: '{{ docker_data_dir }}'
+  always:
+    - name: Disable maintenance mode
+      command: >
+        docker exec -u www-data -i nextcloud
+        php /var/www/html/occ maintenance:mode --off
+
+    - name: Remove database dump
+      file:
+        name: '{{ database }}'
+        state: absent
+
+- name: Prune Nextcloud snapshots
+  include_role:
+    name: restic
+    tasks_from: forget
+  vars:
+    restic_forget_data:
+      tags_intersect:
+      tags_union:
+        - nextcloud
+      keep_daily: 90
+      keep_weekly: 4
+      prune: true
+
+# vi:ft=yaml.ansible
