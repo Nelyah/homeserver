@@ -203,9 +203,9 @@ jellyfin.nelyah.eu {
 	reverse_proxy jellyfin:8096
 }
 
-photos.nelyah.eu {
+photos.nelyah.eu, immich.nelyah.eu {
 	import security_headers
-	reverse_proxy photoprism:2342
+	reverse_proxy immich_server:2283
 	import sso_if_not_whitelist
 }
 

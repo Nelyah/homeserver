@@ -17,6 +17,7 @@ services:
       - emby
       - grafana
       - ghost
+      - immich
       - internal
       - nextcloud
       - navidrome
@@ -44,6 +45,8 @@ networks:
   bookstack:
     external: true
   ghost:
+    external: true
+  immich:
     external: true
   internal:
     external: true
