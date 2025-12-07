@@ -39,10 +39,21 @@
     };
   };
 
+  services.dnsmasq = {
+    enable = true;
+    settings = {
+      interface = [ "tailscale0" ];
+      no-resolv = true;
+      "cache-size" = 10000;
+      address = [ "/nelyah.eu/100.116.21.31" ];
+    };
+  };
+
   services.tailscale = {
     enable = true;
     useRoutingFeatures = "client";
   };
+
   imports = [ ./tailscale-authkey.nix ];
 
   networking.hostName = "home-stockholm";
