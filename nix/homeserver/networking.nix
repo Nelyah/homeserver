@@ -43,6 +43,7 @@
     enable = true;
     useRoutingFeatures = "client";
   };
+  imports = [ ./tailscale-authkey.nix ];
 
   networking.hostName = "home-stockholm";
 }

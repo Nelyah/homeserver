@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, ... }:
 {
   services.frp = {
     enable = true;
@@ -24,6 +24,23 @@
           transport.proxyProtocolVersion = "v2";
         }
       ];
+    };
+  };
+
+  # Make frp wait for tailscale and keep retrying if tailscale is not up yet.
+  systemd.services.frp = {
+    after = [
+      "network-online.target"
+      "tailscaled.service"
+    ];
+    wants = [
+      "network-online.target"
+      "tailscaled.service"
+    ];
+    requires = [ "tailscaled.service" ];
+    serviceConfig = {
+      Restart = "on-failure";
+      RestartSec = lib.mkForce "10s";
     };
   };
 }

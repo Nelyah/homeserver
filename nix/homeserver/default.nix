@@ -13,5 +13,6 @@
     ./vault-unseal.nix
     ./backups.nix
     ./compose.nix
+    ./tailscale-authkey.nix
   ];
 }
