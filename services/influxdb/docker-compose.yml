@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   influxdb:
     image: influxdb:latest
@@ -7,12 +5,11 @@ services:
     stop_grace_period: 1m
     restart: unless-stopped
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
       - influxdb_data:/var/lib/influxdb2:rw
     networks:
       - grafana
     environment: 
+      - TZ="Europe/Stockholm"
       - DOCKER_INFLUXDB_INIT_MODE=${DOCKER_INFLUXDB_INIT_MODE}
       - DOCKER_INFLUXDB_INIT_USERNAME=${DOCKER_INFLUXDB_INIT_USERNAME}
       - DOCKER_INFLUXDB_INIT_PASSWORD=${DOCKER_INFLUXDB_INIT_PASSWORD}

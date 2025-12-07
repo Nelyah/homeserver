@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   nginx_reverse-proxy:
     image: nginx_proxy
