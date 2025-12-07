@@ -4,7 +4,8 @@
   lib,
   config,
   ...
-}: {
+}:
+{
   home = {
     username = username;
     homeDirectory = "/Users/${username}";
