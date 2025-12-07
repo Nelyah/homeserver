@@ -6,6 +6,7 @@ roles/server/files/https-cert.pem
 roles/server/files/https-key.pem
 roles/server/vars/syncthing.yml
 .cache
+.vault-unseal-token
 .vault-token
 
 build
