@@ -1,5 +1,4 @@
-{ lib, ... }:
-{
+{lib, ...}: {
   services.frp = {
     enable = true;
     role = "client";
@@ -37,7 +36,7 @@
       "network-online.target"
       "tailscaled.service"
     ];
-    requires = [ "tailscaled.service" ];
+    requires = ["tailscaled.service"];
     serviceConfig = {
       Restart = "on-failure";
       RestartSec = lib.mkForce "10s";

@@ -2,8 +2,7 @@
   pkgs,
   config,
   ...
-}:
-let
+}: let
   tokenFile = "${config.homeserver.vault.unsealTokenPath}";
   unsealScript = pkgs.writeShellScript "unseal-vault" ''
     #!${pkgs.bash}/bin/bash
@@ -24,8 +23,7 @@ let
       --data "{\"key\":\"${"$"}{token}\"}" \
       ${config.homeserver.vault.address}/v1/sys/unseal >/dev/null
   '';
-in
-{
+in {
   systemd.services.vault-unseal = {
     description = "Unseal Vault instance";
     after = [
@@ -43,7 +41,7 @@ in
   };
 
   systemd.timers.vault-unseal = {
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnBootSec = "10min";
       OnUnitActiveSec = "10min";

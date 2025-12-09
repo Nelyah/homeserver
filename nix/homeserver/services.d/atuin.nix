@@ -1,10 +1,9 @@
-{ config, ... }:
-{
+{config, ...}: {
   name = "atuin";
   compose = {
     enable = true;
     path = "${config.homeserver.homeserverRoot}/services/atuin/docker-compose.yml";
-    networks = [ ];
+    networks = [];
     volumes = [
       "atuin_db"
       "atuin_redis"
@@ -18,7 +17,7 @@
       docker exec atuin_db sh -c "pg_dump -U atuin" > "$dump"
     '';
     post = ''rm -f "$dump"'';
-    paths = [ "/tmp/atuin_db.sql" ];
+    paths = ["/tmp/atuin_db.sql"];
     volumes = [
       "atuin_db"
       "atuin_redis"

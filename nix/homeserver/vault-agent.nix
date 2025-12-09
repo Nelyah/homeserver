@@ -1,5 +1,8 @@
-{ pkgs, config, ... }:
-let
+{
+  pkgs,
+  config,
+  ...
+}: let
   # Flow: Vault compose stack starts → vault-agent renders secrets from external Vault
   # into /run/secrets → unseal unit reads unseal token and unseals the Vault container.
   vaultComposeService = "docker-compose-vault.service";
@@ -48,8 +51,7 @@ let
     RESTIC_REPOSITORY={{ .Data.data.REMOTE_ADDR }}:/home/chloe/USB/backups
     {{ end -}}
   '';
-in
-{
+in {
   environment.etc = {
     "vault-agent.hcl".source = agentConfig;
     "vault-agent-templates/restic-local.ctmpl".source = resticLocalTemplate;
@@ -76,7 +78,7 @@ in
         "/run/secrets"
         "/run/vault-agent.pid"
       ];
-    ReadOnlyPaths = [ "${config.homeserver.vault.tokenPath}" ];
+      ReadOnlyPaths = ["${config.homeserver.vault.tokenPath}"];
       Restart = "on-failure";
       RestartSec = "10s";
     };

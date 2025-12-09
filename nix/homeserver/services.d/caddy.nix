@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   name = "caddy";
   compose = {
     enable = true;
@@ -26,6 +25,6 @@
   };
   backup = {
     enable = true;
-    volumes = [ "caddy_data" ];
+    volumes = ["caddy_data"];
   };
 }

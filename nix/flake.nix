@@ -16,53 +16,49 @@
     };
   };
 
-  outputs =
-    inputs@{
-      self,
-      nixpkgs,
-      nix-darwin,
-      home-manager,
-      ...
-    }:
-    let
-      username = "chloe";
-      hostname = "chloe-macbook-air";
-      system = "aarch64-darwin";
-      homeserverSystem = "x86_64-linux";
-    in
-    {
-      darwinConfigurations.${hostname} = nix-darwin.lib.darwinSystem {
-        inherit system;
-        specialArgs = { inherit inputs username hostname; };
-        modules = [
-          ./darwin
-          home-manager.darwinModules.home-manager
-          {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              extraSpecialArgs = { inherit username; };
-              users.${username} = import ./home;
-            };
-          }
+  outputs = inputs @ {
+    self,
+    nixpkgs,
+    nix-darwin,
+    home-manager,
+    ...
+  }: let
+    username = "chloe";
+    hostname = "chloe-macbook-air";
+    system = "aarch64-darwin";
+    homeserverSystem = "x86_64-linux";
+  in {
+    darwinConfigurations.${hostname} = nix-darwin.lib.darwinSystem {
+      inherit system;
+      specialArgs = {inherit inputs username hostname;};
+      modules = [
+        ./darwin
+        home-manager.darwinModules.home-manager
+        {
+          home-manager = {
+            useGlobalPkgs = true;
+            useUserPackages = true;
+            extraSpecialArgs = {inherit username;};
+            users.${username} = import ./home;
+          };
+        }
+      ];
+    };
 
-        ];
-      };
-
-      # Convenience output for `nix run .#switch`
-      apps.${system}.default = {
-        type = "app";
-        meta.description = "Switch nix-darwin configuration";
-        program = toString (
-          nixpkgs.legacyPackages.${system}.writeShellScript "switch" ''
-            darwin-rebuild switch --flake .#${hostname}
-          ''
-        );
-      };
+    # Convenience output for `nix run .#switch`
+    apps.${system}.default = {
+      type = "app";
+      meta.description = "Switch nix-darwin configuration";
+      program = toString (
+        nixpkgs.legacyPackages.${system}.writeShellScript "switch" ''
+          darwin-rebuild switch --flake .#${hostname}
+        ''
+      );
+    };
 
     nixosConfigurations.homeserver = nixpkgs.lib.nixosSystem {
       system = homeserverSystem;
-      specialArgs = { inherit inputs; };
+      specialArgs = {inherit inputs;};
       modules = [
         ./homeserver
       ];

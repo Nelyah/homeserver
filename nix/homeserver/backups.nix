@@ -3,63 +3,62 @@
   lib,
   config,
   ...
-}:
-let
-  servicesDef = (import ./services.nix { inherit lib config; }).attrset;
+}: let
+  servicesDef = (import ./services.nix {inherit lib config;}).attrset;
   dockerRoot = "${config.homeserver.mainDrive}/docker-data";
   resticCmd = "${pkgs.restic}/bin/restic";
-  selected = lib.filterAttrs (
-    _: service: (service.backup or null) != null && (service.backup.enabled or false)
-  ) servicesDef;
+  selected =
+    lib.filterAttrs (
+      _: service: (service.backup or null) != null && (service.backup.enabled or false)
+    )
+    servicesDef;
 
-  mkBackupScript =
-    name: spec:
-    let
-      volArgs = map (v: "${dockerRoot}/volumes/${v}/") (spec.backup.volumes or [ ]);
-      pathArgs = spec.backup.paths or [ ];
-      backupArgsStr = lib.concatStringsSep " " (volArgs ++ pathArgs);
-      tags = spec.backup.tags or [ name ];
-      tagFlags = lib.concatStringsSep " " (map (t: "--tag ${t}") tags);
-      excludeFlags = lib.concatStringsSep " " (map (p: "--exclude '${p}'") (spec.backup.exclude or [ ]));
-      forget =
-        spec.backup.policy or {
-          daily = 10;
-          weekly = 4;
-          monthly = 4;
-        };
-      pre = spec.backup.pre or "";
-      post = spec.backup.post or "";
+  mkBackupScript = name: spec: let
+    volArgs = map (v: "${dockerRoot}/volumes/${v}/") (spec.backup.volumes or []);
+    pathArgs = spec.backup.paths or [];
+    backupArgsStr = lib.concatStringsSep " " (volArgs ++ pathArgs);
+    tags = spec.backup.tags or [name];
+    tagFlags = lib.concatStringsSep " " (map (t: "--tag ${t}") tags);
+    excludeFlags = lib.concatStringsSep " " (map (p: "--exclude '${p}'") (spec.backup.exclude or []));
+    forget =
+      spec.backup.policy or {
+        daily = 10;
+        weekly = 4;
+        monthly = 4;
+      };
+    pre = spec.backup.pre or "";
+    post = spec.backup.post or "";
 
-      forgetCmd =
-        if forget == null then
-          ""
-        else
-          "${resticCmd} forget "
-          + (lib.concatStringsSep " " (
-            lib.filter (s: s != "") [
-              (lib.optionalString ((forget.last or null) != null) "--keep-last ${toString (forget.last or 0)}")
-              (lib.optionalString (
-                (forget.hourly or null) != null
-              ) "--keep-hourly ${toString (forget.hourly or 0)}")
-              (lib.optionalString ((forget.daily or null) != null) "--keep-daily ${toString (forget.daily or 0)}")
-              (lib.optionalString (
-                (forget.weekly or null) != null
-              ) "--keep-weekly ${toString (forget.weekly or 0)}")
-              (lib.optionalString (
-                (forget.monthly or null) != null
-              ) "--keep-monthly ${toString (forget.monthly or 0)}")
-              (lib.optionalString (
-                (forget.yearly or null) != null
-              ) "--keep-yearly ${toString (forget.yearly or 0)}")
-              "--prune"
-            ]
-          ))
-          + " "
-          + tagFlags;
+    forgetCmd =
+      if forget == null
+      then ""
+      else
+        "${resticCmd} forget "
+        + (lib.concatStringsSep " " (
+          lib.filter (s: s != "") [
+            (lib.optionalString ((forget.last or null) != null) "--keep-last ${toString (forget.last or 0)}")
+            (lib.optionalString (
+              (forget.hourly or null) != null
+            ) "--keep-hourly ${toString (forget.hourly or 0)}")
+            (lib.optionalString ((forget.daily or null) != null) "--keep-daily ${toString (forget.daily or 0)}")
+            (lib.optionalString (
+              (forget.weekly or null) != null
+            ) "--keep-weekly ${toString (forget.weekly or 0)}")
+            (lib.optionalString (
+              (forget.monthly or null) != null
+            ) "--keep-monthly ${toString (forget.monthly or 0)}")
+            (lib.optionalString (
+              (forget.yearly or null) != null
+            ) "--keep-yearly ${toString (forget.yearly or 0)}")
+            "--prune"
+          ]
+        ))
+        + " "
+        + tagFlags;
 
-      envPath = "${config.homeserver.homeserverRoot}/services/${name}/.env";
-      binName = "backup-${name}";
-    in
+    envPath = "${config.homeserver.homeserverRoot}/services/${name}/.env";
+    binName = "backup-${name}";
+  in
     pkgs.writeShellScriptBin binName ''
       #!${pkgs.bash}/bin/bash
       set -euo pipefail
@@ -100,10 +99,12 @@ let
     '';
 
   backupScripts = lib.mapAttrs (name: service: mkBackupScript name service) selected;
-  backupScriptPaths = lib.mapAttrs' (name: drv: {
-    inherit name;
-    value = "${drv}/bin/backup-${name}";
-  }) backupScripts;
+  backupScriptPaths =
+    lib.mapAttrs' (name: drv: {
+      inherit name;
+      value = "${drv}/bin/backup-${name}";
+    })
+    backupScripts;
   selectedNames = lib.attrNames selected;
 
   backupRunner = pkgs.writeShellScriptBin "backup" ''
@@ -136,21 +137,20 @@ let
     for service in "$@"; do
       case "$service" in
       ${lib.concatStringsSep "\n" (
-        lib.mapAttrsToList (name: path: "  ${name}) cmd=\"${path}\" ;;") backupScriptPaths
-      )}
+      lib.mapAttrsToList (name: path: "  ${name}) cmd=\"${path}\" ;;") backupScriptPaths
+    )}
         *) echo "unknown backup target: $service" >&2; exit 1 ;;
       esac
       "$cmd" "$REPO_ENV"
     done
   '';
-in
-{
-  environment.systemPackages = (lib.attrValues backupScripts) ++ [ backupRunner ];
+in {
+  environment.systemPackages = (lib.attrValues backupScripts) ++ [backupRunner];
 
   systemd.services.ansible-backup = {
     description = "Restic backup (local)";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
     serviceConfig = {
       Type = "oneshot";
       TimeoutStartSec = 300;
@@ -160,7 +160,7 @@ in
   };
 
   systemd.timers.ansible-backup = {
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "05:00";
     };
@@ -168,8 +168,8 @@ in
 
   systemd.services.ansible-backup-remote = {
     description = "Restic backup (remote)";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
+    after = ["network-online.target"];
+    wants = ["network-online.target"];
     serviceConfig = {
       Type = "oneshot";
       TimeoutStartSec = 300;
@@ -179,7 +179,7 @@ in
   };
 
   systemd.timers.ansible-backup-remote = {
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "Mon 05:00";
     };

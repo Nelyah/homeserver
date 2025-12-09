@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   name = "authentik";
   compose = {
     enable = true;
@@ -23,7 +22,7 @@
       docker exec authentik_db sh -c "pg_dump -U authentik" > "$dump"
     '';
     post = ''rm -f "$dump"'';
-    paths = [ "/tmp/authentik_db.sql" ];
+    paths = ["/tmp/authentik_db.sql"];
     volumes = [
       "authentik_db"
       "authentik_redis"

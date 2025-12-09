@@ -3,21 +3,21 @@
   lib,
   config,
   ...
-}:
-let
-  servicesDef = (import ./services.nix { inherit lib config; }).attrset;
-  enabledCompose = lib.filterAttrs (
-    _: service: (service.compose or null) != null && (service.compose.enabled or false)
-  ) servicesDef;
+}: let
+  servicesDef = (import ./services.nix {inherit lib config;}).attrset;
+  enabledCompose =
+    lib.filterAttrs (
+      _: service: (service.compose or null) != null && (service.compose.enabled or false)
+    )
+    servicesDef;
 
   networks = lib.unique (
-    lib.flatten (lib.mapAttrsToList (_: svc: svc.compose.networks or [ ]) enabledCompose)
+    lib.flatten (lib.mapAttrsToList (_: svc: svc.compose.networks or []) enabledCompose)
   );
   volumes = lib.unique (
-    lib.flatten (lib.mapAttrsToList (_: svc: svc.compose.volumes or [ ]) enabledCompose)
+    lib.flatten (lib.mapAttrsToList (_: svc: svc.compose.volumes or []) enabledCompose)
   );
-in
-{
+in {
   virtualisation.docker = {
     enable = true;
     enableOnBoot = true;
@@ -57,7 +57,7 @@ in
   };
 
   systemd.timers.docker-fix-logs = {
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnBootSec = "10min";
       OnUnitActiveSec = "10min";
@@ -74,7 +74,7 @@ in
   };
 
   systemd.timers.docker-images-cleanup = {
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig.OnCalendar = "03:00";
   };
 }

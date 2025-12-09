@@ -1,5 +1,8 @@
-{ lib, config, ... }:
 {
+  lib,
+  config,
+  ...
+}: {
   fileSystems."${config.homeserver.mainDrive}" = {
     device = "/dev/disk/by-uuid/52154ddd-f269-459e-88d9-19b7dbfc2c65";
     fsType = "ext4";
@@ -20,5 +23,4 @@
     ];
     neededForBoot = false;
   };
-
 }

@@ -1,5 +1,8 @@
-{ pkgs, config, ... }:
 {
+  pkgs,
+  config,
+  ...
+}: {
   nix = {
     settings = {
       experimental-features = [
@@ -7,7 +10,8 @@
         "flakes"
       ];
       warn-dirty = false;
-    }; gc = {
+    };
+    gc = {
       automatic = true;
       dates = "weekly";
       options = "--delete-older-than 30d";
@@ -27,12 +31,11 @@
   };
 
   i18n = {
-  defaultLocale = "en_GB.UTF-8";
-  supportedLocales = [ "en_GB.UTF-8/UTF-8" ];
-};
+    defaultLocale = "en_GB.UTF-8";
+    supportedLocales = ["en_GB.UTF-8/UTF-8"];
+  };
 
   time.timeZone = "Europe/Stockholm";
-
 
   programs.zsh.enable = true;
 
@@ -44,6 +47,7 @@
     codex
     gcc
     gnumake
+    alejandra
     cmake
     pkg-config
     nixd

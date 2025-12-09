@@ -1,8 +1,7 @@
-{ config, ... }:
-{
+{config, ...}: {
   name = "audiobook";
   backup = {
     enable = true;
-    paths = [ "${config.homeserver.mainDrive}/audiobooks" ];
+    paths = ["${config.homeserver.mainDrive}/audiobooks"];
   };
 }

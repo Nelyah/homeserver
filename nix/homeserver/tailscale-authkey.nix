@@ -3,8 +3,7 @@
   config,
   lib,
   ...
-}:
-let
+}: let
   authKeyPath = "/run/secrets/tailscale-auth-key";
   ensureScript = pkgs.writeShellScript "tailscale-ensure-auth.sh" ''
     set -euo pipefail
@@ -122,8 +121,7 @@ let
       esac
     done
   '';
-in
-{
+in {
   # Run during activation (part of rebuild); fail rebuild on error.
   system.activationScripts.tailscaleEnsureAuth = ''
     ${ensureScript}

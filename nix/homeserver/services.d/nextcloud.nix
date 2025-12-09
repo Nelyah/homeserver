@@ -1,10 +1,9 @@
-{ config, ... }:
-{
+{config, ...}: {
   name = "nextcloud";
   compose = {
     enable = true;
     path = "${config.homeserver.homeserverRoot}/services/nextcloud/docker-compose.yml";
-    networks = [ "nextcloud" ];
+    networks = ["nextcloud"];
     volumes = [
       "nextcloud_data"
       "nextcloud_site"
@@ -23,13 +22,13 @@
       docker exec -u www-data nextcloud php /var/www/html/occ maintenance:mode --off
       rm -f "$dump"
     '';
-    paths = [ "/tmp/nextcloud_db.sql" ];
+    paths = ["/tmp/nextcloud_db.sql"];
     volumes = [
       "nextcloud_mariadb"
       "nextcloud_data"
       "nextcloud_site"
     ];
-    tags = [ "nextcloud" ];
+    tags = ["nextcloud"];
     exclude = [
       ".opcache"
       "access.log"

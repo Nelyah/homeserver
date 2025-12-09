@@ -4,8 +4,7 @@
   lib,
   config,
   ...
-}:
-{
+}: {
   home = {
     username = username;
     homeDirectory = "/Users/${username}";
@@ -32,7 +31,7 @@
   };
 
   # Ensure screenshots directory exists for this user
-  home.activation.createScreenshotsDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  home.activation.createScreenshotsDir = lib.hm.dag.entryAfter ["writeBoundary"] ''
     mkdir -p "${config.home.homeDirectory}/Pictures/screenshots"
   '';
 

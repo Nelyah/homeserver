@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   name = "music";
   backup = {
     enable = true;

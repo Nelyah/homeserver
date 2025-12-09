@@ -1,10 +1,9 @@
-{ config, ... }:
-{
+{config, ...}: {
   name = "audiobookshelf";
   compose = {
     enable = true;
     path = "${config.homeserver.homeserverRoot}/services/audiobookshelf/docker-compose.yml";
-    networks = [ "audiobookshelf" ];
+    networks = ["audiobookshelf"];
     volumes = [
       "audiobookshelf_db"
       "audiobookshelf_metadata"

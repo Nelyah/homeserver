@@ -3,8 +3,7 @@
   username,
   hostname,
   ...
-}:
-{
+}: {
   imports = [
     ./homebrew.nix
   ];
@@ -119,31 +118,29 @@
         # wvous-br-corner = 1;
         wvous-tl-corner = 1;
         wvous-tr-corner = 1;
-        persistent-apps =
-
-          [
-            {
-              app = "/Applications/Firefox.app";
-            }
-            {
-              app = "/System/Applications/Mail.app";
-            }
-            {
-              app = "/Applications/iTerm.app";
-            }
-            {
-              app = "/Applications/Obsidian.app";
-            }
-            {
-              app = "/Applications/Anki.app";
-            }
-            {
-              app = "/System/Applications/Calendar.app";
-            }
-            {
-              app = "/Applications/Signal.app";
-            }
-          ];
+        persistent-apps = [
+          {
+            app = "/Applications/Firefox.app";
+          }
+          {
+            app = "/System/Applications/Mail.app";
+          }
+          {
+            app = "/Applications/iTerm.app";
+          }
+          {
+            app = "/Applications/Obsidian.app";
+          }
+          {
+            app = "/Applications/Anki.app";
+          }
+          {
+            app = "/System/Applications/Calendar.app";
+          }
+          {
+            app = "/Applications/Signal.app";
+          }
+        ];
       };
 
       finder = {
@@ -193,7 +190,7 @@
     stateVersion = 5;
   };
 
-  environment.extraOutputsToInstall = [ "dev" ];
+  environment.extraOutputsToInstall = ["dev"];
   environment.pathsToLink = [
     "/include"
     "/lib"
