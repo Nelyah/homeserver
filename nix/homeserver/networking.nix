@@ -59,7 +59,7 @@ in {
     wants = ["network-online.target"];
   };
 
-  imports = [./tailscale-authkey.nix];
+  imports = [./tailscale-online.nix];
 
   # Because we manage network with systemd, disable the legacy dhcpd client
   # and rely on systemd-netowrkd instead
@@ -117,30 +117,53 @@ in {
   # Generate a per-boot dnsmasq snippet with the current Tailscale IP.
   # TODO: At some point I will want to include IPv6, but I don't think I have it handled with Caddy yet
   systemd.services.dnsmasq = {
-    after = ["tailscaled.service"];
-    wants = ["tailscaled.service"];
     path = [
       pkgs.dnsmasq
       pkgs.coreutils
+      pkgs.systemd
     ];
-    serviceConfig.ExecStartPre = lib.mkBefore [
-      (pkgs.writeShellScript "dnsmasq-generate-tailscale-conf" ''
-                set -euo pipefail
-                ts_ip="$(${pkgs.tailscale}/bin/tailscale ip -4 | head -n1)"
-                if [[ -z "$ts_ip" ]]; then
-                  echo "Failed to detect Tailscale IPv4 address" >&2
-                  exit 1
-                fi
-                ts_ip_6="$(${pkgs.tailscale}/bin/tailscale ip -6 | head -n1)"
-                if [[ -z "$ts_ip_6" ]]; then
-                  echo "Failed to detect Tailscale IPv6 address" >&2
-                  exit 1
-                fi
-                install -d -m 0755 /run/dnsmasq.d
-                cat > /run/dnsmasq.d/tailscale.conf <<EOF
+    serviceConfig = {
+      Restart = "on-failure";
+      ExecStartPre = lib.mkBefore [
+        (pkgs.writeShellScript "dnsmasq-generate-tailscale-conf" ''
+                  set -euo pipefail
+                  install -d -m 0755 /run/dnsmasq.d
+
+                  ts_status="$(systemctl is-active tailscale-online.target || true)"
+                  if [[ "$ts_status" != "active" ]]; then
+                    echo "tailscale-online.target not active (status: $ts_status), skipping nelyah.eu DNS config"
+                    rm -f /run/dnsmasq.d/tailscale.conf
+                    exit 0
+                  fi
+
+                  ts_ip="$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null | head -n1 || true)"
+                  if [[ -z "$ts_ip" ]]; then
+                    echo "Tailscale not available, skipping nelyah.eu DNS config"
+                    rm -f /run/dnsmasq.d/tailscale.conf
+                    exit 0
+                  fi
+
+                  echo "Configuring dnsmasq with tailscale IP: $ts_ip"
+                  cat > /run/dnsmasq.d/tailscale.conf <<EOF
         address=/nelyah.eu/$ts_ip
         EOF
-      '')
-    ];
+        '')
+      ];
+    };
+  };
+
+  # Restart dnsmasq whenever tailscale-online.target starts or stops.
+  systemd.services.dnsmasq-follow-tailscale-online = {
+    description = "Restart dnsmasq when tailscale-online target changes state";
+    wantedBy = ["tailscale-online.target"];
+    wants = ["tailscale-online.target" "dnsmasq.service"];
+    after = ["tailscale-online.target" "dnsmasq.service"];
+    partOf = ["tailscale-online.target"];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.systemd}/bin/systemctl restart --no-block dnsmasq.service";
+      ExecStop = "${pkgs.systemd}/bin/systemctl restart --no-block dnsmasq.service";
+    };
   };
 }

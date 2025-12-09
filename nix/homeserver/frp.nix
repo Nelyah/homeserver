@@ -26,17 +26,17 @@
     };
   };
 
-  # Make frp wait for tailscale and keep retrying if tailscale is not up yet.
+  # Make frp wait for tailscale to be online and restart if it goes offline.
   systemd.services.frp = {
     after = [
       "network-online.target"
-      "tailscaled.service"
+      "tailscale-online.target"
     ];
     wants = [
       "network-online.target"
-      "tailscaled.service"
+      "tailscale-online.target"
     ];
-    requires = ["tailscaled.service"];
+    bindsTo = ["tailscale-online.target"];
     serviceConfig = {
       Restart = "on-failure";
       RestartSec = lib.mkForce "10s";

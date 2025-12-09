@@ -5,12 +5,13 @@
   ...
 }: let
   authKeyPath = "/run/secrets/tailscale-auth-key";
-  ensureScript = pkgs.writeShellScript "tailscale-ensure-auth.sh" ''
+  monitorScript = pkgs.writeShellScript "tailscale-online.sh" ''
     set -euo pipefail
 
     SYSTEMCTL="${pkgs.systemd}/bin/systemctl"
     TAILSCALE="${pkgs.tailscale}/bin/tailscale"
     JQ="${pkgs.jq}/bin/jq"
+    NOTIFY="${pkgs.systemd}/bin/systemd-notify"
     YELLOW="\033[33m"
     RED="\033[31m"
     GREEN="\033[32m"
@@ -50,10 +51,11 @@
 
     fetch_state
 
+    # Authentication loop - get tailscale to Running state
     while true; do
       case "$state" in
         "Running")
-          exit 0
+          break
           ;;
 
         "NoState")
@@ -100,7 +102,7 @@
           fetch_state
           if [[ "$state" == "Running" ]]; then
             printf "%b%s%b\n" "$GREEN" "tailscale authenticated successfully via auth key" "$RESET"
-            exit 0
+            break
           fi
           continue
           ;;
@@ -120,12 +122,66 @@
           ;;
       esac
     done
+
+    # Verify we have an IP address
+    ts_ip="$($TAILSCALE ip -4 2>/dev/null | head -n1 || true)"
+    if [[ -z "$ts_ip" ]]; then
+      printf "%b%s%b\n" "$RED" "tailscale is Running but has no IPv4 address" "$RESET" >&2
+      exit 1
+    fi
+
+    # Signal systemd that we're ready
+    printf "%b%s%b\n" "$GREEN" "tailscale online with IP: $ts_ip" "$RESET"
+    $NOTIFY --ready --status="Tailscale online: $ts_ip"
+
+    # Monitoring loop - check connectivity every 30 seconds
+    while true; do
+      sleep 30
+
+      fetch_state
+      if [[ "$state" != "Running" ]]; then
+        printf "%b%s%b\n" "$RED" "tailscale went offline (state: $state)" "$RESET" >&2
+        exit 1
+      fi
+
+      ts_ip="$($TAILSCALE ip -4 2>/dev/null | head -n1 || true)"
+      if [[ -z "$ts_ip" ]]; then
+        printf "%b%s%b\n" "$RED" "tailscale lost IP address" "$RESET" >&2
+        exit 1
+      fi
+
+      $NOTIFY --status="Tailscale online: $ts_ip"
+    done
   '';
 in {
-  # Run during activation (part of rebuild); fail rebuild on error.
-  system.activationScripts.tailscaleEnsureAuth = ''
-    ${ensureScript}
-  '';
+  # Target that represents "tailscale is online and authenticated"
+  # bindsTo ensures the target stops when the service stops
+  systemd.targets.tailscale-online = {
+    description = "Tailscale is online and authenticated";
+    wants = ["network-online.target" "tailscale-online.service"];
+    after = ["network-online.target" "tailscale-online.service"];
+    bindsTo = ["tailscale-online.service"];
+  };
+
+  # Service that waits for tailscale to be online, then monitors connectivity
+  systemd.services.tailscale-online = {
+    description = "Wait for and monitor Tailscale connectivity";
+    after = ["network-online.target" "tailscaled.service"];
+    wants = ["network-online.target" "tailscaled.service" "tailscale-online.target"];
+    before = ["tailscale-online.target"];
+    wantedBy = ["multi-user.target"];
+    # Disable start-rate limiting so it keeps retrying even after repeated failures
+    startLimitIntervalSec = 0;
+    startLimitBurst = 0;
+
+    serviceConfig = {
+      Type = "notify";
+      NotifyAccess = "main";
+      ExecStart = monitorScript;
+      Restart = "always";
+      RestartSec = "10s";
+    };
+  };
 
   # Keep permissions tight if the key exists.
   systemd.tmpfiles.rules = [
