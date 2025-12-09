@@ -3,22 +3,12 @@
   config,
   ...
 }: {
-  nix = {
-    settings = {
-      experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
-      warn-dirty = false;
-    };
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 30d";
-    };
+  # Homeserver-specific nix settings (common settings in modules/common.nix)
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
   };
-
-  nixpkgs.config.allowUnfree = true;
 
   users.users.chloe = {
     isNormalUser = true;
@@ -37,60 +27,33 @@
 
   time.timeZone = "Europe/Stockholm";
 
-  programs.zsh.enable = true;
-
+  # Homeserver-specific packages (common packages are in modules/common.nix)
   environment.systemPackages = with pkgs; [
-    bat
-    beets
-    cacert
-    cmake
-    codex
-    gcc
-    gnumake
-    alejandra
-    cmake
-    claude-code
-    pkg-config
-    nixd
-    yadm
-    curl
-    davfs2
-    duf
-    ethtool
-    flac
+    # System tools
     bash
-    delta
+    gcc
     gdb
-    git
-    gnupg
-    htop
-    imagemagick
-    isync
-    jq
-    lnav
-    msmtp
-    nodejs
-    ncdu
-    neovim
     net-tools
-    python3
-    python3Packages.pip
-    restic
-    ripgrep
-    rsync
+    ethtool
+    duf
     smartmontools
-    tig
-    tailscale
-    tmux
-    unzip
-    wget
-    yq
-    zsh
-    fzf
-    universal-ctags
-    go
+    davfs2
+
+    # Backup & sync
+    restic
+
+    # Email
+    isync
+    msmtp
     neomutt
     notmuch
+
+    # Media
+    beets
+
+    # Development
+    codex
+    python3Packages.pip
   ] ++ (with pkgs.unstable; [
     claude-code
   ]);

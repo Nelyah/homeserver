@@ -49,17 +49,8 @@ in {
     };
   };
 
-  services.tailscale = {
-    enable = true;
-    useRoutingFeatures = "client";
-  };
-
-  systemd.services.tailscaled = {
-    after = ["network-online.target"];
-    wants = ["network-online.target"];
-  };
-
-  imports = [./tailscale-online.nix];
+  # Tailscale routing features (base config is in modules/tailscale.nix)
+  services.tailscale.useRoutingFeatures = "client";
 
   # Because we manage network with systemd, disable the legacy dhcpd client
   # and rely on systemd-netowrkd instead

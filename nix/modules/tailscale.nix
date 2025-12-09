@@ -4,6 +4,7 @@
   lib,
   ...
 }: let
+  # NixOS-specific: auth key path and monitoring script
   authKeyPath = "/run/secrets/tailscale-auth-key";
   monitorScript = pkgs.writeShellScript "tailscale-online.sh" ''
     set -euo pipefail
@@ -154,37 +155,53 @@
     done
   '';
 in {
-  # Target that represents "tailscale is online and authenticated"
-  # bindsTo ensures the target stops when the service stops
-  systemd.targets.tailscale-online = {
-    description = "Tailscale is online and authenticated";
-    wants = ["network-online.target" "tailscale-online.service"];
-    after = ["network-online.target" "tailscale-online.service"];
-    bindsTo = ["tailscale-online.service"];
-  };
+  config = lib.mkMerge [
+    # Enable tailscale on all platforms
+    {
+      services.tailscale.enable = true;
+    }
 
-  # Service that waits for tailscale to be online, then monitors connectivity
-  systemd.services.tailscale-online = {
-    description = "Wait for and monitor Tailscale connectivity";
-    after = ["network-online.target" "tailscaled.service"];
-    wants = ["network-online.target" "tailscaled.service" "tailscale-online.target"];
-    before = ["tailscale-online.target"];
-    wantedBy = ["multi-user.target"];
-    # Disable start-rate limiting so it keeps retrying even after repeated failures
-    startLimitIntervalSec = 0;
-    startLimitBurst = 0;
-
-    serviceConfig = {
-      Type = "notify";
-      NotifyAccess = "main";
-      ExecStart = monitorScript;
-      Restart = "always";
-      RestartSec = "10s";
+    # NixOS-only: tailscale-online target and monitoring service
+    (lib.mkIf pkgs.stdenv.isLinux {
+      # Target that represents "tailscale is online and authenticated"
+      # bindsTo ensures the target stops when the service stops
+      systemd.targets.tailscale-online = {
+      description = "Tailscale is online and authenticated";
+      wants = ["network-online.target" "tailscale-online.service"];
+      after = ["network-online.target" "tailscale-online.service"];
+      bindsTo = ["tailscale-online.service"];
     };
-  };
 
-  # Keep permissions tight if the key exists.
-  systemd.tmpfiles.rules = [
-    "z ${authKeyPath} 0400 root root -"
+    # Service that waits for tailscale to be online, then monitors connectivity
+    systemd.services.tailscale-online = {
+      description = "Wait for and monitor Tailscale connectivity";
+      after = ["network-online.target" "tailscaled.service"];
+      wants = ["network-online.target" "tailscaled.service" "tailscale-online.target"];
+      before = ["tailscale-online.target"];
+      wantedBy = ["multi-user.target"];
+      # Disable start-rate limiting so it keeps retrying even after repeated failures
+      startLimitIntervalSec = 0;
+      startLimitBurst = 0;
+
+      serviceConfig = {
+        Type = "notify";
+        NotifyAccess = "main";
+        ExecStart = monitorScript;
+        Restart = "always";
+        RestartSec = "10s";
+      };
+    };
+
+    # Ensure tailscaled waits for network
+    systemd.services.tailscaled = {
+      after = ["network-online.target"];
+      wants = ["network-online.target"];
+    };
+
+      # Keep permissions tight if the key exists.
+      systemd.tmpfiles.rules = [
+        "z ${authKeyPath} 0400 root root -"
+      ];
+    })
   ];
 }

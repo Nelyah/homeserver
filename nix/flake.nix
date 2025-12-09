@@ -34,7 +34,8 @@
       inherit system;
       specialArgs = {inherit inputs username hostname;};
       modules = [
-        ./darwin
+        ./hosts/macbook-air
+        ./modules/common.nix
         home-manager.darwinModules.home-manager
         {
           home-manager = {
@@ -74,7 +75,9 @@
             })
           ];
         }
-        ./homeserver
+        ./hosts/homeserver
+        ./modules/common.nix
+        ./modules/tailscale.nix
       ];
     };
   };
