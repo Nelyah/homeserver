@@ -4,6 +4,8 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-25.11-darwin";
 
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -60,6 +62,18 @@
       system = homeserverSystem;
       specialArgs = {inherit inputs;};
       modules = [
+        {
+          # With nixpkgs.overlay, the resulting attribute set is merged
+          # into `pkgs.` before we proceed further
+          nixpkgs.overlays = [
+            (_final: prev: {
+              unstable = import inputs.nixpkgs-unstable {
+                system = homeserverSystem;
+                config = prev.config;
+              };
+            })
+          ];
+        }
         ./homeserver
       ];
     };

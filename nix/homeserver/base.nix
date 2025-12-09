@@ -49,6 +49,7 @@
     gnumake
     alejandra
     cmake
+    claude-code
     pkg-config
     nixd
     yadm
@@ -90,7 +91,9 @@
     go
     neomutt
     notmuch
-  ];
+  ] ++ (with pkgs.unstable; [
+    claude-code
+  ]);
 
   environment.variables = {
     EDITOR = "nvim";
