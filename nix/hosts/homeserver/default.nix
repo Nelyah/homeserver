@@ -10,7 +10,8 @@
     ./frp.nix
     ./vault-agent.nix
     ./vault-unseal.nix
-    ./backups.nix
+    ./backup/backup.nix
+    ./backup/maintenance.nix
     ./compose.nix
   ];
 }

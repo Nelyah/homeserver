@@ -7,7 +7,7 @@
   # Service metadata is declared in services.nix and must stay in sync with the
   # actual docker-compose.yml files (networks/volumes). External networks/volumes
   # are pre-created elsewhere so Compose can attach to them.
-  servicesDef = (import ./services.nix {inherit lib config;}).attrset;
+  servicesDef = (import ./services.nix {inherit lib config pkgs;}).attrset;
   enabledCompose =
     lib.filterAttrs (
       _: service: (service.compose or null) != null && (service.compose.enabled or false)

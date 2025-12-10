@@ -4,7 +4,7 @@
   config,
   ...
 }: let
-  servicesDef = (import ./services.nix {inherit lib config;}).attrset;
+  servicesDef = (import ./services.nix {inherit lib config pkgs;}).attrset;
   enabledCompose =
     lib.filterAttrs (
       _: service: (service.compose or null) != null && (service.compose.enabled or false)

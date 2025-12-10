@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  pkgs,
 }: let
   servicesDir = builtins.path {
     path = ./services.d;
@@ -11,7 +12,7 @@
   nixServices = lib.filterAttrs (_: v: v == "regular") serviceFiles;
   names = builtins.filter (n: lib.hasSuffix ".nix" n) (builtins.attrNames nixServices);
 
-  raw = name: import (servicesDir + "/" + name) {inherit config;};
+  raw = name: import (servicesDir + "/" + name) {inherit config pkgs;};
 
   assertListOfStrings = label: val:
     if lib.isList val && lib.all lib.isString val
@@ -49,7 +50,7 @@
     backup =
       if svc ? backup && svc.backup != null
       then {
-        enabled = svc.backup.enabled or false;
+        enabled = svc.backup.enable or false;
         paths = assertListOfStrings "${baseName}.backup.paths" (svc.backup.paths or []);
         volumes = assertListOfStrings "${baseName}.backup.volumes" (svc.backup.volumes or []);
         tags = assertListOfStrings "${baseName}.backup.tags" (svc.backup.tags or [baseName]);

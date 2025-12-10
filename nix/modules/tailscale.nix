@@ -5,7 +5,7 @@
   ...
 }: let
   # NixOS-specific: auth key path and monitoring script
-  authKeyPath = "/run/secrets/tailscale-auth-key";
+  authKeyPath = "/var/lib/secrets/tailscale-auth-key";
   monitorScript = pkgs.writeShellScript "tailscale-online.sh" ''
     set -euo pipefail
 
@@ -200,6 +200,7 @@ in {
 
       # Keep permissions tight if the key exists.
       systemd.tmpfiles.rules = [
+        "d /var/lib/secrets 0700 root root -"
         "z ${authKeyPath} 0400 root root -"
       ];
     })

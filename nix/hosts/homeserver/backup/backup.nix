@@ -4,9 +4,11 @@
   config,
   ...
 }: let
-  servicesDef = (import ./services.nix {inherit lib config;}).attrset;
+  servicesDef = (import ../services.nix {inherit lib config pkgs;}).attrset;
   dockerRoot = "${config.homeserver.mainDrive}/docker-data";
   resticCmd = "${pkgs.restic}/bin/restic";
+  resticEnv = env: "/var/lib/secrets/restic/${env}.env";
+
   selected =
     lib.filterAttrs (
       _: service: (service.backup or null) != null && (service.backup.enabled or false)
@@ -37,9 +39,7 @@
         + (lib.concatStringsSep " " (
           lib.filter (s: s != "") [
             (lib.optionalString ((forget.last or null) != null) "--keep-last ${toString (forget.last or 0)}")
-            (lib.optionalString (
-              (forget.hourly or null) != null
-            ) "--keep-hourly ${toString (forget.hourly or 0)}")
+            (lib.optionalString ((forget.hourly or null) != null) "--keep-hourly ${toString (forget.hourly or 0)}")
             (lib.optionalString ((forget.daily or null) != null) "--keep-daily ${toString (forget.daily or 0)}")
             (lib.optionalString (
               (forget.weekly or null) != null
@@ -62,8 +62,8 @@
     pkgs.writeShellScriptBin binName ''
       #!${pkgs.bash}/bin/bash
       set -euo pipefail
-      local_env="/run/secrets/restic/local.env"
-      remote_env="/run/secrets/restic/remote.env"
+      local_env="${resticEnv "local"}"
+      remote_env="${resticEnv "remote"}"
 
       TARGET_ENV=${"$"}{1:?expected env choice: local|remote}
       shift || true
@@ -110,23 +110,10 @@
   backupRunner = pkgs.writeShellScriptBin "backup" ''
     #!${pkgs.bash}/bin/bash
     set -euo pipefail
-    local_env="/run/secrets/restic/local.env"
-    remote_env="/run/secrets/restic/remote.env"
 
     TARGET_ENV=${"$"}{1:?expected env choice: local|remote}
     TARGET_SVC=${"$"}{2:-all}
     shift 2 || true
-
-    case "$TARGET_ENV" in
-      local) REPO_ENV="$local_env" ;;
-      remote) REPO_ENV="$remote_env" ;;
-      *) echo "unknown env: $TARGET_ENV (expected local|remote)" >&2; exit 1 ;;
-    esac
-
-    if [[ ! -f "$REPO_ENV" ]]; then
-      echo "missing restic env $REPO_ENV" >&2
-      exit 1
-    fi
 
     if [[ "$TARGET_SVC" == "all" ]]; then
       set -- ${lib.concatStringsSep " " selectedNames}
@@ -141,47 +128,53 @@
     )}
         *) echo "unknown backup target: $service" >&2; exit 1 ;;
       esac
-      "$cmd" "$REPO_ENV"
+      "$cmd" "$TARGET_ENV"
     done
   '';
 in {
   environment.systemPackages = (lib.attrValues backupScripts) ++ [backupRunner];
 
-  systemd.services.ansible-backup = {
-    description = "Restic backup (local)";
-    after = ["network-online.target"];
-    wants = ["network-online.target"];
-    serviceConfig = {
-      Type = "oneshot";
-      TimeoutStartSec = 300;
-      EnvironmentFile = "/run/secrets/restic/local.env";
+  systemd.services = {
+    backup = {
+      description = "Restic backup (local)";
+      after = ["network-online.target" "vault-agent.service"];
+      wants = ["network-online.target" "vault-agent.service"];
+      requires = ["vault-agent.service"];
+      serviceConfig = {
+        Type = "oneshot";
+        TimeoutStartSec = "12h";
+        EnvironmentFile = resticEnv "local";
+      };
+      script = "${backupRunner}/bin/backup local";
     };
-    script = "${backupRunner}/bin/backup local";
+
+    backup-remote = {
+      description = "Restic backup (remote)";
+      after = ["network-online.target" "vault-agent.service"];
+      wants = ["network-online.target" "vault-agent.service"];
+      requires = ["vault-agent.service"];
+      serviceConfig = {
+        Type = "oneshot";
+        TimeoutStartSec = "12h";
+        EnvironmentFile = resticEnv "remote";
+      };
+      script = "${backupRunner}/bin/backup remote";
+    };
   };
 
-  systemd.timers.ansible-backup = {
-    wantedBy = ["timers.target"];
-    timerConfig = {
-      OnCalendar = "05:00";
+  systemd.timers = {
+    backup = {
+      wantedBy = ["timers.target"];
+      timerConfig = {
+        OnCalendar = "05:00";
+      };
     };
-  };
 
-  systemd.services.ansible-backup-remote = {
-    description = "Restic backup (remote)";
-    after = ["network-online.target"];
-    wants = ["network-online.target"];
-    serviceConfig = {
-      Type = "oneshot";
-      TimeoutStartSec = 300;
-      EnvironmentFile = "/run/secrets/restic/remote.env";
-    };
-    script = "${backupRunner}/bin/backup remote";
-  };
-
-  systemd.timers.ansible-backup-remote = {
-    wantedBy = ["timers.target"];
-    timerConfig = {
-      OnCalendar = "Mon 05:00";
+    backup-remote = {
+      wantedBy = ["timers.target"];
+      timerConfig = {
+        OnCalendar = "Mon 05:00";
+      };
     };
   };
 }

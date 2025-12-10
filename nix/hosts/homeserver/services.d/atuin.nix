@@ -1,4 +1,4 @@
-{config, ...}: {
+{config, pkgs, ...}: {
   name = "atuin";
   compose = {
     enable = true;
@@ -14,7 +14,7 @@
     enable = true;
     pre = ''
       dump="/tmp/atuin_db.sql"
-      docker exec atuin_db sh -c "pg_dump -U atuin" > "$dump"
+      ${pkgs.docker}/bin/docker exec atuin_db sh -c "pg_dump -U atuin" > "$dump"
     '';
     post = ''rm -f "$dump"'';
     paths = ["/tmp/atuin_db.sql"];
