@@ -42,6 +42,12 @@
       destination = "/var/lib/secrets/pushover.env"
       perms = "0400"
     }
+
+    template {
+      source      = "/etc/vault-agent-templates/frp-token.ctmpl"
+      destination = "/var/lib/secrets/frp-token"
+      perms = "0400"
+    }
   '';
 
   resticLocalTemplate = pkgs.writeText "restic-local.ctmpl" ''
@@ -64,12 +70,19 @@
     PUSHOVER_USER={{ .Data.data.PUSHOVER_USER }}
     {{ end -}}
   '';
+
+  frpTokenTemplate = pkgs.writeText "frp-token.ctmpl" ''
+    {{ with secret "homeserver_secrets/data/frp" -}}
+    {{ .Data.data.token }}
+    {{ end -}}
+  '';
 in {
   environment.etc = {
     "vault-agent.hcl".source = agentConfig;
     "vault-agent-templates/restic-local.ctmpl".source = resticLocalTemplate;
     "vault-agent-templates/restic-remote.ctmpl".source = resticRemoteTemplate;
     "vault-agent-templates/pushover.ctmpl".source = pushoverTemplate;
+    "vault-agent-templates/frp-token.ctmpl".source = frpTokenTemplate;
   };
 
   systemd.services.vault-agent = {
@@ -106,5 +119,6 @@ in {
     # z: restore the mode/ownership if the file exists (do not create if absent).
     "z ${config.homeserver.vault.tokenPath} 0400 root root -"
     "z ${config.homeserver.vault.unsealTokenPath} 0400 root root -"
+    "z /var/lib/secrets/frp-token 0400 root root -"
   ];
 }
