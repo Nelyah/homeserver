@@ -42,15 +42,12 @@ in {
     ];
     jails.sshd.settings = {
       enabled = true;
-      port = "2541";
+      port = "22";
       maxretry = 1;
       bantime = "-1";
       findtime = 1800;
     };
   };
-
-  # Tailscale routing features (base config is in modules/tailscale.nix)
-  services.tailscale.useRoutingFeatures = "client";
 
   # Because we manage network with systemd, disable the legacy dhcpd client
   # and rely on systemd-netowrkd instead
