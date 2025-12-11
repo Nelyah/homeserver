@@ -3,8 +3,9 @@
   lib,
   ...
 }: let
+  secretsRoot = "/var/lib/secrets";
   resticCmd = "${pkgs.restic}/bin/restic";
-  resticEnv = env: "/var/lib/secrets/restic/${env}.env";
+  resticEnv = env: "${secretsRoot}/restic/${env}.env";
 
   mkMaint = {
     name,
@@ -79,6 +80,16 @@
       })
     ];
 in {
+  homeserver.vault.secrets.pushover = {
+    template = ''
+      {{ with secret "homeserver_secrets/data/pushover" -}}
+      PUSHOVER_TOKEN={{ .Data.data.PUSHOVER_TOKEN }}
+      PUSHOVER_USER={{ .Data.data.PUSHOVER_USER }}
+      {{ end -}}
+    '';
+    destination = "pushover.env";
+  };
+
   systemd.services =
     maintUnits.services
     // {
@@ -86,7 +97,7 @@ in {
         description = "Send Pushover notification for %i";
         serviceConfig = {
           Type = "oneshot";
-          EnvironmentFile = "/var/lib/secrets/pushover.env";
+          EnvironmentFile = "${secretsRoot}/pushover.env";
           Environment = "SERVICE=%i";
         };
         script = ''

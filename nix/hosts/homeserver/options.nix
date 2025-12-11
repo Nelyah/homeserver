@@ -37,5 +37,27 @@ in {
       default = "/data/homeserver/ansible/.vault-unseal-token";
       description = "Path to Vault token used to unseal Vault (read-only).";
     };
+
+    vault.secrets = mkOption {
+      type = types.attrsOf (types.submodule {
+        options = {
+          template = mkOption {
+            type = types.str;
+            description = "Vault template content (Consul Template syntax).";
+          };
+          destination = mkOption {
+            type = types.str;
+            description = "Path relative to /var/lib/secrets/ (e.g., 'restic/local.env').";
+          };
+          perms = mkOption {
+            type = types.str;
+            default = "0400";
+            description = "File permissions (octal string).";
+          };
+        };
+      });
+      default = {};
+      description = "Vault secrets to be rendered by vault-agent under /var/lib/secrets/. All secrets are owned by root.";
+    };
   };
 }

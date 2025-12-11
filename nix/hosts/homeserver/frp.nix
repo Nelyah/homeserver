@@ -1,4 +1,15 @@
-{lib, ...}: {
+{lib, ...}: let
+  secretsRoot = "/var/lib/secrets";
+in {
+  homeserver.vault.secrets.frp-token = {
+    template = ''
+      {{ with secret "homeserver_secrets/data/frp" -}}
+      {{ .Data.data.token }}
+      {{ end -}}
+    '';
+    destination = "frp-token";
+  };
+
   services.frp = {
     enable = true;
     role = "client";
@@ -38,7 +49,7 @@
   systemd.services.frp = {
     # Only start when the token exists and avoid manual starts.
     unitConfig = {
-      ConditionPathExists = "/var/lib/secrets/frp-token";
+      ConditionPathExists = "${secretsRoot}/frp-token";
       StartLimitIntervalSec = 0; # retry indefinitely
     };
     after = [
@@ -54,7 +65,7 @@
       Restart = lib.mkForce "always";
       RestartSec = lib.mkForce "10s";
       DynamicUser = lib.mkForce true;
-      LoadCredential = ["frp-token:/var/lib/secrets/frp-token"];
+      LoadCredential = ["frp-token:${secretsRoot}/frp-token"];
     };
   };
 
@@ -63,7 +74,7 @@
     description = "Start frp when token is available";
     wantedBy = ["multi-user.target"];
     pathConfig = {
-      PathExists = "/var/lib/secrets/frp-token";
+      PathExists = "${secretsRoot}/frp-token";
       Unit = "frp.service";
     };
   };

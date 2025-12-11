@@ -4,10 +4,11 @@
   config,
   ...
 }: let
+  secretsRoot = "/var/lib/secrets";
   servicesDef = (import ../services.nix {inherit lib config pkgs;}).attrset;
   dockerRoot = "${config.homeserver.mainDrive}/docker-data";
   resticCmd = "${pkgs.restic}/bin/restic";
-  resticEnv = env: "/var/lib/secrets/restic/${env}.env";
+  resticEnv = env: "${secretsRoot}/restic/${env}.env";
 
   selected =
     lib.filterAttrs (
@@ -132,6 +133,27 @@
     done
   '';
 in {
+  homeserver.vault.secrets = {
+    restic-local = {
+      template = ''
+        {{ with secret "homeserver_secrets/data/restic" -}}
+        RESTIC_PASSWORD={{ .Data.data.LOCAL_PASSWD }}
+        RESTIC_REPOSITORY=${config.homeserver.backupDrive}/backups
+        {{ end -}}
+      '';
+      destination = "restic/local.env";
+    };
+    restic-remote = {
+      template = ''
+        {{ with secret "homeserver_secrets/data/restic" -}}
+        RESTIC_PASSWORD={{ .Data.data.REMOTE_PASSWD }}
+        RESTIC_REPOSITORY={{ .Data.data.REMOTE_ADDR }}:/home/chloe/USB/backups
+        {{ end -}}
+      '';
+      destination = "restic/remote.env";
+    };
+  };
+
   environment.systemPackages = (lib.attrValues backupScripts) ++ [backupRunner];
 
   systemd.services = {

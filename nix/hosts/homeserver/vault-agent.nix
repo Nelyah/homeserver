@@ -1,11 +1,31 @@
 {
   pkgs,
   config,
+  lib,
   ...
 }: let
-  # Flow: Vault compose stack starts → vault-agent renders secrets from external Vault
-  # into /var/lib/secrets → unseal unit reads unseal token and unseals the Vault container.
+  secretsRoot = "/var/lib/secrets";
   vaultComposeService = "docker-compose-vault.service";
+  secrets = config.homeserver.vault.secrets;
+
+  # Build absolute paths from relative destinations
+  secretPaths = lib.mapAttrs (_: s: "${secretsRoot}/${s.destination}") secrets;
+
+  # Generate template files from declarations
+  templateFiles = lib.mapAttrs (name: secret:
+    pkgs.writeText "${name}.ctmpl" secret.template
+  ) secrets;
+
+  # Generate HCL template blocks (using absolute paths)
+  templateBlocks = lib.concatStringsSep "\n\n" (
+    lib.mapAttrsToList (name: secret: ''
+      template {
+        source      = "/etc/vault-agent-templates/${name}.ctmpl"
+        destination = "${secretsRoot}/${secret.destination}"
+        perms       = "${secret.perms}"
+      }
+    '') secrets
+  );
 
   agentConfig = pkgs.writeText "vault-agent.hcl" ''
     exit_after_auth = false
@@ -25,100 +45,88 @@
       }
     }
 
-    template {
-      source      = "/etc/vault-agent-templates/restic-local.ctmpl"
-      destination = "/var/lib/secrets/restic/local.env"
-      perms = "0400"
-    }
-
-    template {
-      source      = "/etc/vault-agent-templates/restic-remote.ctmpl"
-      destination = "/var/lib/secrets/restic/remote.env"
-      perms = "0400"
-    }
-
-    template {
-      source      = "/etc/vault-agent-templates/pushover.ctmpl"
-      destination = "/var/lib/secrets/pushover.env"
-      perms = "0400"
-    }
-
-    template {
-      source      = "/etc/vault-agent-templates/frp-token.ctmpl"
-      destination = "/var/lib/secrets/frp-token"
-      perms = "0400"
-    }
+    ${templateBlocks}
   '';
 
-  resticLocalTemplate = pkgs.writeText "restic-local.ctmpl" ''
-    {{ with secret "homeserver_secrets/data/restic" -}}
-    RESTIC_PASSWORD={{ .Data.data.LOCAL_PASSWD }}
-    RESTIC_REPOSITORY=${config.homeserver.backupDrive}/backups
-    {{ end -}}
+  # List of expected secret files (for cleanup script)
+  expectedFiles = lib.attrValues secretPaths;
+
+  # Cleanup script: remove files in /var/lib/secrets not in current config
+  cleanupScript = pkgs.writeShellScript "vault-secrets-cleanup" ''
+    set -euo pipefail
+    SECRETS_ROOT="${secretsRoot}"
+    EXPECTED_FILES=(${lib.concatStringsSep " " (map (f: ''"${f}"'') expectedFiles)})
+
+    # Find all files in secrets root
+    while IFS= read -r -d "" file; do
+      # Check if file is in expected list
+      found=0
+      for expected in "''${EXPECTED_FILES[@]}"; do
+        if [[ "$file" == "$expected" ]]; then
+          found=1
+          break
+        fi
+      done
+      # Remove if not expected (stale secret)
+      if [[ $found -eq 0 ]]; then
+        echo "Removing stale secret: $file"
+        rm -f "$file"
+      fi
+    done < <(${pkgs.findutils}/bin/find "$SECRETS_ROOT" -type f -print0 2>/dev/null || true)
   '';
 
-  resticRemoteTemplate = pkgs.writeText "restic-remote.ctmpl" ''
-    {{ with secret "homeserver_secrets/data/restic" -}}
-    RESTIC_PASSWORD={{ .Data.data.REMOTE_PASSWD }}
-    RESTIC_REPOSITORY={{ .Data.data.REMOTE_ADDR }}:/home/chloe/USB/backups
-    {{ end -}}
-  '';
+  # Auto-generate tmpfiles rules for parent directories
+  secretDirs = lib.unique (
+    lib.filter (d: d != secretsRoot) (
+      map (path: builtins.dirOf path) (lib.attrValues secretPaths)
+    )
+  );
+in
+  lib.mkIf (secrets != {}) {
+    environment.etc =
+      {
+        "vault-agent.hcl".source = agentConfig;
+      }
+      // lib.mapAttrs' (name: file: {
+        name = "vault-agent-templates/${name}.ctmpl";
+        value.source = file;
+      })
+      templateFiles;
 
-  pushoverTemplate = pkgs.writeText "pushover.ctmpl" ''
-    {{ with secret "homeserver_secrets/data/pushover" -}}
-    PUSHOVER_TOKEN={{ .Data.data.PUSHOVER_TOKEN }}
-    PUSHOVER_USER={{ .Data.data.PUSHOVER_USER }}
-    {{ end -}}
-  '';
-
-  frpTokenTemplate = pkgs.writeText "frp-token.ctmpl" ''
-    {{ with secret "homeserver_secrets/data/frp" -}}
-    {{ .Data.data.token }}
-    {{ end -}}
-  '';
-in {
-  environment.etc = {
-    "vault-agent.hcl".source = agentConfig;
-    "vault-agent-templates/restic-local.ctmpl".source = resticLocalTemplate;
-    "vault-agent-templates/restic-remote.ctmpl".source = resticRemoteTemplate;
-    "vault-agent-templates/pushover.ctmpl".source = pushoverTemplate;
-    "vault-agent-templates/frp-token.ctmpl".source = frpTokenTemplate;
-  };
-
-  systemd.services.vault-agent = {
-    description = "Vault Agent for homeserver secrets";
-    after = [
-      "network-online.target"
-      vaultComposeService
-    ];
-    wants = [
-      "network-online.target"
-      vaultComposeService
-    ];
-    serviceConfig = {
-      Type = "simple";
-      ExecStart = "${pkgs.vault}/bin/vault agent -config /etc/vault-agent.hcl";
-      Environment = "VAULT_ADDR=${config.homeserver.vault.address}";
-      User = "root";
-      Group = "root";
-      RuntimeDirectory = "vault-agent";
-      ReadWritePaths = [
-        "/var/lib/secrets"
-        "/run/vault-agent"
+    systemd.services.vault-agent = {
+      description = "Vault Agent for homeserver secrets";
+      after = [
+        "network-online.target"
+        vaultComposeService
       ];
-      ReadOnlyPaths = ["${config.homeserver.vault.tokenPath}"];
-      Restart = "on-failure";
-      RestartSec = "10s";
+      wants = [
+        "network-online.target"
+        vaultComposeService
+      ];
+      serviceConfig = {
+        Type = "simple";
+        ExecStartPre = "${cleanupScript}";
+        ExecStart = "${pkgs.vault}/bin/vault agent -config /etc/vault-agent.hcl";
+        Environment = "VAULT_ADDR=${config.homeserver.vault.address}";
+        User = "root";
+        Group = "root";
+        RuntimeDirectory = "vault-agent";
+        ReadWritePaths = [
+          secretsRoot
+          "/run/vault-agent"
+        ];
+        ReadOnlyPaths = ["${config.homeserver.vault.tokenPath}"];
+        Restart = "on-failure";
+        RestartSec = "10s";
+      };
     };
-  };
 
-  # Enforce strict permissions on vault tokens if they exist on disk.
-  systemd.tmpfiles.rules = [
-    "d /var/lib/secrets 0700 root root -"
-    "d /var/lib/secrets/restic 0700 root root -"
-    # z: restore the mode/ownership if the file exists (do not create if absent).
-    "z ${config.homeserver.vault.tokenPath} 0400 root root -"
-    "z ${config.homeserver.vault.unsealTokenPath} 0400 root root -"
-    "z /var/lib/secrets/frp-token 0400 root root -"
-  ];
-}
+    systemd.tmpfiles.rules =
+      [
+        "d ${secretsRoot} 0700 root root -"
+        # z: restore the mode/ownership if the file exists (do not create if absent).
+        "z ${config.homeserver.vault.tokenPath} 0400 root root -"
+        "z ${config.homeserver.vault.unsealTokenPath} 0400 root root -"
+      ]
+      ++ map (dir: "d ${dir} 0700 root root -") secretDirs;
+  }
