@@ -1,0 +1,7 @@
+#! /bin/bash 
+
+NCPATH=$(readlink -f "$(dirname $(which $0))/..")
+source "$NCPATH"/.env
+
+docker exec -it --user root nextcloud chown -R www-data:www-data "${NC_DATA_DIR}/Nelyah/files/"
+

@@ -1,6 +1,7 @@
 {
   pkgs,
   config,
+  inputs,
   ...
 }: {
   # Homeserver-specific nix settings (common settings in modules/common.nix)
@@ -28,35 +29,34 @@
   time.timeZone = "Europe/Stockholm";
 
   # Homeserver-specific packages (common packages are in modules/common.nix)
-  environment.systemPackages = with pkgs; [
-    # System tools
-    bash
-    gcc
-    gdb
-    net-tools
-    ethtool
-    duf
-    smartmontools
-    davfs2
+  environment.systemPackages =
+    (with pkgs; [
+      # System tools
+      bash
+      gcc
+      gdb
+      net-tools
+      ethtool
+      duf
+      smartmontools
+      davfs2
 
-    # Backup & sync
-    restic
+      # Backup & sync
+      restic
 
-    # Email
-    isync
-    msmtp
-    neomutt
-    notmuch
+      # Email
+      isync
+      msmtp
+      neomutt
+      notmuch
 
-    # Media
-    beets
+      # Media
+      beets
 
-    # Development
-    codex
-    python3Packages.pip
-  ] ++ (with pkgs.unstable; [
-    claude-code
-  ]);
+      # Development
+      python3Packages.pip
+    ])
+    ++ [inputs.codex-cli-nix.packages.${pkgs.system}.default];
 
   environment.variables = {
     EDITOR = "nvim";

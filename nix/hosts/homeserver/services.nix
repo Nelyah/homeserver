@@ -7,78 +7,106 @@
     path = ./services.d;
     name = "services-d";
   };
-  # Load all *.nix service files from services.d/
-  serviceFiles = builtins.readDir servicesDir;
-  nixServices = lib.filterAttrs (_: v: v == "regular") serviceFiles;
-  names = builtins.filter (n: lib.hasSuffix ".nix" n) (builtins.attrNames nixServices);
 
-  raw = name: import (servicesDir + "/" + name) {inherit config pkgs;};
+  # Read all entries in services.d/
+  entries = builtins.readDir servicesDir;
 
-  assertListOfStrings = label: val:
-    if lib.isList val && lib.all lib.isString val
-    then val
-    else builtins.throw "${label} must be a list of strings";
+  # Get service names: directories or .nix files (without extension)
+  serviceNames = lib.filter (name:
+    let entry = entries.${name}; in
+    (entry == "directory") ||
+    (entry == "regular" && lib.hasSuffix ".nix" name)
+  ) (builtins.attrNames entries);
 
-  assertString = label: val:
-    if lib.isString val
-    then val
-    else builtins.throw "${label} must be a string";
+  # Normalize name (remove .nix extension if present)
+  normalizeName = name:
+    if lib.hasSuffix ".nix" name
+    then lib.removeSuffix ".nix" name
+    else name;
 
-  assertPolicy = name: policy:
-    if policy == null
-    then null
-    else {
-      last = policy.last or null;
-      hourly = policy.hourly or null;
-      daily = policy.daily or null;
-      weekly = policy.weekly or null;
-      monthly = policy.monthly or null;
-      yearly = policy.yearly or null;
-    };
-
-  validate = svc: let
-    baseName = assertString "service.name" svc.name;
-    compose =
-      if svc ? compose && svc.compose != null
-      then {
-        enable = svc.compose.enable or false;
-        path = assertString "${baseName}.compose.path" svc.compose.path;
-        networks = assertListOfStrings "${baseName}.compose.networks" (svc.compose.networks or []);
-        volumes = assertListOfStrings "${baseName}.compose.volumes" (svc.compose.volumes or []);
-      }
-      else null;
-    backup =
-      if svc ? backup && svc.backup != null
-      then {
-        enable = svc.backup.enable or false;
-        paths = assertListOfStrings "${baseName}.backup.paths" (svc.backup.paths or []);
-        volumes = assertListOfStrings "${baseName}.backup.volumes" (svc.backup.volumes or []);
-        tags = assertListOfStrings "${baseName}.backup.tags" (svc.backup.tags or [baseName]);
-        pre = assertString "${baseName}.backup.pre" (svc.backup.pre or "");
-        post = assertString "${baseName}.backup.post" (svc.backup.post or "");
-        exclude = assertListOfStrings "${baseName}.backup.exclude" (svc.backup.exclude or []);
-        policy = assertPolicy "${baseName}.backup.policy" (
-          svc.backup.policy or {
-            daily = 10;
-            weekly = 4;
-            monthly = 4;
-          }
-        );
-      }
+  # Load a service from either a directory or a .nix file
+  loadService = name: let
+    entry = entries.${name};
+    isDir = entry == "directory";
+    importPath =
+      if isDir
+      then servicesDir + "/${name}/default.nix"
+      else servicesDir + "/${name}";
+    serviceDir =
+      if isDir
+      then servicesDir + "/${name}"
       else null;
   in {
-    name = baseName;
-    inherit compose backup;
+    raw = import importPath {inherit config pkgs lib;};
+    inherit serviceDir isDir;
+    entryName = name;
   };
 
-  services = map (file: validate (raw file)) names;
-in {
-  list = services;
-  attrset = lib.listToAttrs (
-    map (s: {
-      name = s.name;
-      value = s;
+  # Build service attrset with auto-detected files/env templates
+  buildService = name: let
+    loaded = loadService name;
+    raw = loaded.raw;
+    svcName = raw.name or (normalizeName name);
+
+    explicitFiles = raw.files or {};
+    autoComposeFile =
+      if loaded.isDir && loaded.serviceDir != null
+         && builtins.pathExists (loaded.serviceDir + "/docker-compose.yml")
+         && !(explicitFiles ? "docker-compose.yml")
+      then {
+        "docker-compose.yml" = {
+          source = loaded.serviceDir + "/docker-compose.yml";
+          destination = null;
+          executable = false;
+        };
+      }
+      else {};
+    files = autoComposeFile // explicitFiles;
+
+    explicitSecretFiles = raw.secretFiles or {};
+    autoEnvSecret =
+      if loaded.isDir && loaded.serviceDir != null
+         && builtins.pathExists (loaded.serviceDir + "/.env.ctmpl")
+         && !(explicitSecretFiles ? ".env")
+      then {
+        ".env" = {
+          destination = ".env";
+          perms = "0400";
+          template = builtins.readFile (loaded.serviceDir + "/.env.ctmpl");
+        };
+      }
+      else {};
+    secretFiles = explicitSecretFiles // autoEnvSecret;
+  in {
+    inherit svcName;
+    service = raw // {name = svcName; files = files; secretFiles = secretFiles;};
+  };
+
+  builtServices = map buildService serviceNames;
+
+  # Attrset keyed by service name
+  rawServices = lib.listToAttrs (
+    map (entry: {
+      name = entry.svcName;
+      value = entry.service;
     })
-    services
+    builtServices
   );
+
+  # Use the typed option (from options.nix) to validate and apply defaults
+  optionsModule = import ./options.nix {inherit lib;};
+  validated = lib.evalModules {
+    modules = [
+      {
+        options = optionsModule.options;
+        config.homeserver.services = rawServices;
+      }
+    ];
+  };
+
+  servicesAttr = validated.config.homeserver.services;
+  servicesList = map (n: servicesAttr.${n}) (lib.attrNames servicesAttr);
+in {
+  list = servicesList;
+  attrset = servicesAttr;
 }

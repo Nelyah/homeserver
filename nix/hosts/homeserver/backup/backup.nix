@@ -23,18 +23,13 @@
     tags = spec.backup.tags or [name];
     tagFlags = lib.concatStringsSep " " (map (t: "--tag ${t}") tags);
     excludeFlags = lib.concatStringsSep " " (map (p: "--exclude '${p}'") (spec.backup.exclude or []));
-    forget =
-      spec.backup.policy or {
-        daily = 10;
-        weekly = 4;
-        monthly = 4;
-      };
+    forget = spec.backup.policy;
     pre = spec.backup.pre or "";
     post = spec.backup.post or "";
 
     forgetCmd =
       if forget == null
-      then ""
+      then null
       else
         "${resticCmd} forget "
         + (lib.concatStringsSep " " (
@@ -92,9 +87,11 @@
       # we want to run forget only on success and still execute post hooks before returning.
       ${pre}
       ${resticCmd} backup ${backupArgsStr} ${excludeFlags} ${tagFlags} || status=$?
-      if [[ $status -eq 0 && -n "${forgetCmd}" ]]; then
+      ${lib.optionalString (forgetCmd != null) ''
+      if [[ $status -eq 0 ]]; then
         ${forgetCmd} || status=$?
       fi
+      ''}
       ${post}
       exit $status
     '';

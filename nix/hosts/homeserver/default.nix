@@ -7,6 +7,7 @@
     ./storage.nix
     ./networking.nix
     ./docker.nix
+    ./deployment.nix
     ./frp.nix
     ./vault-agent.nix
     ./vault-unseal.nix

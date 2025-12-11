@@ -74,6 +74,7 @@
     rsync
     unzip
     yt-dlp
+    codex
 
     # Other utilities
     atuin
@@ -87,7 +88,9 @@
     universal-ctags
     uv
     yarn
-  ];
+  ] ++ (with pkgs.unstable; [
+    claude-code
+  ]);
 
   # Enable zsh on all hosts
   programs.zsh.enable = true;

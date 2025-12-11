@@ -1,0 +1,4 @@
+#! /bin/bash
+
+docker exec -u www-data nextcloud php /var/www/html/occ files:scan --all
+

@@ -1,0 +1,4 @@
+#! /bin/bash
+
+docker exec -it caddy sh -c "cd /etc/caddy ; caddy fmt --overwrite"
+
