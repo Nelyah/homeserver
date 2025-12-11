@@ -11,7 +11,7 @@
 
   selected =
     lib.filterAttrs (
-      _: service: (service.backup or null) != null && (service.backup.enabled or false)
+      _: service: (service.backup or null) != null && (service.backup.enable or false)
     )
     servicesDef;
 

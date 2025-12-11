@@ -7,7 +7,7 @@
   servicesDef = (import ./services.nix {inherit lib config pkgs;}).attrset;
   enabledCompose =
     lib.filterAttrs (
-      _: service: (service.compose or null) != null && (service.compose.enabled or false)
+      _: service: (service.compose or null) != null && (service.compose.enable or false)
     )
     servicesDef;
 
@@ -34,7 +34,7 @@ in {
                               sed -r 's/^.*container=([^ ]+) .*/\1/' | \
                               sort -u); do
           echo >&2 "Truncating corrupted logs for container $container_id"
-          truncate -s0 "$(docker container inspect --format='{{.LogPath}}' "$container_id")"
+          truncate -s0 "$(${pkgs.docker}/bin/docker container inspect --format='{{.LogPath}}' "$container_id")"
       done
     '')
   ];
@@ -43,10 +43,10 @@ in {
   system.activationScripts.dockerPrereqs.text = ''
     set -e
     for n in ${lib.concatStringsSep " " networks}; do
-      docker network create "$n" >/dev/null 2>&1 || true
+      ${pkgs.docker}/bin/docker network create "$n" >/dev/null 2>&1 || true
     done
     for v in ${lib.concatStringsSep " " volumes}; do
-      docker volume create "$v" >/dev/null 2>&1 || true
+      ${pkgs.docker}/bin/docker volume create "$v" >/dev/null 2>&1 || true
     done
   '';
 

@@ -41,7 +41,7 @@
     compose =
       if svc ? compose && svc.compose != null
       then {
-        enabled = svc.compose.enabled or false;
+        enable = svc.compose.enable or false;
         path = assertString "${baseName}.compose.path" svc.compose.path;
         networks = assertListOfStrings "${baseName}.compose.networks" (svc.compose.networks or []);
         volumes = assertListOfStrings "${baseName}.compose.volumes" (svc.compose.volumes or []);
@@ -50,7 +50,7 @@
     backup =
       if svc ? backup && svc.backup != null
       then {
-        enabled = svc.backup.enable or false;
+        enable = svc.backup.enable or false;
         paths = assertListOfStrings "${baseName}.backup.paths" (svc.backup.paths or []);
         volumes = assertListOfStrings "${baseName}.backup.volumes" (svc.backup.volumes or []);
         tags = assertListOfStrings "${baseName}.backup.tags" (svc.backup.tags or [baseName]);

@@ -10,7 +10,7 @@
   servicesDef = (import ./services.nix {inherit lib config pkgs;}).attrset;
   enabledCompose =
     lib.filterAttrs (
-      _: service: (service.compose or null) != null && (service.compose.enabled or false)
+      _: service: (service.compose or null) != null && (service.compose.enable or false)
     )
     servicesDef;
 
@@ -32,7 +32,7 @@
     wantedBy = ["multi-user.target"];
     serviceConfig = {
       WorkingDirectory = composeDir;
-      ExecStart = "${pkgs.docker-compose}/bin/docker-compose -f ${composeFile} up -d";
+      ExecStart = "${pkgs.docker-compose}/bin/docker-compose -f ${composeFile} up";
       ExecStop = "${pkgs.docker-compose}/bin/docker-compose -f ${composeFile} stop";
       Restart = "on-failure";
     };
