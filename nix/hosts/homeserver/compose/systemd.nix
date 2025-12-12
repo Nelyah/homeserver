@@ -42,9 +42,11 @@
     ] ++ lib.optional needsVault "vault-agent.service";
     wantedBy = ["multi-user.target"];
     serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
       WorkingDirectory = composeDir;
-      ExecStart = "${pkgs.docker-compose}/bin/docker-compose -f ${composeFile} up${buildArg}";
-      ExecStop = "${pkgs.docker-compose}/bin/docker-compose -f ${composeFile} stop";
+      ExecStart = "${pkgs.docker-compose}/bin/docker-compose -f ${composeFile} up -d --remove-orphans --force-recreate${buildArg}";
+      ExecStop = "${pkgs.docker-compose}/bin/docker-compose -f ${composeFile} down --remove-orphans";
       Restart = "on-failure";
     };
   };

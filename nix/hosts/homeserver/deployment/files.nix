@@ -54,6 +54,7 @@
     DEPLOY_ROOT="${deployRoot}"
     SECRETS_ROOT="${secretsRoot}"
     ENABLED_SERVICES=(${lib.concatStringsSep " " (map (n: ''"${n}"'') enabledServiceNames)})
+    SYSTEMCTL="${pkgs.systemd}/bin/systemctl"
 
     if [ -z "$DEPLOY_ROOT" ]; then
       echo "DEPLOY_ROOT is empty; aborting"
@@ -114,6 +115,22 @@
         ln -sf "$SECRETS_ROOT/docker-services/${name}/${spec.destination}" "$DEPLOY_ROOT/${name}/${spec.destination}" 2>/dev/null || true
       fi
     '') secretFiles)) servicesWithSecretFiles)}
+
+    # Recover failed compose units without restarting healthy/running stacks.
+    # This avoids a redeploy causing a restart of every service.
+    for svc in "''${ENABLED_SERVICES[@]}"; do
+      unit="docker-compose-''${svc}.service"
+      load_state="$("$SYSTEMCTL" show -p LoadState --value "$unit" 2>/dev/null || true)"
+      if [ -z "$load_state" ] || [ "$load_state" = "not-found" ]; then
+        continue
+      fi
+
+      if "$SYSTEMCTL" --quiet is-failed "$unit"; then
+        echo "Unit $unit is failed; resetting and restarting"
+        "$SYSTEMCTL" reset-failed "$unit" || true
+        "$SYSTEMCTL" restart "$unit" || true
+      fi
+    done
 
     echo "Docker services deployed successfully"
   '';

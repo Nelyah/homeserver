@@ -6,6 +6,11 @@
     networks = [];
     volumes = [];
   };
+  files = {
+    "Dockerfile".source = ./Dockerfile;
+    "ovh-update-dyndns.py".source = ./ovh-update-dyndns.py;
+    "requirements.txt".source = ./requirements.txt;
+  };
   secretFiles = {
     ".env" = {
       destination = ".env";

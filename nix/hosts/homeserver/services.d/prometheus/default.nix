@@ -2,6 +2,7 @@
   name = "prometheus";
   compose = {
     enable = true;
+    build = true;
     networks = ["grafana"];
     volumes = [
       "prometheus_data"
