@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nix flake check:*)",
+      "Bash(git -C /data/homeserver/nix status:*)",
+      "Bash(nix-instantiate:*)",
+      "Bash(git -C /data/homeserver/nix show:*)",
+      "WebSearch",
+      "WebFetch(domain:www.freedesktop.org)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:bl33pbl0p.github.io)",
+      "Bash(tree:*)",
+      "Bash(git mv:*)",
+      "Bash(git -C /data/homeserver/nix add modules/common.nix modules/tailscale.nix)",
+      "Bash(git -C /data/homeserver/nix add flake.nix hosts/homeserver/base.nix hosts/homeserver/networking.nix hosts/homeserver/tailscale-online.nix)",
+      "Bash(git -C /data/homeserver/nix add:*)",
+      "WebFetch(domain:restic.readthedocs.io)",
+      "Bash(git -C /data/homeserver/nix diff HEAD)",
+      "Bash(git -C /data/homeserver/nix diff --cached hosts/homeserver/backup/maintenance.nix)",
+      "Bash(cat:*)",
+      "Bash(echo:*)",
+      "Bash(let script = '')",
+      "Bash('')",
+      "Bash(in script)",
+      "Bash(NIXEOF)",
+      "WebFetch(domain:github.blog)",
+      "WebFetch(domain:docs.factory.ai)",
+      "WebFetch(domain:developers.openai.com)",
+      "Bash(ln:*)",
+      "Bash(ls:*)",
+      "Bash(done)",
+      "Bash(for svc in atuin audiobookshelf authentik caddy grafana blog_hugo influxdb jellyfin navidrome nextcloud ovh_dyndns_updater prometheus uptime-kuma vault)",
+      "Bash(do echo \"=== $svc ===\" ls -la \"/data/homeserver/services/$svc/\")",
+      "Bash(wc:*)",
+      "Bash(git -C /data/homeserver/nix rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
