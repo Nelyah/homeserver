@@ -1,9 +1,11 @@
 {
   pkgs,
   lib,
+  config,
   ...
 }: let
-  secretsRoot = "/var/lib/secrets";
+  # Use centralized paths from options
+  secretsRoot = config.homeserver.paths.secretsRoot;
   resticCmd = "${pkgs.restic}/bin/restic";
   resticEnv = env: "${secretsRoot}/restic/${env}.env";
 

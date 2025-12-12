@@ -1,7 +1,10 @@
+# Service discovery and loading module
+# Discovers services from services.d/ and populates config.homeserver.services
 {
   lib,
   config,
   pkgs,
+  ...
 }: let
   servicesDir = builtins.path {
     path = ./services.d;
@@ -93,20 +96,7 @@
     builtServices
   );
 
-  # Use the typed option (from options.nix) to validate and apply defaults
-  optionsModule = import ./options.nix {inherit lib;};
-  validated = lib.evalModules {
-    modules = [
-      {
-        options = optionsModule.options;
-        config.homeserver.services = rawServices;
-      }
-    ];
-  };
-
-  servicesAttr = validated.config.homeserver.services;
-  servicesList = map (n: servicesAttr.${n}) (lib.attrNames servicesAttr);
 in {
-  list = servicesList;
-  attrset = servicesAttr;
+  # Set the services config directly - options.nix provides the schema
+  config.homeserver.services = rawServices;
 }

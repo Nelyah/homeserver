@@ -3,16 +3,16 @@
     ./boot.nix
     ./hardware-configuration.nix
     ./options.nix
+    ./services.nix           # Must come after options.nix
     ./base.nix
     ./storage.nix
     ./networking.nix
-    ./docker.nix
-    ./deployment.nix
+    ./docker                 # Split from docker.nix
+    ./deployment             # Split from deployment.nix
     ./frp.nix
     ./vault-agent.nix
     ./vault-unseal.nix
-    ./backup/backup.nix
-    ./backup/maintenance.nix
-    ./compose.nix
+    ./backup                 # Reorganized with default.nix
+    ./compose                # Split from compose.nix
   ];
 }

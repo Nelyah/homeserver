@@ -1,31 +1,10 @@
+# Docker maintenance tasks: log cleanup and image pruning
 {
   pkgs,
-  lib,
   config,
   ...
-}: let
-  servicesDef = (import ./services.nix {inherit lib config pkgs;}).attrset;
-  enabledCompose =
-    lib.filterAttrs (
-      _: service: (service.compose or null) != null && (service.compose.enable or false)
-    )
-    servicesDef;
-
-  networks = lib.unique (
-    lib.flatten (lib.mapAttrsToList (_: svc: svc.compose.networks or []) enabledCompose)
-  );
-  volumes = lib.unique (
-    lib.flatten (lib.mapAttrsToList (_: svc: svc.compose.volumes or []) enabledCompose)
-  );
-in {
-  virtualisation.docker = {
-    enable = true;
-    enableOnBoot = true;
-    daemon.settings."data-root" = "${config.homeserver.mainDrive}/docker-data";
-  };
-
+}: {
   environment.systemPackages = [
-    pkgs.docker-compose
     (pkgs.writeShellScriptBin "docker-fix-logs" ''
       #!${pkgs.bash}/bin/bash
       set -euo pipefail
@@ -38,17 +17,6 @@ in {
       done
     '')
   ];
-
-  # Create external networks/volumes referenced by compose stacks
-  system.activationScripts.dockerPrereqs.text = ''
-    set -e
-    for n in ${lib.concatStringsSep " " networks}; do
-      ${pkgs.docker}/bin/docker network create "$n" >/dev/null 2>&1 || true
-    done
-    for v in ${lib.concatStringsSep " " volumes}; do
-      ${pkgs.docker}/bin/docker volume create "$v" >/dev/null 2>&1 || true
-    done
-  '';
 
   systemd.services.docker-fix-logs = {
     description = "Truncate corrupted docker logs";

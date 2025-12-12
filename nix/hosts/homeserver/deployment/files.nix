@@ -1,23 +1,26 @@
 # Deployment module for docker service files
 # Handles copying files from Nix store to /var/lib/docker-services/
-# and registering vault-rendered secret files (including .env)
+# and creating symlinks for vault-rendered secret files
 {
   lib,
   pkgs,
   config,
   ...
 }: let
-  deployRoot = "/var/lib/docker-services";
-  secretsRoot = "/var/lib/secrets";
-  servicesDef = (import ./services.nix {inherit lib config pkgs;}).attrset;
+  homeserverLib = import ../lib { inherit lib; };
+
+  # Use centralized paths from options
+  deployRoot = config.homeserver.paths.deployRoot;
+  secretsRoot = config.homeserver.paths.secretsRoot;
+
+  # Read services from config (populated by services.nix module)
+  services = config.homeserver.services;
 
   # Filter services with compose enabled
-  enabledServices = lib.filterAttrs (
-    _: svc: (svc.compose or null) != null && (svc.compose.enable or false)
-  ) servicesDef;
+  enabledServices = homeserverLib.docker.filterEnabledCompose services;
 
   # Filter services with secret files defined
-  servicesWithSecretFiles = lib.filterAttrs (_: svc: (svc.compose.enable or false) && (svc.secretFiles or {}) != {}) servicesDef;
+  servicesWithSecretFiles = homeserverLib.docker.filterWithSecretFiles services;
 
   # Build a derivation containing all files for a service
   mkServicePackage = name: svc: let
@@ -42,7 +45,6 @@
 
   # List of enabled service names for the deployment script
   enabledServiceNames = lib.attrNames enabledServices;
-
   servicesWithSecretFilesNames = lib.attrNames servicesWithSecretFiles;
 
   # Deployment script
@@ -125,16 +127,4 @@ in lib.mkIf (enabledServices != {}) {
     text = "${deployScript}";
     deps = ["specialfs" "users" "groups"];
   };
-
-  # Register vault secrets for services with secret files
-  homeserver.vault.secrets = lib.foldAttrs (a: b: a // b) {} (lib.mapAttrsToList (name: svc:
-    lib.mapAttrs' (_fname: spec: {
-      name = "docker-service-${name}-${lib.replaceStrings ["/"] ["-"] spec.destination}";
-      value = {
-        template = spec.template;
-        destination = "docker-services/${name}/${spec.destination}";
-        perms = spec.perms;
-      };
-    }) (svc.secretFiles or {})
-  ) servicesWithSecretFiles);
 }

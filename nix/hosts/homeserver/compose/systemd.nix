@@ -1,20 +1,23 @@
+# Docker Compose systemd service generation
 {
   lib,
   pkgs,
   config,
   ...
 }: let
-  deployRoot = "/var/lib/docker-services";
+  # Use centralized paths from options
+  deployRoot = config.homeserver.paths.deployRoot;
 
-  # Service metadata is declared in services.nix and must stay in sync with the
+  # Read services from config (populated by services.nix module)
+  # Service metadata is declared in services.d/ and must stay in sync with the
   # actual docker-compose.yml files (networks/volumes). External networks/volumes
   # are pre-created elsewhere so Compose can attach to them.
-  servicesDef = (import ./services.nix {inherit lib config pkgs;}).attrset;
+  services = config.homeserver.services;
   enabledCompose =
     lib.filterAttrs (
       _: service: (service.compose or null) != null && (service.compose.enable or false)
     )
-    servicesDef;
+    services;
 
   mkComposeService = name: service: let
     # Auto-derive compose path from deployment location if not explicitly set

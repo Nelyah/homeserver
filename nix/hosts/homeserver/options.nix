@@ -1,5 +1,10 @@
-{lib, ...}: let
-  inherit (lib) mkOption types;
+# Options can be imported standalone (by services.nix for validation)
+# or as a NixOS module (by default.nix). When imported standalone,
+# config is empty and the config block is skipped.
+{lib, config ? {}, ...}: let
+  inherit (lib) mkOption mkDefault types mkIf;
+  # Check if we're being used as a NixOS module (config.homeserver exists)
+  isNixOSModule = config ? homeserver;
 in {
   options.homeserver = {
     mainDrive = mkOption {
@@ -18,6 +23,31 @@ in {
       type = types.str;
       default = "/data/homeserver";
       description = "Root path of the homeserver repo on the host.";
+    };
+
+    # Centralized path configuration
+    paths = {
+      deployRoot = mkOption {
+        type = types.str;
+        default = "/var/lib/docker-services";
+        description = "Root directory for deployed docker service files.";
+      };
+
+      secretsRoot = mkOption {
+        type = types.str;
+        default = "/var/lib/secrets";
+        description = "Root directory for vault-rendered secrets.";
+      };
+
+      dockerDataRoot = mkOption {
+        type = types.str;
+        description = "Docker data root directory.";
+      };
+
+      dockerVolumesRoot = mkOption {
+        type = types.str;
+        description = "Docker volumes directory.";
+      };
     };
 
     vault.address = mkOption {
@@ -212,6 +242,14 @@ in {
           };
         };
       }));
+    };
+  };
+
+  # Set computed defaults for path options (only when used as NixOS module)
+  config = mkIf isNixOSModule {
+    homeserver.paths = {
+      dockerDataRoot = mkDefault "${config.homeserver.mainDrive}/docker-data";
+      dockerVolumesRoot = mkDefault "${config.homeserver.paths.dockerDataRoot}/volumes";
     };
   };
 }

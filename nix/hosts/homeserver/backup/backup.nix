@@ -4,55 +4,44 @@
   config,
   ...
 }: let
-  secretsRoot = "/var/lib/secrets";
-  servicesDef = (import ../services.nix {inherit lib config pkgs;}).attrset;
-  dockerRoot = "${config.homeserver.mainDrive}/docker-data";
+  homeserverLib = import ../lib { inherit lib; };
+
+  # Use centralized paths from options
+  secretsRoot = config.homeserver.paths.secretsRoot;
+  deployRoot = config.homeserver.paths.deployRoot;
+  dockerVolumesRoot = config.homeserver.paths.dockerVolumesRoot;
+
+  # Read services from config (populated by services.nix module)
+  services = config.homeserver.services;
   resticCmd = "${pkgs.restic}/bin/restic";
   resticEnv = env: "${secretsRoot}/restic/${env}.env";
 
-  selected =
-    lib.filterAttrs (
-      _: service: (service.backup or null) != null && (service.backup.enable or false)
-    )
-    servicesDef;
+  # Filter services with backup enabled
+  selected = homeserverLib.docker.filterEnabledBackup services;
 
   mkBackupScript = name: spec: let
-    volArgs = map (v: "${dockerRoot}/volumes/${v}/") (spec.backup.volumes or []);
-    pathArgs = spec.backup.paths or [];
-    backupArgsStr = lib.concatStringsSep " " (volArgs ++ pathArgs);
+    # Use lib helpers for flag building
+    backupArgsStr = homeserverLib.backup.mkBackupArgsStr {
+      inherit dockerVolumesRoot;
+      volumes = spec.backup.volumes or [];
+      paths = spec.backup.paths or [];
+    };
     tags = spec.backup.tags or [name];
-    tagFlags = lib.concatStringsSep " " (map (t: "--tag ${t}") tags);
-    excludeFlags = lib.concatStringsSep " " (map (p: "--exclude '${p}'") (spec.backup.exclude or []));
+    tagFlags = homeserverLib.backup.mkTagFlags tags;
+    excludeFlags = homeserverLib.backup.mkExcludeFlags (spec.backup.exclude or []);
     forget = spec.backup.policy;
     pre = spec.backup.pre or "";
     post = spec.backup.post or "";
 
+    # Build forget command using lib helper
+    forgetFlags = homeserverLib.backup.mkForgetFlags forget;
     forgetCmd =
       if forget == null
       then null
-      else
-        "${resticCmd} forget "
-        + (lib.concatStringsSep " " (
-          lib.filter (s: s != "") [
-            (lib.optionalString ((forget.last or null) != null) "--keep-last ${toString (forget.last or 0)}")
-            (lib.optionalString ((forget.hourly or null) != null) "--keep-hourly ${toString (forget.hourly or 0)}")
-            (lib.optionalString ((forget.daily or null) != null) "--keep-daily ${toString (forget.daily or 0)}")
-            (lib.optionalString (
-              (forget.weekly or null) != null
-            ) "--keep-weekly ${toString (forget.weekly or 0)}")
-            (lib.optionalString (
-              (forget.monthly or null) != null
-            ) "--keep-monthly ${toString (forget.monthly or 0)}")
-            (lib.optionalString (
-              (forget.yearly or null) != null
-            ) "--keep-yearly ${toString (forget.yearly or 0)}")
-            "--prune"
-          ]
-        ))
-        + " "
-        + tagFlags;
+      else "${resticCmd} forget ${forgetFlags} ${tagFlags}";
 
-    envPath = "${config.homeserver.homeserverRoot}/services/${name}/.env";
+    # Secrets are rendered and symlinked into the deployed compose directory.
+    envPath = "${deployRoot}/${name}/.env";
     binName = "backup-${name}";
   in
     pkgs.writeShellScriptBin binName ''
