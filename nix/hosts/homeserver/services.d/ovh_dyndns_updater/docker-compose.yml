@@ -3,5 +3,5 @@ services:
     build: .
     container_name: ovh-dns-update
     image: ovh-dns-update
-    restart: "no"
+    restart: unless-stopped
     env_file: .env
