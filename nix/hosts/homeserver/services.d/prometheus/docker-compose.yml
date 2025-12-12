@@ -26,6 +26,9 @@ services:
       - grafana
     pid: host
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - '/:/host:ro,rslave'
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
@@ -35,6 +38,13 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: cadvisor
     stop_grace_period: 1m
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_ADMIN
     networks:
       - grafana
     volumes:
@@ -51,13 +61,19 @@ services:
     devices:
       - /dev/kmsg
     restart: unless-stopped
-    privileged: true
 
   smartctl_exporter:
     build: exporters
     container_name: smartctl_exporter
     stop_grace_period: 1m
-    privileged: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_ADMIN
+      - SYS_RAWIO
     restart: unless-stopped
     command:
       - --reload
