@@ -85,6 +85,8 @@
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: svc: let
       pkg = servicePackages.${name};
       hasPackage = pkg != null;
+      secretDests = lib.mapAttrsToList (_: spec: spec.destination) (svc.secretFiles or {});
+      rsyncExcludeArgs = lib.concatStringsSep " " (map (d: "--exclude='${d}'") secretDests);
     in ''
       echo "Deploying ${name}..."
       mkdir -p "$DEPLOY_ROOT/${name}"
@@ -94,11 +96,12 @@
           echo "Package path for ${name} is empty; aborting"
           exit 1
         fi
-        # Copy files from nix store (preserve symlinks in target)
-        ${pkgs.rsync}/bin/rsync -a --delete --exclude='.env' "${pkg}/" "$DEPLOY_ROOT/${name}/"
+        # Copy files from nix store and prune stale entries.
+        # Exclude secret destinations so `--delete` doesn't remove secret symlinks.
+        ${pkgs.rsync}/bin/rsync -a --delete ${rsyncExcludeArgs} "${pkg}/" "$DEPLOY_ROOT/${name}/"
 
-        # Set permissions: files read-only, directories executable
-        find "$DEPLOY_ROOT/${name}" -type f ! -name '.env' -exec chmod 0444 {} \; 2>/dev/null || true
+        # Set permissions: keep exec bits but strip write permissions.
+        find "$DEPLOY_ROOT/${name}" -type f -exec chmod a-w {} \; 2>/dev/null || true
         find "$DEPLOY_ROOT/${name}" -type d -exec chmod 0755 {} \; 2>/dev/null || true
       ''}
     '') enabledServices)}
