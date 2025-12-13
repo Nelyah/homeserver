@@ -128,6 +128,87 @@ class ServiceManager:
 
         return results
 
+    async def recreate_service(self, service_name: str) -> ServiceActionResult:
+        """Recreate a service by running docker compose down/up."""
+        from .service_helpers import get_service
+
+        svc = get_service(self.config, service_name)
+        compose_file = await self.resolve_compose_file(svc.name)
+
+        docker_compose = (
+            shutil.which("docker-compose")
+            or "/run/current-system/sw/bin/docker-compose"
+        )
+        if not Path(docker_compose).exists():
+            return ServiceActionResult(
+                service_name=service_name,
+                success=False,
+                detail="docker-compose not found",
+            )
+
+        if not compose_file.exists():
+            return ServiceActionResult(
+                service_name=service_name,
+                success=False,
+                detail=f"compose file not found: {compose_file}",
+            )
+
+        # Run docker compose down
+        proc_down = await asyncio.create_subprocess_exec(
+            docker_compose,
+            "-f",
+            str(compose_file),
+            "down",
+            cwd=str(compose_file.parent),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        await proc_down.wait()
+
+        if proc_down.returncode != 0:
+            return ServiceActionResult(
+                service_name=service_name,
+                success=False,
+                detail="down failed",
+            )
+
+        # Run docker compose up -d
+        proc_up = await asyncio.create_subprocess_exec(
+            docker_compose,
+            "-f",
+            str(compose_file),
+            "up",
+            "-d",
+            cwd=str(compose_file.parent),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        await proc_up.wait()
+
+        if proc_up.returncode != 0:
+            return ServiceActionResult(
+                service_name=service_name,
+                success=False,
+                detail="up failed",
+            )
+
+        return ServiceActionResult(
+            service_name=service_name,
+            success=True,
+            detail="recreated",
+        )
+
+    async def perform_recreate(self, service_arg: str) -> list[ServiceActionResult]:
+        """Recreate one or all services via docker compose down/up."""
+        service_names = self.get_service_names(service_arg)
+        results: list[ServiceActionResult] = []
+
+        for name in service_names:
+            result = await self.recreate_service(name)
+            results.append(result)
+
+        return results
+
     async def resolve_compose_file(self, service_name: str) -> Path:
         """Resolve the compose file path for a service."""
         unit = self.compose_unit_for(service_name)

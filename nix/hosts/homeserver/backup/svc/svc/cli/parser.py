@@ -222,10 +222,15 @@ def stop_cmd(ctx: click.Context, service: str) -> None:
 
 @cli.command("restart")
 @click.argument("service", type=ServiceNameParam(backup_only=False, allow_all=True))
+@click.option(
+    "--recreate",
+    is_flag=True,
+    help="Perform docker compose down/up instead of systemctl restart",
+)
 @click.pass_context
-def restart_cmd(ctx: click.Context, service: str) -> None:
+def restart_cmd(ctx: click.Context, service: str, recreate: bool) -> None:
     """Restart a docker-compose service."""
-    args = argparse.Namespace(service=service)
+    args = argparse.Namespace(service=service, recreate=recreate)
     _run_command(ctx, RestartCommand(), args)
 
 

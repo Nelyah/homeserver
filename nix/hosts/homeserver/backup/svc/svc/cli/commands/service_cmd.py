@@ -66,6 +66,42 @@ class RestartCommand(ServiceActionCommand):
     def __init__(self):
         super().__init__("restart")
 
+    async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
+        recreate = getattr(args, "recreate", False)
+
+        # If not recreating, use the normal systemctl-based restart
+        if not recreate:
+            return await super().execute(args, ctx)
+
+        # Otherwise, do docker compose down/up
+        require_root("recreate services")
+        service_arg = args.service
+
+        manager = ServiceManager(ctx.config, ctx.systemctl)
+        results = await manager.perform_recreate(service_arg)
+
+        # Render results table
+        columns = [
+            TableColumn("Service", style="bold"),
+            TableColumn("Result"),
+        ]
+
+        rows: list[TableRow] = []
+        for result in results:
+            rows.append(
+                TableRow(
+                    cells=[
+                        result.service_name,
+                        ctx.renderer.format_status(result.success, result.detail),
+                    ]
+                )
+            )
+
+        ctx.renderer.render_table("Recreate services", columns, rows)
+
+        all_success = all(r.success for r in results)
+        return EXIT_SUCCESS if all_success else EXIT_SYSTEMCTL_ERROR
+
 
 class LogsCommand(Command):
     """Stream docker-compose logs for a service."""
