@@ -54,6 +54,7 @@
     gnumake
     pkg-config
     ninja
+    ruff
 
     # Languages & runtimes
     go
