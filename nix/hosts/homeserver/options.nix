@@ -58,13 +58,13 @@ in {
 
     vault.tokenPath = mkOption {
       type = types.str;
-      default = "/data/homeserver/ansible/.vault-token";
+      default = "/var/lib/secrets/vault/access-token";
       description = "Path to Vault token used by the Vault agent (read-only).";
     };
 
     vault.unsealTokenPath = mkOption {
       type = types.str;
-      default = "/data/homeserver/ansible/.vault-unseal-token";
+      default = "/var/lib/secrets/vault/unseal-token";
       description = "Path to Vault token used to unseal Vault (read-only).";
     };
 

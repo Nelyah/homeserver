@@ -131,6 +131,7 @@ in
     systemd.tmpfiles.rules =
       [
         "d ${secretsRoot} 0700 root root -"
+        "d ${secretsRoot}/vault 0700 root root -"
         # z: restore the mode/ownership if the file exists (do not create if absent).
         "z ${config.homeserver.vault.tokenPath} 0400 root root -"
         "z ${config.homeserver.vault.unsealTokenPath} 0400 root root -"
