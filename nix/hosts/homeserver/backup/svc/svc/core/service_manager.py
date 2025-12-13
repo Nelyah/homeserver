@@ -30,6 +30,8 @@ ActionType = Literal["start", "stop", "restart"]
 
 @dataclass(frozen=True)
 class _ComposeStep:
+    """A single docker-compose invocation and its failure label."""
+
     args: list[str]
     failure_detail: str
 
@@ -38,11 +40,12 @@ class ServiceManager:
     """Manages docker-compose service lifecycle operations."""
 
     def __init__(self, config: Config, *, dry_run: bool = False):
+        """Create a ServiceManager."""
         self.config = config
         self.dry_run = dry_run
 
     def compose_file_for(self, service_name: str) -> Path:
-        """Get the deployed docker-compose.yml path for a service."""
+        """Return the deployed `docker-compose.yml` path for a service."""
         return Path(self.config.paths.deploy_root) / service_name / "docker-compose.yml"
 
     def get_service_names(self, service_arg: str) -> list[str]:
@@ -160,6 +163,7 @@ class ServiceManager:
         cwd: str,
         output: Callable[[str], None] | None,
     ) -> int:
+        """Run a subprocess, streaming output when requested."""
         if self.dry_run:
             if output is not None:
                 output(f"[dry-run] Would run in {cwd}: {' '.join(args)}")
@@ -185,6 +189,7 @@ class ServiceManager:
         )
 
         async def pump(reader: asyncio.StreamReader | None) -> None:
+            """Pump a stream reader line-by-line into the output callback."""
             if reader is None:
                 return
             while True:
@@ -204,7 +209,7 @@ class ServiceManager:
         build: bool = False,
         output: Callable[[str], None] | None = None,
     ) -> ServiceActionResult:
-        """Recreate a service by running docker compose down/up."""
+        """Recreate a service by running docker compose `down` then `up -d`."""
         svc = get_service(self.config, service_name)
         compose_file = self.compose_file_for(svc.name)
 
@@ -332,6 +337,7 @@ class ServiceManager:
         return proc.returncode or 0
 
     def _docker_compose_bin(self) -> str | None:
+        """Resolve the docker-compose binary path."""
         docker_compose = (
             shutil.which("docker-compose") or "/run/current-system/sw/bin/docker-compose"
         )
@@ -346,6 +352,7 @@ class ServiceManager:
         force_recreate: bool,
         remove_orphans: bool,
     ) -> list[str]:
+        """Build a docker-compose `up` command-line."""
         args = [docker_compose, "-f", str(compose_file), "up", "-d"]
         if remove_orphans:
             args.append("--remove-orphans")
@@ -358,6 +365,7 @@ class ServiceManager:
     def _compose_down_args(
         self, docker_compose: str, compose_file: Path, *, remove_orphans: bool
     ) -> list[str]:
+        """Build a docker-compose `down` command-line."""
         args = [docker_compose, "-f", str(compose_file), "down"]
         if remove_orphans:
             args.append("--remove-orphans")
@@ -371,6 +379,7 @@ class ServiceManager:
         compose_file: Path,
         build: bool,
     ) -> tuple[list[_ComposeStep], str]:
+        """Return the compose steps and success message for a service action."""
         down = _ComposeStep(
             args=self._compose_down_args(
                 docker_compose,

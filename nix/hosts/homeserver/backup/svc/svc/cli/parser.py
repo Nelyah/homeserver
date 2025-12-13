@@ -46,12 +46,15 @@ from .renderer import create_renderer
 
 @dataclass(frozen=True)
 class GlobalOptions:
+    """Global options parsed by click."""
+
     config: str
     verbose: bool
     dry_run: bool
 
 
 def _load_services_for_completion(config_path: str, *, backup_only: bool) -> list[str]:
+    """Load service names from the JSON config for shell completion."""
     try:
         with Path(config_path).open() as f:
             raw: Any = json.load(f)
@@ -86,6 +89,8 @@ def _load_services_for_completion(config_path: str, *, backup_only: bool) -> lis
 
 
 class ServiceNameParam(click.ParamType):
+    """click ParamType with dynamic service-name completion."""
+
     name = "service"
 
     def __init__(self, *, backup_only: bool, allow_all: bool):
@@ -96,6 +101,7 @@ class ServiceNameParam(click.ParamType):
     def shell_complete(
         self, ctx: click.Context, param: click.Parameter, incomplete: str
     ) -> list[CompletionItem]:
+        """Return completion candidates for the `service` argument."""
         _ = param
         params = ctx.find_root().params or {}
         config_param = params.get("config")
@@ -108,6 +114,7 @@ class ServiceNameParam(click.ParamType):
 
 
 def _get_app_ctx(ctx: click.Context) -> AppContext:
+    """Create the AppContext from global click options."""
     options: GlobalOptions = ctx.ensure_object(GlobalOptions)  # type: ignore[assignment]
     config = load_config(options.config)
     renderer = create_renderer()
@@ -120,6 +127,7 @@ def _get_app_ctx(ctx: click.Context) -> AppContext:
 
 
 def _run_command(ctx: click.Context, command: Command[Any], args: Any) -> None:
+    """Run a command object using an isolated asyncio event loop."""
     app_ctx = _get_app_ctx(ctx)
     try:
         exit_code: int = asyncio.run(command.execute(args, app_ctx))

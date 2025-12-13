@@ -22,6 +22,8 @@ class PydanticBase(BaseModel):
     else:
 
         class Config:
+            """Pydantic v1 configuration."""
+
             allow_population_by_field_name = True
             extra = "forbid"
 

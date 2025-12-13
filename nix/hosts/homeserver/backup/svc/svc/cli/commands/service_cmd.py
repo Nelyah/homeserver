@@ -12,9 +12,11 @@ class ServiceActionCommand(Command[ServiceActionArgs]):
     """Base class for service action commands (start/stop/restart)."""
 
     def __init__(self, action: ActionType):
+        """Create a ServiceActionCommand for a specific action."""
         self._action: ActionType = action
 
     async def execute(self, args: ServiceActionArgs, ctx: AppContext) -> int:
+        """Execute the action for one service or all services."""
         require_root(f"{self._action} services")
         service_arg = args.service
 
@@ -36,6 +38,7 @@ class ServiceActionCommand(Command[ServiceActionArgs]):
     def render_results(
         ctx: AppContext, title: str, results: list[ServiceActionResult]
     ) -> None:
+        """Render a service action results table."""
         columns = [
             TableColumn("Service", style="bold"),
             TableColumn("Result"),
@@ -70,6 +73,7 @@ class RestartCommand(Command[RestartArgs]):
     """Restart docker-compose service(s)."""
 
     async def execute(self, args: RestartArgs, ctx: AppContext) -> int:
+        """Restart or recreate one service or all services."""
         if not args.recreate:
             require_root("restart services")
             manager = ServiceManager(ctx.config, dry_run=ctx.dry_run)
@@ -104,6 +108,7 @@ class LogsCommand(Command[LogsArgs]):
     """Stream docker-compose logs for a service."""
 
     async def execute(self, args: LogsArgs, ctx: AppContext) -> int:
+        """Stream docker-compose logs with optional follow/timestamps."""
         service_name = args.service
         follow = args.follow
         tail = args.tail

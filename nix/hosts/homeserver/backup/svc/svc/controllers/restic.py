@@ -15,6 +15,8 @@ logger = logging.getLogger("svc.controllers.restic")
 
 
 class ResticSnapshot(TypedDict, total=False):
+    """Minimal restic snapshot representation."""
+
     id: str
     time: str
     hostname: str
@@ -167,6 +169,7 @@ class ResticRunner:
         return self._latest_snapshot_by_lex_time(snapshots)
 
     def _parse_snapshot_time(self, value: str | None) -> datetime | None:
+        """Parse a restic RFC3339 timestamp string to a datetime."""
         if not value:
             return None
         try:
@@ -182,6 +185,7 @@ class ResticRunner:
     def _latest_snapshot_by_parsed_time(
         self, snapshots: list[ResticSnapshot]
     ) -> tuple[str | None, datetime | None]:
+        """Pick the latest snapshot using parsed timestamps."""
         latest_id: str | None = None
         latest_time: datetime | None = None
 
@@ -198,6 +202,7 @@ class ResticRunner:
         return latest_id, latest_time
 
     def _latest_snapshot_by_lex_time(self, snapshots: list[ResticSnapshot]) -> str | None:
+        """Fallback: pick the latest snapshot using lexicographic `time` ordering."""
         candidates = [
             s for s in snapshots if isinstance(s.get("id"), str) and isinstance(s.get("time"), str)
         ]

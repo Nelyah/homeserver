@@ -14,6 +14,7 @@ class RestoreCommand(Command[RestoreArgs]):
     """Restore a service from backup."""
 
     async def execute(self, args: RestoreArgs, ctx: AppContext) -> int:
+        """Restore a service snapshot and render results."""
         env = args.env
         service_name = args.service
         snapshot_spec = args.snapshot

@@ -23,6 +23,7 @@ class DockerHealthCommand(Command[EmptyArgs]):
     """
 
     async def execute(self, args: EmptyArgs, ctx: AppContext) -> int:
+        """Check deployed container health and render a report."""
         _ = args
         expected_services = self._expected_services(ctx)
         containers = await ctx.docker.list_containers()
@@ -31,6 +32,7 @@ class DockerHealthCommand(Command[EmptyArgs]):
         return EXIT_DOCKER_ISSUES if report.has_issues else EXIT_SUCCESS
 
     def _expected_services(self, ctx: AppContext) -> set[str]:
+        """Return service names present under the deploy root."""
         deploy_root = Path(ctx.config.paths.deploy_root)
         if not deploy_root.exists():
             return set()
@@ -39,6 +41,7 @@ class DockerHealthCommand(Command[EmptyArgs]):
     def _analyze_containers(
         self, expected_services: set[str], containers: list[ContainerInfo]
     ) -> "_DockerHealthReport":
+        """Categorize containers into missing/bad/orphan groups."""
         seen_projects = {c.project for c in containers if c.project}
         missing_services = sorted(expected_services - seen_projects)
 
@@ -64,6 +67,7 @@ class DockerHealthCommand(Command[EmptyArgs]):
         )
 
     def _render_report(self, ctx: AppContext, report: "_DockerHealthReport") -> None:
+        """Render a health report to the configured renderer."""
         if report.missing_services:
             ctx.renderer.print_heading("Deployed services with no running container")
             columns = [TableColumn("Service", style="bold")]
@@ -128,6 +132,7 @@ class PruneImagesCommand(Command[EmptyArgs]):
     """
 
     async def execute(self, args: EmptyArgs, ctx: AppContext) -> int:
+        """Remove dangling Docker images."""
         _ = args
         images = await ctx.docker.get_dangling_images()
 
@@ -177,6 +182,7 @@ class PruneOrphansCommand(Command[EmptyArgs]):
     """
 
     async def execute(self, args: EmptyArgs, ctx: AppContext) -> int:
+        """Remove stopped containers with no compose project label."""
         _ = args
         containers = await ctx.docker.list_containers()
 
@@ -214,6 +220,8 @@ class PruneOrphansCommand(Command[EmptyArgs]):
 
 
 class _DockerHealthReport:
+    """Holds categorized docker health findings."""
+
     def __init__(
         self,
         *,
@@ -222,6 +230,7 @@ class _DockerHealthReport:
         bad_other: list[ContainerInfo],
         orphans: list[ContainerInfo],
     ) -> None:
+        """Create a docker health report."""
         self.missing_services = missing_services
         self.bad_deployed = bad_deployed
         self.bad_other = bad_other
@@ -229,4 +238,5 @@ class _DockerHealthReport:
 
     @property
     def has_issues(self) -> bool:
+        """Return True if any issues were detected."""
         return bool(self.missing_services or self.bad_deployed or self.bad_other or self.orphans)

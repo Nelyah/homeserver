@@ -19,6 +19,7 @@ class ListCommand(Command[ListArgs]):
     """List all services and their status."""
 
     async def execute(self, args: ListArgs, ctx: AppContext) -> int:
+        """Render a table of services with deploy/backup status."""
         services = sorted(ctx.config.services.keys())
         if not services:
             ctx.renderer.print_warn("No services found in config")
@@ -32,6 +33,7 @@ class ListCommand(Command[ListArgs]):
         global_last_ok = await unit_last_success(ctx.systemctl, global_backup_unit)
 
         def is_deployed(service_name: str) -> bool:
+            """Check whether service has a deploy directory."""
             deploy_dir = Path(ctx.config.paths.deploy_root) / service_name
             try:
                 return deploy_dir.is_dir()
@@ -39,6 +41,7 @@ class ListCommand(Command[ListArgs]):
                 return False
 
         def last_backup_ok(*, backup_enabled: bool) -> bool:
+            """Return the last backup result for this service based on global unit state."""
             if not backup_enabled:
                 return False
             return bool(global_last_ok is True)
@@ -80,6 +83,7 @@ class ListBackupsCommand(Command[ListBackupsArgs]):
     """List snapshots for a service."""
 
     async def execute(self, args: ListBackupsArgs, ctx: AppContext) -> int:
+        """List snapshots for a service and show configured backup targets."""
         env = args.env
         service_name = args.service
 

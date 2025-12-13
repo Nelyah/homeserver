@@ -156,6 +156,7 @@ class RestoreOrchestrator:
         include_paths: list[str],
         missing: list[str],
     ) -> RestoreResult | None:
+        """Validate include paths and return an early RestoreResult on failure."""
         if not include_paths:
             message = f"No restore paths configured for {svc.name}"
             return RestoreResult(
@@ -179,12 +180,14 @@ class RestoreOrchestrator:
         return None
 
     def _log_restore_plan(self, snapshot_id: str, include_paths: list[str]) -> None:
+        """Log the restore plan to the application logger."""
         logger.info("Snapshot: %s", snapshot_id[:8])
         logger.info("Restore includes:")
         for path in include_paths:
             logger.info("  %s", path)
 
     async def _maybe_stop_compose(self, svc: ServiceConfig) -> tuple[bool, str]:
+        """Stop the compose service if configured; returns (stopped, unit)."""
         compose_unit = svc.restore.compose_unit
         if not svc.restore.stop_compose or not compose_unit:
             return False, compose_unit
@@ -199,6 +202,7 @@ class RestoreOrchestrator:
         return False, compose_unit
 
     async def _maybe_restart_compose(self, was_stopped: bool, compose_unit: str) -> None:
+        """Restart a compose unit if it was stopped earlier."""
         if not was_stopped or not compose_unit:
             return
 

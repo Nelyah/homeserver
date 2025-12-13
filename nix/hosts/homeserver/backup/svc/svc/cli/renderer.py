@@ -90,18 +90,23 @@ class RichRenderer(Renderer):
         return rich_escape(text)
 
     def print_heading(self, title: str) -> None:
+        """Print a section heading."""
         self.console.print(f"[bold blue]== {self._escape(title)} ==[/]")
 
     def print_ok(self, message: str) -> None:
+        """Print a success message."""
         self.console.print(f"[green]OK[/] {self._escape(message)}")
 
     def print_warn(self, message: str) -> None:
+        """Print a warning message."""
         self.console.print(f"[yellow]WARN[/] {self._escape(message)}")
 
     def print_error(self, message: str) -> None:
+        """Print an error message."""
         self.console.print(f"[red]ERROR[/] {self._escape(message)}")
 
     def print_info(self, message: str) -> None:
+        """Print an informational message."""
         self.console.print(self._escape(message))
 
     def render_table(
@@ -110,6 +115,7 @@ class RichRenderer(Renderer):
         columns: Sequence[TableColumn],
         rows: Sequence[TableRow],
     ) -> None:
+        """Render a table to the console."""
         table = Table(title=title, header_style="bold", show_lines=False)
 
         for col in columns:
@@ -127,9 +133,11 @@ class RichRenderer(Renderer):
         self.console.print(table)
 
     def format_check(self, ok: bool) -> RenderableType | str:
+        """Format a boolean as a check mark or dash."""
         return Text("✓", style="green") if ok else Text("-", style="dim")
 
     def format_status(self, ok: bool, detail: str) -> RenderableType | str:
+        """Format a status indicator with detail text."""
         icon = Text("✓", style="green") if ok else Text("✗", style="red")
         message = Text(self._escape(detail))
         return Text.assemble(icon, " ", message)
@@ -139,18 +147,23 @@ class PlainRenderer(Renderer):
     """Plain text renderer for non-TTY or fallback output."""
 
     def print_heading(self, title: str) -> None:
+        """Print a section heading."""
         print(f"== {title} ==")
 
     def print_ok(self, message: str) -> None:
+        """Print a success message."""
         print(f"OK: {message}")
 
     def print_warn(self, message: str) -> None:
+        """Print a warning message."""
         print(f"WARN: {message}")
 
     def print_error(self, message: str) -> None:
+        """Print an error message."""
         print(f"ERROR: {message}")
 
     def print_info(self, message: str) -> None:
+        """Print an informational message."""
         print(message)
 
     def render_table(
@@ -159,6 +172,7 @@ class PlainRenderer(Renderer):
         columns: Sequence[TableColumn],
         rows: Sequence[TableRow],
     ) -> None:
+        """Render a simple text table."""
         print(f"\n{title}")
         print("-" * len(title))
 
@@ -173,9 +187,11 @@ class PlainRenderer(Renderer):
         print()
 
     def format_check(self, ok: bool) -> RenderableType | str:
+        """Format a boolean as a check mark or dash."""
         return "✓" if ok else "-"
 
     def format_status(self, ok: bool, detail: str) -> RenderableType | str:
+        """Format a status indicator with detail text."""
         status = "OK" if ok else "FAIL"
         return f"{status}: {detail}"
 

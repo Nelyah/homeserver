@@ -32,21 +32,21 @@ class AppContext:
 
     @property
     def systemctl(self) -> SystemctlController:
-        """Get or create SystemctlController."""
+        """Get or create a SystemctlController."""
         if self._systemctl is None:
             self._systemctl = SystemctlController(dry_run=self.dry_run)
         return self._systemctl
 
     @property
     def docker(self) -> DockerController:
-        """Get or create DockerController."""
+        """Get or create a DockerController."""
         if self._docker is None:
             self._docker = DockerController()
         return self._docker
 
     @property
     def path_resolver(self) -> PathResolver:
-        """Get or create PathResolver."""
+        """Get or create a PathResolver."""
         if self._path_resolver is None:
             self._path_resolver = PathResolver(self.config, self.docker)
         return self._path_resolver

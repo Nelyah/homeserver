@@ -12,6 +12,7 @@ class BackupCommand(Command[BackupArgs]):
     """Run backup for one or all services."""
 
     async def execute(self, args: BackupArgs, ctx: AppContext) -> int:
+        """Execute backups and render a plan + summary."""
         env = args.env
         orchestrator = self._orchestrator(env, ctx)
         services: list[ServiceConfig] = orchestrator.get_backup_services(args.service)
@@ -27,6 +28,7 @@ class BackupCommand(Command[BackupArgs]):
         return overall_status
 
     def _orchestrator(self, env: str, ctx: AppContext) -> BackupOrchestrator:
+        """Create a BackupOrchestrator for the selected restic env."""
         env_vars = load_restic_env(ctx.config.paths.secrets_root, env)
         restic = ctx.create_restic_runner(env_vars)
         return BackupOrchestrator(
@@ -37,6 +39,7 @@ class BackupCommand(Command[BackupArgs]):
         )
 
     def _require_root_if_needed(self, services: list[ServiceConfig]) -> None:
+        """Require root if any service needs to be stopped for backup."""
         for svc in services:
             if svc.backup.needs_service_stopped:
                 require_root(f"backup {svc.name} (needsServiceStopped)")
@@ -48,6 +51,7 @@ class BackupCommand(Command[BackupArgs]):
         env: str,
         services: list[ServiceConfig],
     ) -> None:
+        """Render the backup plan table."""
         columns = [
             TableColumn("Service", style="bold"),
             TableColumn("Stop", justify="center"),
@@ -81,6 +85,7 @@ class BackupCommand(Command[BackupArgs]):
         env: str,
         services: list[ServiceConfig],
     ) -> tuple[list[tuple[str, int]], int]:
+        """Run backups for each service and return (results, overall_status)."""
         results: list[tuple[str, int]] = []
         overall_status = EXIT_SUCCESS
 
@@ -100,6 +105,7 @@ class BackupCommand(Command[BackupArgs]):
     def _render_backup_result(
         self, ctx: AppContext, name: str, result: BackupResult
     ) -> None:
+        """Render per-service backup result messages."""
         if result.success:
             ctx.renderer.print_ok(result.message)
         else:
@@ -112,6 +118,7 @@ class BackupCommand(Command[BackupArgs]):
             ctx.renderer.print_warn(f"Forget failed for {name} (exit code {result.forget_status})")
 
     def _render_results(self, ctx: AppContext, results: list[tuple[str, int]]) -> None:
+        """Render the final backup summary table."""
         columns = [
             TableColumn("Service", style="bold"),
             TableColumn("Result"),
