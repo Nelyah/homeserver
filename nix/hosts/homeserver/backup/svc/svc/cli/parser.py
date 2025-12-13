@@ -7,7 +7,6 @@ same commands/options and dynamic completion of service names.
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import json
 from dataclasses import dataclass
@@ -18,6 +17,16 @@ import click
 from click.shell_completion import CompletionItem
 
 from ..config import load_config
+from .args import (
+    BackupArgs,
+    EmptyArgs,
+    ListArgs,
+    ListBackupsArgs,
+    LogsArgs,
+    RestartArgs,
+    RestoreArgs,
+    ServiceActionArgs,
+)
 from .commands import (
     BackupCommand,
     DockerHealthCommand,
@@ -85,8 +94,9 @@ class ServiceNameParam(click.ParamType):
         self._allow_all = allow_all
 
     def shell_complete(
-        self, ctx: click.Context, _param: click.Parameter, incomplete: str
+        self, ctx: click.Context, param: click.Parameter, incomplete: str
     ) -> list[CompletionItem]:
+        _ = param
         params = ctx.find_root().params or {}
         config_param = params.get("config")
         config_path = config_param if isinstance(config_param, str) else "/etc/svc/services.json"
@@ -109,7 +119,7 @@ def _get_app_ctx(ctx: click.Context) -> AppContext:
     )
 
 
-def _run_command(ctx: click.Context, command: Command, args: argparse.Namespace) -> None:
+def _run_command(ctx: click.Context, command: Command[Any], args: Any) -> None:
     app_ctx = _get_app_ctx(ctx)
     try:
         exit_code: int = asyncio.run(command.execute(args, app_ctx))
@@ -145,8 +155,7 @@ def cli(ctx: click.Context, config: str, verbose: bool, dry_run: bool) -> None:
 @click.pass_context
 def list_cmd(ctx: click.Context, backup_env: str) -> None:
     """List services and their backup status."""
-    args = argparse.Namespace(backup_env=backup_env)
-    _run_command(ctx, ListCommand(), args)
+    _run_command(ctx, ListCommand(), ListArgs(backup_env=backup_env))
 
 
 @cli.command("list-backups")
@@ -155,8 +164,7 @@ def list_cmd(ctx: click.Context, backup_env: str) -> None:
 @click.pass_context
 def list_backups_cmd(ctx: click.Context, env: str, service: str) -> None:
     """List restic snapshots for a service."""
-    args = argparse.Namespace(env=env, service=service)
-    _run_command(ctx, ListBackupsCommand(), args)
+    _run_command(ctx, ListBackupsCommand(), ListBackupsArgs(env=env, service=service))
 
 
 @cli.command("backup")
@@ -165,8 +173,7 @@ def list_backups_cmd(ctx: click.Context, env: str, service: str) -> None:
 @click.pass_context
 def backup_cmd(ctx: click.Context, env: str, service: str) -> None:
     """Run backups"""
-    args = argparse.Namespace(env=env, service=service)
-    _run_command(ctx, BackupCommand(), args)
+    _run_command(ctx, BackupCommand(), BackupArgs(env=env, service=service))
 
 
 @cli.command("restore")
@@ -187,22 +194,25 @@ def restore_cmd(
     verify_includes: bool,
 ) -> None:
     """Restore a service from a snapshot (default: `latest`)."""
-    args = argparse.Namespace(
-        env=env,
-        service=service,
-        snapshot=snapshot,
-        verify_includes=verify_includes,
+    _run_command(
+        ctx,
+        RestoreCommand(),
+        RestoreArgs(
+            env=env,
+            service=service,
+            snapshot=snapshot,
+            verify_includes=verify_includes,
+        ),
     )
-    _run_command(ctx, RestoreCommand(), args)
 
 
 @cli.command("start")
 @click.argument("service", type=ServiceNameParam(backup_only=False, allow_all=True))
+@click.option("--build", is_flag=True, help="Build images before starting")
 @click.pass_context
-def start_cmd(ctx: click.Context, service: str) -> None:
+def start_cmd(ctx: click.Context, service: str, build: bool) -> None:
     """Start a docker-compose services."""
-    args = argparse.Namespace(service=service)
-    _run_command(ctx, StartCommand(), args)
+    _run_command(ctx, StartCommand(), ServiceActionArgs(service=service, build=build))
 
 
 @cli.command("stop")
@@ -210,8 +220,7 @@ def start_cmd(ctx: click.Context, service: str) -> None:
 @click.pass_context
 def stop_cmd(ctx: click.Context, service: str) -> None:
     """Stop a docker-compose services."""
-    args = argparse.Namespace(service=service)
-    _run_command(ctx, StopCommand(), args)
+    _run_command(ctx, StopCommand(), ServiceActionArgs(service=service, build=False))
 
 
 @cli.command("restart")
@@ -221,11 +230,11 @@ def stop_cmd(ctx: click.Context, service: str) -> None:
     is_flag=True,
     help="Perform docker compose down/up instead of systemctl restart",
 )
+@click.option("--build", is_flag=True, help="Build images before starting")
 @click.pass_context
-def restart_cmd(ctx: click.Context, service: str, recreate: bool) -> None:
+def restart_cmd(ctx: click.Context, service: str, recreate: bool, build: bool) -> None:
     """Restart a docker-compose service."""
-    args = argparse.Namespace(service=service, recreate=recreate)
-    _run_command(ctx, RestartCommand(), args)
+    _run_command(ctx, RestartCommand(), RestartArgs(service=service, recreate=recreate, build=build))
 
 
 @cli.command("logs")
@@ -241,13 +250,11 @@ def restart_cmd(ctx: click.Context, service: str, recreate: bool) -> None:
 @click.pass_context
 def logs_cmd(ctx: click.Context, service: str, follow: bool, tail: int, timestamps: bool) -> None:
     """Stream docker-compose logs for a service."""
-    args = argparse.Namespace(
-        service=service,
-        follow=follow,
-        tail=tail,
-        timestamps=timestamps,
+    _run_command(
+        ctx,
+        LogsCommand(),
+        LogsArgs(service=service, follow=follow, tail=tail, timestamps=timestamps),
     )
-    _run_command(ctx, LogsCommand(), args)
 
 
 # ---------------------------------------------------------------------------
@@ -269,8 +276,7 @@ def docker_health_cmd(ctx: click.Context) -> None:
     Reports deployed services with no running container, containers not in
     Up/healthy state, and orphan containers (stopped, no compose label).
     """
-    args = argparse.Namespace()
-    _run_command(ctx, DockerHealthCommand(), args)
+    _run_command(ctx, DockerHealthCommand(), EmptyArgs())
 
 
 @docker_group.command("prune-images")
@@ -283,8 +289,7 @@ def docker_prune_images_cmd(ctx: click.Context) -> None:
     The old image loses its tag but remains on disk. These are safe to remove
     as they are not used by any container.
     """
-    args = argparse.Namespace()
-    _run_command(ctx, PruneImagesCommand(), args)
+    _run_command(ctx, PruneImagesCommand(), EmptyArgs())
 
 
 @docker_group.command("prune-orphans")
@@ -297,5 +302,4 @@ def docker_prune_orphans_cmd(ctx: click.Context) -> None:
     project label. They may be leftover from removed compose stacks or
     one-off test runs. Only stopped containers without labels are removed.
     """
-    args = argparse.Namespace()
-    _run_command(ctx, PruneOrphansCommand(), args)
+    _run_command(ctx, PruneOrphansCommand(), EmptyArgs())

@@ -1,13 +1,15 @@
 """Base command protocol and application context."""
 
-import argparse
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Generic, TypeVar
 
 from ...config import Config
 from ...controllers import DockerController, ResticRunner, SystemctlController
 from ...core import PathResolver
 from ..renderer import Renderer
+
+TArgs = TypeVar("TArgs")
 
 
 @dataclass
@@ -54,11 +56,11 @@ class AppContext:
         return ResticRunner(env_vars, dry_run=self.dry_run)
 
 
-class Command(ABC):
+class Command(ABC, Generic[TArgs]):
     """Abstract base class for CLI commands."""
 
     @abstractmethod
-    async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, args: TArgs, ctx: AppContext) -> int:
         """
         Execute the command.
 

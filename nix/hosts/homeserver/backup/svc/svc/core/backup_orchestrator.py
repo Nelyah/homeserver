@@ -68,7 +68,7 @@ class BackupOrchestrator:
             tags=list(svc.backup.tags),
         )
 
-    async def backup_service(self, svc: ServiceConfig, dry_run: bool = False) -> BackupResult:
+    async def backup_service(self, svc: ServiceConfig) -> BackupResult:
         """
         Execute backup for a single service.
 
@@ -79,13 +79,7 @@ class BackupOrchestrator:
         - Retention policy application
         - Service restart
         """
-        if dry_run:
-            return BackupResult(
-                service_name=svc.name,
-                success=True,
-                exit_code=EXIT_SUCCESS,
-                message=f"[dry-run] Would run backup for {svc.name}",
-            )
+        dry_run_prefix = "[dry-run] " if self.restic.dry_run else ""
 
         paths, missing = await self.path_resolver.get_backup_paths(
             svc.backup.volumes, svc.backup.paths
@@ -97,7 +91,7 @@ class BackupOrchestrator:
                 service_name=svc.name,
                 success=False,
                 exit_code=EXIT_CONFIG_ERROR,
-                message=f"No backup paths configured for {svc.name}",
+                message=f"{dry_run_prefix}No backup paths configured for {svc.name}",
             )
 
         if missing:
@@ -132,7 +126,7 @@ class BackupOrchestrator:
                     service_name=svc.name,
                     success=False,
                     exit_code=EXIT_RESTIC_ERROR,
-                    message=f"Backup failed for {svc.name} (exit code {status})",
+                    message=f"{dry_run_prefix}Backup failed for {svc.name} (exit code {status})",
                     paths_backed_up=paths,
                 )
 
@@ -146,7 +140,7 @@ class BackupOrchestrator:
                 service_name=svc.name,
                 success=True,
                 exit_code=EXIT_SUCCESS,
-                message=f"Backup completed for {svc.name}",
+                message=f"{dry_run_prefix}Backup completed for {svc.name}",
                 paths_backed_up=paths,
                 forget_status=forget_status,
             )

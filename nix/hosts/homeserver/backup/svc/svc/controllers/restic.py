@@ -203,7 +203,7 @@ class ResticRunner:
         ]
         if not candidates:
             return None
-        best = max(candidates, key=lambda s: cast("str", s.get("time") or ""))
+        best = max(candidates, key=lambda s: (s.get("time") or ""))
         best_id = best.get("id")
         return best_id if isinstance(best_id, str) else None
 

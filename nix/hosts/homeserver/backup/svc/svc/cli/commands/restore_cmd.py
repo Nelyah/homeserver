@@ -1,23 +1,23 @@
 """Restore command."""
 
-import argparse
 import logging
 
 from ...config import load_restic_env
 from ...core import RestoreOrchestrator, require_root, validate_service
+from ..args import RestoreArgs
 from .base import AppContext, Command
 
 logger = logging.getLogger("svc.cli.restore")
 
 
-class RestoreCommand(Command):
+class RestoreCommand(Command[RestoreArgs]):
     """Restore a service from backup."""
 
-    async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, args: RestoreArgs, ctx: AppContext) -> int:
         env = args.env
         service_name = args.service
         snapshot_spec = args.snapshot
-        verify_includes = getattr(args, "verify_includes", False)
+        verify_includes = args.verify_includes
 
         require_root(f"restore {service_name}")
 

@@ -1,10 +1,10 @@
 """Docker maintenance commands (health, prune-images, prune-orphans)."""
 
-import argparse
 from pathlib import Path
 
 from ...controllers.docker import ContainerInfo
 from ...exceptions import EXIT_SUCCESS
+from ..args import EmptyArgs
 from ..renderer import TableColumn, TableRow
 from .base import AppContext, Command
 
@@ -12,7 +12,7 @@ from .base import AppContext, Command
 EXIT_DOCKER_ISSUES = 1
 
 
-class DockerHealthCommand(Command):
+class DockerHealthCommand(Command[EmptyArgs]):
     """
     Check health of deployed docker services and containers.
 
@@ -22,7 +22,8 @@ class DockerHealthCommand(Command):
     - Orphan containers (stopped, no compose project label)
     """
 
-    async def execute(self, _args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, args: EmptyArgs, ctx: AppContext) -> int:
+        _ = args
         expected_services = self._expected_services(ctx)
         containers = await ctx.docker.list_containers()
         report = self._analyze_containers(expected_services, containers)
@@ -114,7 +115,7 @@ class DockerHealthCommand(Command):
         ctx.renderer.render_table(title, columns, rows)
 
 
-class PruneImagesCommand(Command):
+class PruneImagesCommand(Command[EmptyArgs]):
     """
     Remove dangling Docker images.
 
@@ -126,7 +127,8 @@ class PruneImagesCommand(Command):
     never affected.
     """
 
-    async def execute(self, _args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, args: EmptyArgs, ctx: AppContext) -> int:
+        _ = args
         images = await ctx.docker.get_dangling_images()
 
         if not images:
@@ -159,7 +161,7 @@ class PruneImagesCommand(Command):
         return EXIT_SUCCESS
 
 
-class PruneOrphansCommand(Command):
+class PruneOrphansCommand(Command[EmptyArgs]):
     """
     Remove orphan containers.
 
@@ -174,7 +176,8 @@ class PruneOrphansCommand(Command):
     Running containers and labeled containers are never affected.
     """
 
-    async def execute(self, _args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, args: EmptyArgs, ctx: AppContext) -> int:
+        _ = args
         containers = await ctx.docker.list_containers()
 
         # Find orphans (stopped, no compose project label)

@@ -1,6 +1,5 @@
 """List services command."""
 
-import argparse
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -8,6 +7,7 @@ from ...config import load_restic_env
 from ...controllers import unit_last_success
 from ...core import validate_service
 from ...exceptions import EXIT_SUCCESS
+from ..args import ListArgs, ListBackupsArgs
 from ..renderer import TableColumn, TableRow
 from .base import AppContext, Command
 
@@ -15,17 +15,19 @@ if TYPE_CHECKING:
     from ...controllers.restic import ResticSnapshot
 
 
-class ListCommand(Command):
+class ListCommand(Command[ListArgs]):
     """List all services and their status."""
 
-    async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, args: ListArgs, ctx: AppContext) -> int:
         services = sorted(ctx.config.services.keys())
         if not services:
             ctx.renderer.print_warn("No services found in config")
             return EXIT_SUCCESS
 
-        backup_env = getattr(args, "backup_env", "local")
-        global_backup_unit = "backup.service" if backup_env == "local" else "backup-remote.service"
+        backup_env = args.backup_env
+        global_backup_unit = (
+            "backup.service" if backup_env == "local" else "backup-remote.service"
+        )
 
         global_last_ok = await unit_last_success(ctx.systemctl, global_backup_unit)
 
@@ -36,15 +38,9 @@ class ListCommand(Command):
             except OSError:
                 return False
 
-        async def last_backup_ok(service_name: str, *, backup_enabled: bool) -> bool:
+        def last_backup_ok(*, backup_enabled: bool) -> bool:
             if not backup_enabled:
                 return False
-
-            per_service_unit = f"backup-{service_name}.service"
-            per_service_result = await unit_last_success(ctx.systemctl, per_service_unit)
-            if per_service_result is not None:
-                return bool(per_service_result)
-
             return bool(global_last_ok is True)
 
         columns = [
@@ -59,7 +55,7 @@ class ListCommand(Command):
             svc = ctx.config.services[name]
             deployed_ok = is_deployed(name)
             backup_ok = bool(svc.backup.enable)
-            last_ok = await last_backup_ok(name, backup_enabled=backup_ok)
+            last_ok = last_backup_ok(backup_enabled=backup_ok)
 
             rows.append(
                 TableRow(
@@ -80,10 +76,10 @@ class ListCommand(Command):
         return EXIT_SUCCESS
 
 
-class ListBackupsCommand(Command):
+class ListBackupsCommand(Command[ListBackupsArgs]):
     """List snapshots for a service."""
 
-    async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, args: ListBackupsArgs, ctx: AppContext) -> int:
         env = args.env
         service_name = args.service
 

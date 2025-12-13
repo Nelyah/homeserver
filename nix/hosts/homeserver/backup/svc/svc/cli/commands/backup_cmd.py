@@ -1,21 +1,20 @@
 """Backup command."""
 
-import argparse
-
-from ...config import load_restic_env
-from ...core import BackupOrchestrator, require_root
+from ...config import ServiceConfig, load_restic_env
+from ...core import BackupOrchestrator, BackupResult, require_root
 from ...exceptions import EXIT_SUCCESS
+from ..args import BackupArgs
 from ..renderer import TableColumn, TableRow
 from .base import AppContext, Command
 
 
-class BackupCommand(Command):
+class BackupCommand(Command[BackupArgs]):
     """Run backup for one or all services."""
 
-    async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, args: BackupArgs, ctx: AppContext) -> int:
         env = args.env
         orchestrator = self._orchestrator(env, ctx)
-        services = orchestrator.get_backup_services(args.service)
+        services: list[ServiceConfig] = orchestrator.get_backup_services(args.service)
         if not services:
             ctx.renderer.print_warn("No services with backup enabled")
             return EXIT_SUCCESS
@@ -37,7 +36,7 @@ class BackupCommand(Command):
             path_resolver=ctx.path_resolver,
         )
 
-    def _require_root_if_needed(self, services: list) -> None:
+    def _require_root_if_needed(self, services: list[ServiceConfig]) -> None:
         for svc in services:
             if svc.backup.needs_service_stopped:
                 require_root(f"backup {svc.name} (needsServiceStopped)")
@@ -47,7 +46,7 @@ class BackupCommand(Command):
         ctx: AppContext,
         orchestrator: BackupOrchestrator,
         env: str,
-        services: list,
+        services: list[ServiceConfig],
     ) -> None:
         columns = [
             TableColumn("Service", style="bold"),
@@ -57,7 +56,7 @@ class BackupCommand(Command):
             TableColumn("Tags"),
         ]
 
-        rows = []
+        rows: list[TableRow] = []
         for svc in services:
             plan = orchestrator.create_backup_plan(svc)
             stop_display = "yes" if plan.needs_stop else "no"
@@ -80,7 +79,7 @@ class BackupCommand(Command):
         ctx: AppContext,
         orchestrator: BackupOrchestrator,
         env: str,
-        services: list,
+        services: list[ServiceConfig],
     ) -> tuple[list[tuple[str, int]], int]:
         results: list[tuple[str, int]] = []
         overall_status = EXIT_SUCCESS
@@ -90,7 +89,7 @@ class BackupCommand(Command):
             if ctx.dry_run:
                 ctx.renderer.print_warn("Dry run enabled: no changes will be made")
 
-            result = await orchestrator.backup_service(svc, dry_run=ctx.dry_run)
+            result = await orchestrator.backup_service(svc)
             if result.exit_code != EXIT_SUCCESS:
                 overall_status = result.exit_code
             self._render_backup_result(ctx, svc.name, result)
@@ -98,7 +97,9 @@ class BackupCommand(Command):
 
         return results, overall_status
 
-    def _render_backup_result(self, ctx: AppContext, name: str, result) -> None:
+    def _render_backup_result(
+        self, ctx: AppContext, name: str, result: BackupResult
+    ) -> None:
         if result.success:
             ctx.renderer.print_ok(result.message)
         else:

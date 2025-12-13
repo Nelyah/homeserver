@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import re
 import shutil
 import sys
 from collections.abc import Callable
@@ -11,7 +10,6 @@ from pathlib import Path
 from typing import Literal
 
 from ..config import Config
-from ..controllers import SystemctlController
 from ..exceptions import ConfigError, DependencyError
 from .service_helpers import get_service
 
@@ -39,14 +37,13 @@ class _ComposeStep:
 class ServiceManager:
     """Manages docker-compose service lifecycle operations."""
 
-    def __init__(self, config: Config, systemctl: SystemctlController):
+    def __init__(self, config: Config, *, dry_run: bool = False):
         self.config = config
-        self.systemctl = systemctl
+        self.dry_run = dry_run
 
-    @staticmethod
-    def compose_unit_for(service_name: str) -> str:
-        """Get the systemd unit name for a service's docker-compose."""
-        return f"docker-compose-{service_name}.service"
+    def compose_file_for(self, service_name: str) -> Path:
+        """Get the deployed docker-compose.yml path for a service."""
+        return Path(self.config.paths.deploy_root) / service_name / "docker-compose.yml"
 
     def get_service_names(self, service_arg: str) -> list[str]:
         """
@@ -68,10 +65,11 @@ class ServiceManager:
         action: ActionType,
         service_name: str,
         *,
+        build: bool = False,
         output: Callable[[str], None] | None = None,
     ) -> ServiceActionResult:
         """Perform a single action on a service via docker-compose directly."""
-        compose_file = await self.resolve_compose_file(service_name)
+        compose_file = self.compose_file_for(service_name)
         docker_compose = self._docker_compose_bin()
         if docker_compose is None:
             return ServiceActionResult(
@@ -87,7 +85,6 @@ class ServiceManager:
                 detail=f"compose file not found: {compose_file}",
             )
 
-        build = await self._compose_build_enabled(service_name)
         interactive = output is not None and sys.stdout.isatty() and sys.stderr.isatty()
 
         try:
@@ -130,6 +127,7 @@ class ServiceManager:
         action: ActionType,
         service_arg: str,
         *,
+        build: bool = False,
         output: Callable[[str], None] | None = None,
     ) -> list[ServiceActionResult]:
         """
@@ -150,7 +148,7 @@ class ServiceManager:
         for name in service_names:
             if output is not None and not interactive and len(service_names) > 1:
                 output(f"== {action} {name} ==")
-            result = await self._perform_action(action, name, output=output)
+            result = await self._perform_action(action, name, build=build, output=output)
             results.append(result)
 
         return results
@@ -162,6 +160,11 @@ class ServiceManager:
         cwd: str,
         output: Callable[[str], None] | None,
     ) -> int:
+        if self.dry_run:
+            if output is not None:
+                output(f"[dry-run] Would run in {cwd}: {' '.join(args)}")
+            return 0
+
         # If we're connected to a real terminal, inheriting the parent's fds
         # preserves docker-compose's interactive/inline progress rendering.
         if output is not None and sys.stdout.isatty() and sys.stderr.isatty():
@@ -198,11 +201,12 @@ class ServiceManager:
         self,
         service_name: str,
         *,
+        build: bool = False,
         output: Callable[[str], None] | None = None,
     ) -> ServiceActionResult:
         """Recreate a service by running docker compose down/up."""
         svc = get_service(self.config, service_name)
-        compose_file = await self.resolve_compose_file(svc.name)
+        compose_file = self.compose_file_for(svc.name)
 
         docker_compose = self._docker_compose_bin()
         if docker_compose is None:
@@ -241,7 +245,14 @@ class ServiceManager:
 
         # Run docker compose up -d
         up_rc = await self._run_streamed(
-            [docker_compose, "-f", str(compose_file), "up", "-d"],
+            [
+                docker_compose,
+                "-f",
+                str(compose_file),
+                "up",
+                "-d",
+                *([] if not build else ["--build"]),
+            ],
             cwd=str(compose_file.parent),
             output=output,
         )
@@ -262,6 +273,7 @@ class ServiceManager:
         self,
         service_arg: str,
         *,
+        build: bool = False,
         output: Callable[[str], None] | None = None,
     ) -> list[ServiceActionResult]:
         """Recreate one or all services via docker compose down/up."""
@@ -272,27 +284,10 @@ class ServiceManager:
         for name in service_names:
             if output is not None and not interactive and len(service_names) > 1:
                 output(f"== recreate {name} ==")
-            result = await self.recreate_service(name, output=output)
+            result = await self.recreate_service(name, build=build, output=output)
             results.append(result)
 
         return results
-
-    async def resolve_compose_file(self, service_name: str) -> Path:
-        """Resolve the compose file path for a service."""
-        unit = self.compose_unit_for(service_name)
-
-        props = await self.systemctl.show(unit, ["LoadState", "ExecStart", "WorkingDirectory"])
-        exec_start = props.get("ExecStart", "")
-
-        match = re.search(r"(?:^|\s)-f\s+([^\s;]+)", exec_start)
-        if match:
-            return Path(match.group(1))
-
-        working_dir = props.get("WorkingDirectory")
-        if working_dir:
-            return Path(working_dir) / "docker-compose.yml"
-
-        return Path(self.config.paths.deploy_root) / service_name / "docker-compose.yml"
 
     async def stream_logs(
         self,
@@ -317,7 +312,7 @@ class ServiceManager:
             )
             raise DependencyError(message)
 
-        compose_file = await self.resolve_compose_file(svc.name)
+        compose_file = self.compose_file_for(svc.name)
         if not compose_file.exists():
             message = f"Compose file not found: {compose_file}"
             raise ConfigError(message)
@@ -341,12 +336,6 @@ class ServiceManager:
             shutil.which("docker-compose") or "/run/current-system/sw/bin/docker-compose"
         )
         return docker_compose if Path(docker_compose).exists() else None
-
-    async def _compose_build_enabled(self, service_name: str) -> bool:
-        unit = self.compose_unit_for(service_name)
-        props = await self.systemctl.show(unit, ["ExecStart"])
-        exec_start = props.get("ExecStart", "")
-        return "--build" in exec_start
 
     def _compose_up_args(
         self,

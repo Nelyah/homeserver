@@ -137,7 +137,8 @@ class RestoreOrchestrator:
                 include_paths=include_paths,
             )
 
-        message = f"Restore completed for {svc.name}"
+        dry_run_prefix = "[dry-run] " if self.restic.dry_run else ""
+        message = f"{dry_run_prefix}Restore completed for {svc.name}"
         return RestoreResult(
             service_name=svc.name,
             success=True,
