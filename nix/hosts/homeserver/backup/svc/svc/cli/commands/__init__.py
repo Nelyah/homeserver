@@ -2,13 +2,11 @@
 
 from .backup_cmd import BackupCommand
 from .base import AppContext, Command
+from .docker_cmd import DockerHealthCommand, PruneImagesCommand, PruneOrphansCommand
 from .list_cmd import ListBackupsCommand, ListCommand
 from .restore_cmd import RestoreCommand
 from .service_cmd import (
-    DockerHealthCommand,
     LogsCommand,
-    PruneImagesCommand,
-    PruneOrphansCommand,
     RestartCommand,
     StartCommand,
     StopCommand,
