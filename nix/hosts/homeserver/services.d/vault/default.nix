@@ -2,9 +2,7 @@
   name = "vault";
   compose = {
     enable = true;
-    # Keep Vault off shared Docker networks; Caddy reaches it via the host loopback bind in docker-compose.yml.
-    # This reduces the blast radius if any other container joins a "trusted" network.
-    networks = [];
+    networks = ["internal"];
     volumes = ["vault_data"];
   };
   files = {

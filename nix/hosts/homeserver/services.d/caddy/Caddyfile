@@ -226,9 +226,7 @@ auth.nelyah.eu {
 
 vault.nelyah.eu {
 	import security_headers
-	# Vault TLS is currently disabled inside the container; Caddy terminates HTTPS and proxies to Vault over
-	# a localhost-only bind on the Docker host (see vault docker-compose.yml).
-	reverse_proxy host.docker.internal:8200
+	reverse_proxy vault:8200
 	import sso_if_not_whitelist
 }
 
