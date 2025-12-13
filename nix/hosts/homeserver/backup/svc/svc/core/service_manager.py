@@ -4,13 +4,15 @@ import asyncio
 import logging
 import re
 import shutil
+import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
 from ..config import Config
 from ..controllers import SystemctlController
-from ..exceptions import DependencyError, SystemctlError
+from ..exceptions import DependencyError
 
 logger = logging.getLogger("svc.core.service_manager")
 
@@ -48,51 +50,141 @@ class ServiceManager:
 
         Returns:
             List of service names to operate on
+
         """
         if service_arg == "all":
             return sorted(self.config.services.keys())
-        else:
-            from .service_helpers import get_service
+        from .service_helpers import get_service
 
-            return [get_service(self.config, service_arg).name]
+        return [get_service(self.config, service_arg).name]
 
     async def _perform_action(
-        self, action: ActionType, service_name: str
+        self,
+        action: ActionType,
+        service_name: str,
+        *,
+        output: Callable[[str], None] | None = None,
     ) -> ServiceActionResult:
-        """Perform a single action on a service."""
-        unit = self.compose_unit_for(service_name)
-
-        if not await self.systemctl.is_loaded(unit):
+        """Perform a single action on a service via docker-compose directly."""
+        compose_file = await self.resolve_compose_file(service_name)
+        docker_compose = self._docker_compose_bin()
+        if docker_compose is None:
             return ServiceActionResult(
                 service_name=service_name,
                 success=False,
-                detail="not loaded",
+                detail="docker-compose not found",
             )
+
+        if not compose_file.exists():
+            return ServiceActionResult(
+                service_name=service_name,
+                success=False,
+                detail=f"compose file not found: {compose_file}",
+            )
+
+        build = await self._compose_build_enabled(service_name)
+        interactive = output is not None and sys.stdout.isatty() and sys.stderr.isatty()
+
+        def maybe_print(cmd: str) -> None:
+            if output is not None and not interactive:
+                output(cmd)
 
         try:
             if action == "stop":
-                await self.systemctl.stop(unit)
+                down_args = [
+                    docker_compose,
+                    "-f",
+                    str(compose_file),
+                    "down",
+                    "--remove-orphans",
+                ]
+                maybe_print(f"$ {' '.join(down_args)}")
+                rc = await self._run_streamed(
+                    down_args,
+                    cwd=str(compose_file.parent),
+                    output=output,
+                )
+                if rc != 0:
+                    return ServiceActionResult(
+                        service_name=service_name,
+                        success=False,
+                        detail="down failed",
+                    )
                 return ServiceActionResult(
                     service_name=service_name,
                     success=True,
                     detail="stopped",
                 )
-            elif action == "start":
-                await self.systemctl.start(unit)
+
+            if action == "start":
+                up_args = self._compose_up_args(
+                    docker_compose,
+                    compose_file,
+                    build=build,
+                    force_recreate=True,
+                    remove_orphans=True,
+                )
+                maybe_print(f"$ {' '.join(up_args)}")
+                rc = await self._run_streamed(up_args, cwd=str(compose_file.parent), output=output)
+                if rc != 0:
+                    return ServiceActionResult(
+                        service_name=service_name,
+                        success=False,
+                        detail="up failed",
+                    )
                 return ServiceActionResult(
                     service_name=service_name,
                     success=True,
                     detail="started",
                 )
-            elif action == "restart":
-                await self.systemctl.stop(unit)
-                await self.systemctl.start(unit)
+
+            if action == "restart":
+                # Mirror the systemd unit semantics (down, then up -d ...).
+                down_args = [
+                    docker_compose,
+                    "-f",
+                    str(compose_file),
+                    "down",
+                    "--remove-orphans",
+                ]
+                maybe_print(f"$ {' '.join(down_args)}")
+                down_rc = await self._run_streamed(
+                    down_args,
+                    cwd=str(compose_file.parent),
+                    output=output,
+                )
+                if down_rc != 0:
+                    return ServiceActionResult(
+                        service_name=service_name,
+                        success=False,
+                        detail="down failed",
+                    )
+
+                up_args = self._compose_up_args(
+                    docker_compose,
+                    compose_file,
+                    build=build,
+                    force_recreate=True,
+                    remove_orphans=True,
+                )
+                maybe_print(f"$ {' '.join(up_args)}")
+                up_rc = await self._run_streamed(
+                    up_args,
+                    cwd=str(compose_file.parent),
+                    output=output,
+                )
+                if up_rc != 0:
+                    return ServiceActionResult(
+                        service_name=service_name,
+                        success=False,
+                        detail="up failed",
+                    )
                 return ServiceActionResult(
                     service_name=service_name,
                     success=True,
                     detail="restarted",
                 )
-        except SystemctlError as e:
+        except Exception as e:
             return ServiceActionResult(
                 service_name=service_name,
                 success=False,
@@ -107,7 +199,11 @@ class ServiceManager:
         )
 
     async def perform_action(
-        self, action: ActionType, service_arg: str
+        self,
+        action: ActionType,
+        service_arg: str,
+        *,
+        output: Callable[[str], None] | None = None,
     ) -> list[ServiceActionResult]:
         """
         Perform an action on one or all services.
@@ -118,28 +214,73 @@ class ServiceManager:
 
         Returns:
             List of results for each service
+
         """
         service_names = self.get_service_names(service_arg)
         results: list[ServiceActionResult] = []
+        interactive = output is not None and sys.stdout.isatty() and sys.stderr.isatty()
 
         for name in service_names:
-            result = await self._perform_action(action, name)
+            if output is not None and not interactive and len(service_names) > 1:
+                output(f"== {action} {name} ==")
+            result = await self._perform_action(action, name, output=output)
             results.append(result)
 
         return results
 
-    async def recreate_service(self, service_name: str) -> ServiceActionResult:
+    async def _run_streamed(
+        self,
+        args: list[str],
+        *,
+        cwd: str,
+        output: Callable[[str], None] | None,
+    ) -> int:
+        # If we're connected to a real terminal, inheriting the parent's fds
+        # preserves docker-compose's interactive/inline progress rendering.
+        if output is not None and sys.stdout.isatty() and sys.stderr.isatty():
+            proc = await asyncio.create_subprocess_exec(*args, cwd=cwd)
+            await proc.wait()
+            return proc.returncode or 0
+
+        if output is None:
+            proc = await asyncio.create_subprocess_exec(*args, cwd=cwd)
+            await proc.wait()
+            return proc.returncode or 0
+
+        proc = await asyncio.create_subprocess_exec(
+            *args,
+            cwd=cwd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        async def pump(reader: asyncio.StreamReader | None) -> None:
+            if reader is None:
+                return
+            while True:
+                chunk = await reader.readline()
+                if not chunk:
+                    break
+                output(chunk.decode(errors="replace").rstrip("\n"))
+
+        await asyncio.gather(pump(proc.stdout), pump(proc.stderr))
+        rc = await proc.wait()
+        return rc or 0
+
+    async def recreate_service(
+        self,
+        service_name: str,
+        *,
+        output: Callable[[str], None] | None = None,
+    ) -> ServiceActionResult:
         """Recreate a service by running docker compose down/up."""
         from .service_helpers import get_service
 
         svc = get_service(self.config, service_name)
         compose_file = await self.resolve_compose_file(svc.name)
 
-        docker_compose = (
-            shutil.which("docker-compose")
-            or "/run/current-system/sw/bin/docker-compose"
-        )
-        if not Path(docker_compose).exists():
+        docker_compose = self._docker_compose_bin()
+        if docker_compose is None:
             return ServiceActionResult(
                 service_name=service_name,
                 success=False,
@@ -153,39 +294,33 @@ class ServiceManager:
                 detail=f"compose file not found: {compose_file}",
             )
 
-        # Run docker compose down
-        proc_down = await asyncio.create_subprocess_exec(
-            docker_compose,
-            "-f",
-            str(compose_file),
-            "down",
-            cwd=str(compose_file.parent),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        await proc_down.wait()
+        interactive = output is not None and sys.stdout.isatty() and sys.stderr.isatty()
+        if output is not None and not interactive:
+            output(f"$ {docker_compose} -f {compose_file} down")
 
-        if proc_down.returncode != 0:
+        # Run docker compose down
+        down_rc = await self._run_streamed(
+            [docker_compose, "-f", str(compose_file), "down"],
+            cwd=str(compose_file.parent),
+            output=output,
+        )
+        if down_rc != 0:
             return ServiceActionResult(
                 service_name=service_name,
                 success=False,
                 detail="down failed",
             )
 
-        # Run docker compose up -d
-        proc_up = await asyncio.create_subprocess_exec(
-            docker_compose,
-            "-f",
-            str(compose_file),
-            "up",
-            "-d",
-            cwd=str(compose_file.parent),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        await proc_up.wait()
+        if output is not None and not interactive:
+            output(f"$ {docker_compose} -f {compose_file} up -d")
 
-        if proc_up.returncode != 0:
+        # Run docker compose up -d
+        up_rc = await self._run_streamed(
+            [docker_compose, "-f", str(compose_file), "up", "-d"],
+            cwd=str(compose_file.parent),
+            output=output,
+        )
+        if up_rc != 0:
             return ServiceActionResult(
                 service_name=service_name,
                 success=False,
@@ -198,13 +333,21 @@ class ServiceManager:
             detail="recreated",
         )
 
-    async def perform_recreate(self, service_arg: str) -> list[ServiceActionResult]:
+    async def perform_recreate(
+        self,
+        service_arg: str,
+        *,
+        output: Callable[[str], None] | None = None,
+    ) -> list[ServiceActionResult]:
         """Recreate one or all services via docker compose down/up."""
         service_names = self.get_service_names(service_arg)
         results: list[ServiceActionResult] = []
+        interactive = output is not None and sys.stdout.isatty() and sys.stderr.isatty()
 
         for name in service_names:
-            result = await self.recreate_service(name)
+            if output is not None and not interactive and len(service_names) > 1:
+                output(f"== recreate {name} ==")
+            result = await self.recreate_service(name, output=output)
             results.append(result)
 
         return results
@@ -240,13 +383,14 @@ class ServiceManager:
 
         Returns:
             Exit code from docker-compose logs
+
         """
         from .service_helpers import get_service
 
         svc = get_service(self.config, service_name)
 
-        docker_compose = shutil.which("docker-compose") or "/run/current-system/sw/bin/docker-compose"
-        if not Path(docker_compose).exists():
+        docker_compose = self._docker_compose_bin()
+        if docker_compose is None:
             raise DependencyError(
                 "docker-compose not found in PATH or at /run/current-system/sw/bin/docker-compose"
             )
@@ -272,3 +416,34 @@ class ServiceManager:
         )
         await proc.wait()
         return proc.returncode or 0
+
+    def _docker_compose_bin(self) -> str | None:
+        docker_compose = (
+            shutil.which("docker-compose")
+            or "/run/current-system/sw/bin/docker-compose"
+        )
+        return docker_compose if Path(docker_compose).exists() else None
+
+    async def _compose_build_enabled(self, service_name: str) -> bool:
+        unit = self.compose_unit_for(service_name)
+        props = await self.systemctl.show(unit, ["ExecStart"])
+        exec_start = props.get("ExecStart", "")
+        return "--build" in exec_start
+
+    def _compose_up_args(
+        self,
+        docker_compose: str,
+        compose_file: Path,
+        *,
+        build: bool,
+        force_recreate: bool,
+        remove_orphans: bool,
+    ) -> list[str]:
+        args = [docker_compose, "-f", str(compose_file), "up", "-d"]
+        if remove_orphans:
+            args.append("--remove-orphans")
+        if force_recreate:
+            args.append("--force-recreate")
+        if build:
+            args.append("--build")
+        return args

@@ -20,7 +20,11 @@ class ServiceActionCommand(Command):
         service_arg = args.service
 
         manager = ServiceManager(ctx.config, ctx.systemctl)
-        results = await manager.perform_action(self._action, service_arg)
+        results = await manager.perform_action(
+            self._action,
+            service_arg,
+            output=ctx.renderer.print_info,
+        )
 
         # Render results table
         columns = [
@@ -78,7 +82,10 @@ class RestartCommand(ServiceActionCommand):
         service_arg = args.service
 
         manager = ServiceManager(ctx.config, ctx.systemctl)
-        results = await manager.perform_recreate(service_arg)
+        results = await manager.perform_recreate(
+            service_arg,
+            output=ctx.renderer.print_info,
+        )
 
         # Render results table
         columns = [
