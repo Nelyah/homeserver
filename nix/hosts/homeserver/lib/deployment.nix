@@ -67,9 +67,13 @@
   # Returns: bash script fragment
   mkSymlinkScript = { secretsRoot, deployRoot, serviceName, secretFiles }:
     lib.concatMapStringsSep "\n" (spec: ''
-      if [ -f "${secretsRoot}/docker-services/${serviceName}/${spec.destination}" ]; then
-        ln -sf "${secretsRoot}/docker-services/${serviceName}/${spec.destination}" \
-               "${deployRoot}/${serviceName}/${spec.destination}" 2>/dev/null || true
+      secret_src="${secretsRoot}/docker-services/${serviceName}/${spec.destination}"
+      secret_dst="${deployRoot}/${serviceName}/${spec.destination}"
+      if [ -f "$secret_src" ]; then
+        if ! ln -sf "$secret_src" "$secret_dst"; then
+          echo "Failed to create symlink for ${serviceName}/${spec.destination}" >&2
+          exit 1
+        fi
       fi
     '') (lib.attrValues secretFiles);
 }

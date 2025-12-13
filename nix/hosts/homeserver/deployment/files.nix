@@ -56,8 +56,20 @@
     ENABLED_SERVICES=(${lib.concatStringsSep " " (map (n: ''"${n}"'') enabledServiceNames)})
     SYSTEMCTL="${pkgs.systemd}/bin/systemctl"
 
-    if [ -z "$DEPLOY_ROOT" ]; then
-      echo "DEPLOY_ROOT is empty; aborting"
+    # Safety guard: refuse obviously dangerous paths
+    if [ -z "$DEPLOY_ROOT" ] || [ "$DEPLOY_ROOT" = "/" ] || [ "$DEPLOY_ROOT" = "/var" ] || [ "$DEPLOY_ROOT" = "/var/lib" ]; then
+      echo "Refusing unsafe DEPLOY_ROOT=$DEPLOY_ROOT" >&2
+      exit 1
+    fi
+
+    # Ensure tmpfiles rules are applied (creates deploy root and marker file)
+    # This is needed because activation scripts run before systemd-tmpfiles-resetup.service
+    ${pkgs.systemd}/bin/systemd-tmpfiles --create
+
+    # Require marker file created by tmpfiles.d to prevent accidental deletion
+    if [ ! -f "$DEPLOY_ROOT/.homeserver-deploy-root" ]; then
+      echo "Missing marker file: $DEPLOY_ROOT/.homeserver-deploy-root" >&2
+      echo "Ensure tmpfiles.d has created the deploy root directory" >&2
       exit 1
     fi
 
@@ -113,9 +125,10 @@
   '';
 
 in lib.mkIf (enabledServices != {}) {
-  # Create base directories
+  # Create base directories and safety marker file
   systemd.tmpfiles.rules = [
     "d ${deployRoot} 0755 root root -"
+    "f ${deployRoot}/.homeserver-deploy-root 0444 root root -"
   ] ++ map (name: "d ${deployRoot}/${name} 0755 root root -") enabledServiceNames
     ++ map (name: "d ${secretsRoot}/docker-services/${name} 0700 root root -") servicesWithSecretFilesNames;
 

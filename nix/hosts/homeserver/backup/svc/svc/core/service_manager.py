@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import re
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -163,9 +164,11 @@ class ServiceManager:
 
         svc = get_service(self.config, service_name)
 
-        docker_compose = "/run/current-system/sw/bin/docker-compose"
+        docker_compose = shutil.which("docker-compose") or "/run/current-system/sw/bin/docker-compose"
         if not Path(docker_compose).exists():
-            raise DependencyError(f"docker-compose not found: {docker_compose}")
+            raise DependencyError(
+                "docker-compose not found in PATH or at /run/current-system/sw/bin/docker-compose"
+            )
 
         compose_file = await self.resolve_compose_file(svc.name)
         if not compose_file.exists():

@@ -38,7 +38,8 @@
       "Bash(nix eval:*)",
       "Bash(nix build:*)",
       "Bash(/nix/store/94brsrsrrralcrm2m7vyy0b5zjkgmqh4-python3-3.13.9-env/bin/python3:*)",
-      "Bash(/tmp/test-svc2/bin/svc:*)"
+      "Bash(/tmp/test-svc2/bin/svc:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

@@ -55,6 +55,13 @@
   cleanupScript = pkgs.writeShellScript "vault-secrets-cleanup" ''
     set -euo pipefail
     SECRETS_ROOT="${secretsRoot}"
+
+    # Safety guard: refuse obviously dangerous paths
+    if [ -z "$SECRETS_ROOT" ] || [ "$SECRETS_ROOT" = "/" ]; then
+      echo "Refusing unsafe SECRETS_ROOT=$SECRETS_ROOT" >&2
+      exit 1
+    fi
+
     EXPECTED_FILES=(${lib.concatStringsSep " " (map (f: ''"${f}"'') expectedFiles)})
 
     # Find all files in secrets root

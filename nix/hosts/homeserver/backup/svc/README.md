@@ -6,9 +6,8 @@ Python CLI for managing homeserver service backups/restores (restic) and basic s
 
 ```bash
 cd hosts/homeserver/backup/svc
-uv venv
+uv sync
 source .venv/bin/activate
-uv pip install -e '.[dev]'
 svc --help
 ```
 
