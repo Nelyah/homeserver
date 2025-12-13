@@ -6,7 +6,12 @@ from typing import cast
 
 from ..config import Config, ServiceConfig
 from ..controllers import ResticRunner, SystemctlController
-from ..exceptions import EXIT_CONFIG_ERROR, EXIT_RESTIC_ERROR, EXIT_SUCCESS
+from ..exceptions import (
+    EXIT_CONFIG_ERROR,
+    EXIT_RESTIC_ERROR,
+    EXIT_SUCCESS,
+    SystemctlError,
+)
 from .path_resolver import PathResolver
 
 logger = logging.getLogger("svc.core.restore")
@@ -91,94 +96,115 @@ class RestoreOrchestrator:
         - Restic restore execution
         - Service restart
         """
-        # Resolve snapshot
         snapshot_id, error = await self.resolve_snapshot(svc, snapshot_spec)
         if error or not snapshot_id:
+            message = error or "Failed to resolve snapshot"
             return RestoreResult(
                 service_name=svc.name,
                 success=False,
                 exit_code=EXIT_RESTIC_ERROR,
-                message=error or "Failed to resolve snapshot",
+                message=message,
             )
 
-        # Resolve include paths
         include_paths, missing = await self.path_resolver.get_backup_paths(
             svc.restore.volumes, svc.restore.paths
         )
+        invalid = self._validate_include_paths(svc, snapshot_id, include_paths, missing)
+        if invalid is not None:
+            return invalid
 
-        if not include_paths:
-            return RestoreResult(
-                service_name=svc.name,
-                success=False,
-                exit_code=EXIT_CONFIG_ERROR,
-                message=f"No restore paths configured for {svc.name}",
-                snapshot_id=snapshot_id,
-            )
+        self._log_restore_plan(snapshot_id, include_paths)
 
-        if missing:
-            return RestoreResult(
-                service_name=svc.name,
-                success=False,
-                exit_code=EXIT_CONFIG_ERROR,
-                message="Configured restore targets do not exist (create docker volumes/paths first)",
-                snapshot_id=snapshot_id,
-            )
-
-        logger.info(f"Snapshot: {snapshot_id[:8]}")
-        logger.info("Restore includes:")
-        for p in include_paths:
-            logger.info(f"  {p}")
-
-        # Verify includes if requested
         missing_in_snapshot: list[str] = []
         if verify_includes:
             missing_in_snapshot = await self.verify_snapshot_includes(snapshot_id, include_paths)
 
-        compose_unit = svc.restore.compose_unit
-        was_stopped = False
-
-        # Stop service if configured
-        if svc.restore.stop_compose and compose_unit:
-            is_loaded = await self.systemctl.is_loaded(compose_unit)
-            is_active = await self.systemctl.is_active(compose_unit)
-
-            if is_loaded and is_active:
-                logger.info(f"Stopping {compose_unit}...")
-                await self.systemctl.stop(compose_unit)
-                was_stopped = True
-
+        was_stopped, compose_unit = await self._maybe_stop_compose(svc)
         try:
-            # Run restore
             logger.info("Running restic restore...")
             status = await self.restic.restore(snapshot_id, include_paths, svc.restore.target)
+        finally:
+            await self._maybe_restart_compose(was_stopped, compose_unit)
 
-            if status != 0:
-                return RestoreResult(
-                    service_name=svc.name,
-                    success=False,
-                    exit_code=EXIT_RESTIC_ERROR,
-                    message=f"Restore failed for {svc.name} (exit code {status})",
-                    snapshot_id=snapshot_id,
-                    include_paths=include_paths,
-                )
-
+        if status != 0:
+            message = f"Restore failed for {svc.name} (exit code {status})"
             return RestoreResult(
                 service_name=svc.name,
-                success=True,
-                exit_code=EXIT_SUCCESS,
-                message=f"Restore completed for {svc.name}",
+                success=False,
+                exit_code=EXIT_RESTIC_ERROR,
+                message=message,
                 snapshot_id=snapshot_id,
                 include_paths=include_paths,
-                missing_in_snapshot=missing_in_snapshot,
             )
 
-        finally:
-            # Restart service if we stopped it
-            if was_stopped and compose_unit:
-                try:
-                    is_loaded = await self.systemctl.is_loaded(compose_unit)
-                    if is_loaded:
-                        logger.info(f"Starting {compose_unit}...")
-                        await self.systemctl.start(compose_unit)
-                except Exception as e:
-                    logger.warning(f"Failed to restart {compose_unit}: {e}")
+        message = f"Restore completed for {svc.name}"
+        return RestoreResult(
+            service_name=svc.name,
+            success=True,
+            exit_code=EXIT_SUCCESS,
+            message=message,
+            snapshot_id=snapshot_id,
+            include_paths=include_paths,
+            missing_in_snapshot=missing_in_snapshot,
+        )
+
+    def _validate_include_paths(
+        self,
+        svc: ServiceConfig,
+        snapshot_id: str,
+        include_paths: list[str],
+        missing: list[str],
+    ) -> RestoreResult | None:
+        if not include_paths:
+            message = f"No restore paths configured for {svc.name}"
+            return RestoreResult(
+                service_name=svc.name,
+                success=False,
+                exit_code=EXIT_CONFIG_ERROR,
+                message=message,
+                snapshot_id=snapshot_id,
+            )
+
+        if missing:
+            message = "Configured restore targets do not exist (create docker volumes/paths first)"
+            return RestoreResult(
+                service_name=svc.name,
+                success=False,
+                exit_code=EXIT_CONFIG_ERROR,
+                message=message,
+                snapshot_id=snapshot_id,
+            )
+
+        return None
+
+    def _log_restore_plan(self, snapshot_id: str, include_paths: list[str]) -> None:
+        logger.info("Snapshot: %s", snapshot_id[:8])
+        logger.info("Restore includes:")
+        for path in include_paths:
+            logger.info("  %s", path)
+
+    async def _maybe_stop_compose(self, svc: ServiceConfig) -> tuple[bool, str]:
+        compose_unit = svc.restore.compose_unit
+        if not svc.restore.stop_compose or not compose_unit:
+            return False, compose_unit
+
+        is_loaded = await self.systemctl.is_loaded(compose_unit)
+        is_active = await self.systemctl.is_active(compose_unit)
+        if is_loaded and is_active:
+            logger.info("Stopping %s...", compose_unit)
+            await self.systemctl.stop(compose_unit)
+            return True, compose_unit
+
+        return False, compose_unit
+
+    async def _maybe_restart_compose(self, was_stopped: bool, compose_unit: str) -> None:
+        if not was_stopped or not compose_unit:
+            return
+
+        try:
+            is_loaded = await self.systemctl.is_loaded(compose_unit)
+            if is_loaded:
+                logger.info("Starting %s...", compose_unit)
+                await self.systemctl.start(compose_unit)
+        except SystemctlError as e:
+            logger.warning("Failed to restart %s: %s", compose_unit, e)

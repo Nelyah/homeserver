@@ -6,8 +6,9 @@ from typing import cast
 
 from ..config import Config, ServiceConfig
 from ..controllers import ResticRunner, SystemctlController
-from ..exceptions import EXIT_CONFIG_ERROR, EXIT_RESTIC_ERROR, EXIT_SUCCESS
+from ..exceptions import EXIT_CONFIG_ERROR, EXIT_RESTIC_ERROR, EXIT_SUCCESS, SystemctlError
 from .path_resolver import PathResolver
+from .service_helpers import validate_service
 
 logger = logging.getLogger("svc.core.backup")
 
@@ -55,8 +56,6 @@ class BackupOrchestrator:
         """Get list of services to backup based on argument."""
         if service_arg == "all":
             return [svc for svc in self.config.services.values() if svc.backup.enable]
-        from .service_helpers import validate_service
-
         return [validate_service(self.config, service_arg)]
 
     def create_backup_plan(self, svc: ServiceConfig) -> BackupPlan:
@@ -80,6 +79,14 @@ class BackupOrchestrator:
         - Retention policy application
         - Service restart
         """
+        if dry_run:
+            return BackupResult(
+                service_name=svc.name,
+                success=True,
+                exit_code=EXIT_SUCCESS,
+                message=f"[dry-run] Would run backup for {svc.name}",
+            )
+
         paths, missing = await self.path_resolver.get_backup_paths(
             svc.backup.volumes, svc.backup.paths
         )
@@ -111,7 +118,7 @@ class BackupOrchestrator:
             is_active = await self.systemctl.is_active(compose_unit)
 
             if is_loaded and is_active:
-                logger.info(f"Stopping {compose_unit}...")
+                logger.info("Stopping %s...", compose_unit)
                 await self.systemctl.stop(compose_unit)
                 was_stopped = True
 
@@ -148,7 +155,7 @@ class BackupOrchestrator:
             # Restart service if we stopped it
             if was_stopped:
                 try:
-                    logger.info(f"Starting {compose_unit}...")
+                    logger.info("Starting %s...", compose_unit)
                     await self.systemctl.start(compose_unit)
-                except Exception as e:
-                    logger.warning(f"Failed to restart {compose_unit}: {e}")
+                except SystemctlError as e:
+                    logger.warning("Failed to restart %s: %s", compose_unit, e)

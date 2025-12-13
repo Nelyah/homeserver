@@ -11,6 +11,7 @@ import argparse
 import asyncio
 import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, cast
 
 import click
@@ -43,9 +44,9 @@ class GlobalOptions:
 
 def _load_services_for_completion(config_path: str, *, backup_only: bool) -> list[str]:
     try:
-        with open(config_path) as f:
+        with Path(config_path).open() as f:
             raw: Any = json.load(f)
-    except Exception:
+    except (OSError, json.JSONDecodeError):
         return []
 
     if not isinstance(raw, dict):
@@ -84,7 +85,7 @@ class ServiceNameParam(click.ParamType):
         self._allow_all = allow_all
 
     def shell_complete(
-        self, ctx: click.Context, param: click.Parameter, incomplete: str
+        self, ctx: click.Context, _param: click.Parameter, incomplete: str
     ) -> list[CompletionItem]:
         params = ctx.find_root().params or {}
         config_param = params.get("config")
@@ -114,7 +115,7 @@ def _run_command(ctx: click.Context, command: Command, args: argparse.Namespace)
         exit_code: int = asyncio.run(command.execute(args, app_ctx))
         raise click.exceptions.Exit(exit_code)
     except (KeyboardInterrupt, asyncio.CancelledError):
-        raise click.exceptions.Exit(130)
+        raise click.exceptions.Exit(130) from None
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})

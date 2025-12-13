@@ -39,10 +39,7 @@ class PathResolver:
         if mount is not None:
             mount_path = Path(mount)
             # Strip _data suffix if present (docker volume internal structure)
-            if mount_path.name == "_data":
-                fs_path = str(mount_path.parent)
-            else:
-                fs_path = str(mount_path)
+            fs_path = str(mount_path.parent) if mount_path.name == "_data" else str(mount_path)
         else:
             # Fallback to default docker volumes path
             fs_path = f"{self.config.paths.docker_volumes_root}/{volume}"

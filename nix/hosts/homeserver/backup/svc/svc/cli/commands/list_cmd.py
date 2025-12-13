@@ -2,14 +2,17 @@
 
 import argparse
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ...config import load_restic_env
 from ...controllers import unit_last_success
-from ...controllers.restic import ResticSnapshot
 from ...core import validate_service
 from ...exceptions import EXIT_SUCCESS
 from ..renderer import TableColumn, TableRow
 from .base import AppContext, Command
+
+if TYPE_CHECKING:
+    from ...controllers.restic import ResticSnapshot
 
 
 class ListCommand(Command):
@@ -30,10 +33,10 @@ class ListCommand(Command):
             deploy_dir = Path(ctx.config.paths.deploy_root) / service_name
             try:
                 return deploy_dir.is_dir()
-            except Exception:
+            except OSError:
                 return False
 
-        async def last_backup_ok(service_name: str, backup_enabled: bool) -> bool:
+        async def last_backup_ok(service_name: str, *, backup_enabled: bool) -> bool:
             if not backup_enabled:
                 return False
 
@@ -56,7 +59,7 @@ class ListCommand(Command):
             svc = ctx.config.services[name]
             deployed_ok = is_deployed(name)
             backup_ok = bool(svc.backup.enable)
-            last_ok = await last_backup_ok(name, backup_ok)
+            last_ok = await last_backup_ok(name, backup_enabled=backup_ok)
 
             rows.append(
                 TableRow(
@@ -98,17 +101,17 @@ class ListBackupsCommand(Command):
         ]
 
         rows: list[TableRow] = []
-        for rp in resolved:
-            rows.append(
-                TableRow(
-                    cells=[
-                        rp.source_type,
-                        rp.source_name,
-                        rp.filesystem_path,
-                        ctx.renderer.format_check(rp.exists),
-                    ]
-                )
+        rows = [
+            TableRow(
+                cells=[
+                    rp.source_type,
+                    rp.source_name,
+                    rp.filesystem_path,
+                    ctx.renderer.format_check(rp.exists),
+                ]
             )
+            for rp in resolved
+        ]
 
         if not resolved:
             rows.append(TableRow(cells=["—", "—", "—", "—"]))

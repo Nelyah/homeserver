@@ -3,7 +3,7 @@
 import os
 
 from ..config import Config, ServiceConfig
-from ..exceptions import PermissionError, ServiceNotFoundError
+from ..exceptions import ServiceNotFoundError, SvcPermissionError
 
 
 def validate_service(config: Config, service_name: str) -> ServiceConfig:
@@ -23,11 +23,13 @@ def validate_service(config: Config, service_name: str) -> ServiceConfig:
     """
     if service_name not in config.services:
         available = ", ".join(sorted(config.services.keys()))
-        raise ServiceNotFoundError(f"Service '{service_name}' not found. Available: {available}")
+        message = f"Service '{service_name}' not found. Available: {available}"
+        raise ServiceNotFoundError(message)
 
     svc = config.services[service_name]
     if not svc.backup.enable:
-        raise ServiceNotFoundError(f"Service '{service_name}' does not have backup enabled")
+        message = f"Service '{service_name}' does not have backup enabled"
+        raise ServiceNotFoundError(message)
     return svc
 
 
@@ -48,7 +50,8 @@ def get_service(config: Config, service_name: str) -> ServiceConfig:
     """
     if service_name not in config.services:
         available = ", ".join(sorted(config.services.keys()))
-        raise ServiceNotFoundError(f"Service '{service_name}' not found. Available: {available}")
+        message = f"Service '{service_name}' not found. Available: {available}"
+        raise ServiceNotFoundError(message)
     return config.services[service_name]
 
 
@@ -64,4 +67,5 @@ def require_root(operation: str) -> None:
 
     """
     if os.geteuid() != 0:
-        raise PermissionError(f"{operation} requires root privileges. Try: sudo svc ...")
+        message = f"{operation} requires root privileges. Try: sudo svc ..."
+        raise SvcPermissionError(message)

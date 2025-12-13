@@ -63,6 +63,7 @@ ignore = [
     "D100",   # ignore missing docs
     "D101",
     "D102",
+    "G004", # logging statement with f-string
     "D103",
     "D104",
     "D105",
@@ -74,10 +75,15 @@ ignore = [
     "D400",
     "D401",
     "D415",
+    "D417",
     "E402",   # false positives for local imports
     "E501",   # line too long
+    "FBT",    # booleans as positional args (too noisy here)
     "TRY003", # external messages in exceptions are too verbose
+    "TRY400", # prefer exception() over error() (not desired for expected failures)
     "TD002",
     "TD003",
     "FIX002", # too verbose descriptions of todos
+    "T201",   # allow print() in PlainRenderer
+    "ERA001", # allow explanatory comments
 ]

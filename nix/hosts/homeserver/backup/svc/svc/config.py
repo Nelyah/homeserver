@@ -8,8 +8,10 @@ from pydantic import BaseModel, Field, ValidationError
 
 try:
     from pydantic import ConfigDict  # pydantic v2
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     ConfigDict = None  # pydantic v1
+
+from .exceptions import ConfigError
 
 
 class PydanticBase(BaseModel):
@@ -93,36 +95,36 @@ def validate_model(model_cls: type[TModel], data: object) -> TModel:
 
 def load_config(config_path: str) -> Config:
     """Load and validate configuration from JSON file."""
-    from .exceptions import ConfigError
-
     path = Path(config_path)
     if not path.exists():
-        raise ConfigError(f"Config file not found: {config_path}")
+        message = f"Config file not found: {config_path}"
+        raise ConfigError(message)
 
     try:
-        with open(path) as f:
+        with path.open() as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
-        raise ConfigError(f"Invalid JSON in config file: {e}")
+        message = f"Invalid JSON in config file: {e}"
+        raise ConfigError(message) from e
 
     try:
         return validate_model(Config, data)
     except ValidationError as e:
-        raise ConfigError(f"Invalid config schema: {e}")
+        message = f"Invalid config schema: {e}"
+        raise ConfigError(message) from e
 
 
 def load_restic_env(secrets_root: str, env: str) -> dict[str, str]:
     """Load restic environment variables from env file."""
-    from .exceptions import ConfigError
-
     env_file = Path(secrets_root) / "restic" / f"{env}.env"
     if not env_file.exists():
-        raise ConfigError(f"Restic env file not found: {env_file}")
+        message = f"Restic env file not found: {env_file}"
+        raise ConfigError(message)
 
     result: dict[str, str] = {}
-    with open(env_file) as f:
-        for line in f:
-            line = line.strip()
+    with env_file.open() as f:
+        for raw_line in f:
+            line = raw_line.strip()
             if not line or line.startswith("#"):
                 continue
             if "=" in line:
@@ -132,6 +134,7 @@ def load_restic_env(secrets_root: str, env: str) -> dict[str, str]:
     required = ["RESTIC_PASSWORD", "RESTIC_REPOSITORY"]
     for key in required:
         if key not in result:
-            raise ConfigError(f"Missing {key} in {env_file}")
+            message = f"Missing {key} in {env_file}"
+            raise ConfigError(message)
 
     return result

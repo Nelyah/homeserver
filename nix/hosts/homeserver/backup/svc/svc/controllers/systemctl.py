@@ -19,8 +19,8 @@ class SystemctlController:
         self, args: list[str], capture_output: bool = False
     ) -> asyncio.subprocess.Process:
         """Run systemctl command asynchronously."""
-        cmd = [self.systemctl] + args
-        logger.debug(f"Running: {' '.join(cmd)}")
+        cmd = [self.systemctl, *args]
+        logger.debug("Running: %s", " ".join(cmd))
 
         if capture_output:
             proc = await asyncio.create_subprocess_exec(
@@ -41,7 +41,7 @@ class SystemctlController:
             )
             stdout, _ = await proc.communicate()
             return stdout.decode().strip() == "loaded"
-        except Exception:
+        except (OSError, UnicodeDecodeError):
             return False
 
     async def is_active(self, unit: str) -> bool:
@@ -49,33 +49,36 @@ class SystemctlController:
         try:
             proc = await self._run(["--quiet", "is-active", unit])
             await proc.wait()
-            return proc.returncode == 0
-        except Exception:
+        except OSError:
             return False
+        else:
+            return proc.returncode == 0
 
     async def stop(self, unit: str) -> None:
         """Stop a systemd unit."""
-        logger.info(f"Stopping {unit}...")
+        logger.info("Stopping %s...", unit)
         if self.dry_run:
-            logger.info(f"[DRY RUN] Would stop {unit}")
+            logger.info("[DRY RUN] Would stop %s", unit)
             return
 
         proc = await self._run(["stop", unit])
         await proc.wait()
         if proc.returncode != 0:
-            raise SystemctlError(f"Failed to stop {unit}")
+            message = f"Failed to stop {unit}"
+            raise SystemctlError(message)
 
     async def start(self, unit: str) -> None:
         """Start a systemd unit."""
-        logger.info(f"Starting {unit}...")
+        logger.info("Starting %s...", unit)
         if self.dry_run:
-            logger.info(f"[DRY RUN] Would start {unit}")
+            logger.info("[DRY RUN] Would start %s", unit)
             return
 
         proc = await self._run(["start", unit])
         await proc.wait()
         if proc.returncode != 0:
-            raise SystemctlError(f"Failed to start {unit}")
+            message = f"Failed to start {unit}"
+            raise SystemctlError(message)
 
     async def show(self, unit: str, properties: list[str]) -> dict[str, str]:
         """Return a mapping of `systemctl show` properties for a unit."""

@@ -40,7 +40,7 @@ class SystemctlError(SvcError):
     exit_code = EXIT_SYSTEMCTL_ERROR
 
 
-class PermissionError(SvcError):
+class SvcPermissionError(SvcError):
     """Operation requires root privileges."""
 
     exit_code = EXIT_PERMISSION_ERROR

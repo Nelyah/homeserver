@@ -42,8 +42,8 @@ class ResticRunner:
         env = os.environ.copy()
         env.update(self.env_vars)
 
-        cmd = [self.restic] + args
-        logger.debug(f"Running: {' '.join(cmd)}")
+        cmd = [self.restic, *args]
+        logger.debug("Running: %s", " ".join(cmd))
 
         if self.dry_run and not capture_output:
             logger.info(f"[DRY RUN] Would run: restic {' '.join(args)}")
@@ -123,7 +123,8 @@ class ResticRunner:
 
         result = await self._run(args, capture_output=True)
         if result.returncode != 0:
-            raise ResticError(f"Failed to list snapshots: {result.stderr}")
+            message = f"Failed to list snapshots: {result.stderr}"
+            raise ResticError(message)
 
         try:
             raw: Any = json.loads(result.stdout) if result.stdout else []
@@ -157,39 +158,54 @@ class ResticRunner:
         """Get ID of the latest snapshot for a tag (across all hosts)."""
         try:
             snapshots = await self.snapshots([tag])
-        except Exception:
+        except ResticError:
+            return None
+        latest_id, _latest_time = self._latest_snapshot_by_parsed_time(snapshots)
+        if latest_id is not None:
+            return latest_id
+
+        return self._latest_snapshot_by_lex_time(snapshots)
+
+    def _parse_snapshot_time(self, value: str | None) -> datetime | None:
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            if value.endswith("Z"):
+                try:
+                    return datetime.fromisoformat(f"{value[:-1]}+00:00")
+                except ValueError:
+                    return None
             return None
 
-        def parse_time(value: str | None) -> datetime | None:
-            if not value:
-                return None
-            try:
-                # Restic emits RFC3339; normalize Z to +00:00 for fromisoformat
-                return datetime.fromisoformat(value.replace("Z", "+00:00"))
-            except Exception:
-                return None
-
-        latest: ResticSnapshot | None = None
+    def _latest_snapshot_by_parsed_time(
+        self, snapshots: list[ResticSnapshot]
+    ) -> tuple[str | None, datetime | None]:
+        latest_id: str | None = None
         latest_time: datetime | None = None
+
         for snap in snapshots:
-            t = parse_time(snap.get("time"))
+            t = self._parse_snapshot_time(snap.get("time"))
             if t is None:
                 continue
             if latest_time is None or t > latest_time:
-                latest_time = t
-                latest = snap
+                snap_id = snap.get("id")
+                if isinstance(snap_id, str):
+                    latest_time = t
+                    latest_id = snap_id
 
-        if latest is not None:
-            latest_id = latest.get("id")
-            if isinstance(latest_id, str):
-                return latest_id
+        return latest_id, latest_time
 
-        # Fallback: pick lexicographically-max "time" if parsing failed
-        snapshots_with_time = [s for s in snapshots if isinstance(s.get("time"), str)]
-        if not snapshots_with_time:
+    def _latest_snapshot_by_lex_time(self, snapshots: list[ResticSnapshot]) -> str | None:
+        candidates = [
+            s for s in snapshots if isinstance(s.get("id"), str) and isinstance(s.get("time"), str)
+        ]
+        if not candidates:
             return None
-        best = max(snapshots_with_time, key=lambda s: s.get("time") or "")
-        return best.get("id") if isinstance(best.get("id"), str) else None
+        best = max(candidates, key=lambda s: cast("str", s.get("time") or ""))
+        best_id = best.get("id")
+        return best_id if isinstance(best_id, str) else None
 
     async def ls(self, snapshot_id: str, path: str | None = None) -> CommandResult:
         """Run `restic ls` for a snapshot, optionally restricted to a path."""

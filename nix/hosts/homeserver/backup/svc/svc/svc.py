@@ -21,31 +21,33 @@ import click
 from svc.cli import cli
 from svc.exceptions import EXIT_CONFIG_ERROR, EXIT_USAGE_ERROR, SvcError
 
+logger = logging.getLogger("svc")
 
-def setup_logging(verbose: bool) -> None:
+try:
+    from rich.logging import RichHandler
+except ImportError:  # pragma: no cover
+    RichHandler = None  # type: ignore[assignment]
+
+
+def setup_logging(*, verbose: bool) -> None:
     """Configure logging based on verbosity."""
     level = logging.DEBUG if verbose else logging.INFO
 
-    try:
-        from rich.logging import RichHandler
-
-        if sys.stderr.isatty():
-            logging.basicConfig(
-                level=level,
-                format="%(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-                handlers=[
-                    RichHandler(
-                        rich_tracebacks=verbose,
-                        show_time=verbose,
-                        show_level=True,
-                        show_path=False,
-                    )
-                ],
-            )
-            return
-    except ImportError:
-        pass
+    if RichHandler is not None and sys.stderr.isatty():
+        logging.basicConfig(
+            level=level,
+            format="%(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+            handlers=[
+                RichHandler(
+                    rich_tracebacks=verbose,
+                    show_time=verbose,
+                    show_level=True,
+                    show_path=False,
+                )
+            ],
+        )
+        return
 
     fmt = (
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -96,33 +98,31 @@ def reorder_global_options(argv: list[str]) -> list[str]:
 
 def main() -> int:
     """Main entry point."""
+    argv = reorder_global_options(sys.argv[1:])
+
+    # Parse just the global flags for logging setup.
+    # (click will parse them again, but it doesn't hurt.)
+    verbose = ("-v" in argv) or ("--verbose" in argv)
+    setup_logging(verbose=verbose)
+
     try:
-        argv = reorder_global_options(sys.argv[1:])
-
-        # Parse just the global flags for logging setup.
-        # (click will parse them again, but it doesn't hurt.)
-        verbose = ("-v" in argv) or ("--verbose" in argv)
-        setup_logging(verbose)
-
         cli.main(args=argv, prog_name="svc", standalone_mode=False)
-        return 0
     except click.exceptions.Exit as e:
         return int(getattr(e, "exit_code", 0))
-    except click.exceptions.Abort:
-        logging.info("Interrupted by user")
+    except (click.exceptions.Abort, KeyboardInterrupt):
+        logger.info("Interrupted by user")
         return 130
     except click.ClickException as e:
         e.show()
         return EXIT_USAGE_ERROR
     except SvcError as e:
-        logging.exception(str(e))
+        logger.error("%s", e)
         return e.exit_code
-    except KeyboardInterrupt:
-        logging.info("Interrupted by user")
-        return 130
-    except Exception as e:
-        logging.exception(f"Unexpected error: {e}")
+    except Exception:
+        logger.exception("Unexpected error")
         return EXIT_CONFIG_ERROR
+    else:
+        return 0
 
 
 if __name__ == "__main__":

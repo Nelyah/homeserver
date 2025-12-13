@@ -22,84 +22,73 @@ class DockerHealthCommand(Command):
     - Orphan containers (stopped, no compose project label)
     """
 
-    async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
-        # Get list of expected services from deploy_root
-        deploy_root = Path(ctx.config.paths.deploy_root)
-        expected_services: set[str] = set()
-        if deploy_root.exists():
-            for item in deploy_root.iterdir():
-                if item.is_dir():
-                    expected_services.add(item.name)
-
-        # Get all containers
+    async def execute(self, _args: argparse.Namespace, ctx: AppContext) -> int:
+        expected_services = self._expected_services(ctx)
         containers = await ctx.docker.list_containers()
+        report = self._analyze_containers(expected_services, containers)
+        self._render_report(ctx, report)
+        return EXIT_DOCKER_ISSUES if report.has_issues else EXIT_SUCCESS
 
-        # Build sets for analysis
-        seen_projects: set[str] = set()
-        for c in containers:
-            if c.project:
-                seen_projects.add(c.project)
+    def _expected_services(self, ctx: AppContext) -> set[str]:
+        deploy_root = Path(ctx.config.paths.deploy_root)
+        if not deploy_root.exists():
+            return set()
+        return {item.name for item in deploy_root.iterdir() if item.is_dir()}
 
-        # Categorize containers
-        missing_services: list[str] = []
+    def _analyze_containers(
+        self, expected_services: set[str], containers: list[ContainerInfo]
+    ) -> "_DockerHealthReport":
+        seen_projects = {c.project for c in containers if c.project}
+        missing_services = sorted(expected_services - seen_projects)
+
         bad_deployed: list[ContainerInfo] = []
         bad_other: list[ContainerInfo] = []
         orphans: list[ContainerInfo] = []
 
-        # Find missing services (deployed but no container)
-        for svc in sorted(expected_services):
-            if svc not in seen_projects:
-                missing_services.append(svc)
-
-        # Categorize unhealthy containers
-        for c in containers:
-            is_bad = not c.is_up or not c.is_healthy
-
+        for container in containers:
+            is_bad = (not container.is_up) or (not container.is_healthy)
             if is_bad:
-                if c.project and c.project in expected_services:
-                    bad_deployed.append(c)
+                if container.project and container.project in expected_services:
+                    bad_deployed.append(container)
                 else:
-                    bad_other.append(c)
+                    bad_other.append(container)
+            if container.is_orphan:
+                orphans.append(container)
 
-            if c.is_orphan:
-                orphans.append(c)
+        return _DockerHealthReport(
+            missing_services=missing_services,
+            bad_deployed=bad_deployed,
+            bad_other=bad_other,
+            orphans=orphans,
+        )
 
-        # Track if we found any issues
-        has_issues = bool(missing_services or bad_deployed or bad_other or orphans)
-
-        # Report missing services
-        if missing_services:
+    def _render_report(self, ctx: AppContext, report: "_DockerHealthReport") -> None:
+        if report.missing_services:
             ctx.renderer.print_heading("Deployed services with no running container")
             columns = [TableColumn("Service", style="bold")]
-            rows = [TableRow(cells=[svc]) for svc in missing_services]
+            rows = [TableRow(cells=[svc]) for svc in report.missing_services]
             ctx.renderer.render_table("Missing", columns, rows)
 
-        # Report unhealthy deployed containers
-        if bad_deployed:
+        if report.bad_deployed:
             ctx.renderer.print_heading("Deployed containers not Up/healthy")
-            self._render_container_table(ctx, "Unhealthy Deployed", bad_deployed)
+            self._render_container_table(ctx, "Unhealthy Deployed", report.bad_deployed)
 
-        # Report unhealthy non-deployed containers
-        if bad_other:
+        if report.bad_other:
             ctx.renderer.print_heading("Other containers not Up/healthy")
-            self._render_container_table(ctx, "Unhealthy Other", bad_other)
+            self._render_container_table(ctx, "Unhealthy Other", report.bad_other)
 
-        # Report orphans
-        if orphans:
+        if report.orphans:
             ctx.renderer.print_heading("Orphan containers (no compose project label, not Up)")
             columns = [TableColumn("Name", style="bold")]
-            rows = [TableRow(cells=[c.name]) for c in orphans]
+            rows = [TableRow(cells=[c.name]) for c in report.orphans]
             ctx.renderer.render_table("Orphans", columns, rows)
             ctx.renderer.print_warn("Run `svc docker prune-orphans` to remove these containers.")
 
-        if not has_issues:
+        if not report.has_issues:
             ctx.renderer.print_ok(
                 "All good: deployed services are running, "
                 "containers are healthy, and no orphans found."
             )
-            return EXIT_SUCCESS
-
-        return EXIT_DOCKER_ISSUES
 
     def _render_container_table(
         self, ctx: AppContext, title: str, containers: list[ContainerInfo]
@@ -137,7 +126,7 @@ class PruneImagesCommand(Command):
     never affected.
     """
 
-    async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, _args: argparse.Namespace, ctx: AppContext) -> int:
         images = await ctx.docker.get_dangling_images()
 
         if not images:
@@ -185,7 +174,7 @@ class PruneOrphansCommand(Command):
     Running containers and labeled containers are never affected.
     """
 
-    async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
+    async def execute(self, _args: argparse.Namespace, ctx: AppContext) -> int:
         containers = await ctx.docker.list_containers()
 
         # Find orphans (stopped, no compose project label)
@@ -219,3 +208,22 @@ class PruneOrphansCommand(Command):
             return EXIT_DOCKER_ISSUES
 
         return EXIT_SUCCESS
+
+
+class _DockerHealthReport:
+    def __init__(
+        self,
+        *,
+        missing_services: list[str],
+        bad_deployed: list[ContainerInfo],
+        bad_other: list[ContainerInfo],
+        orphans: list[ContainerInfo],
+    ) -> None:
+        self.missing_services = missing_services
+        self.bad_deployed = bad_deployed
+        self.bad_other = bad_other
+        self.orphans = orphans
+
+    @property
+    def has_issues(self) -> bool:
+        return bool(self.missing_services or self.bad_deployed or self.bad_other or self.orphans)

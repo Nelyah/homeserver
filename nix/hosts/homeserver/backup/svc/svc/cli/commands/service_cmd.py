@@ -33,15 +33,15 @@ class ServiceActionCommand(Command):
         ]
 
         rows: list[TableRow] = []
-        for result in results:
-            rows.append(
-                TableRow(
-                    cells=[
-                        result.service_name,
-                        ctx.renderer.format_status(result.success, result.detail),
-                    ]
-                )
+        rows = [
+            TableRow(
+                cells=[
+                    result.service_name,
+                    ctx.renderer.format_status(result.success, result.detail),
+                ]
             )
+            for result in results
+        ]
 
         title = f"{self._action.capitalize()} services"
         ctx.renderer.render_table(title, columns, rows)
@@ -73,7 +73,7 @@ class RestartCommand(ServiceActionCommand):
     async def execute(self, args: argparse.Namespace, ctx: AppContext) -> int:
         recreate = getattr(args, "recreate", False)
 
-        # If not recreating, use the normal systemctl-based restart
+        # If not recreating, use the normal compose-based restart
         if not recreate:
             return await super().execute(args, ctx)
 
@@ -94,15 +94,15 @@ class RestartCommand(ServiceActionCommand):
         ]
 
         rows: list[TableRow] = []
-        for result in results:
-            rows.append(
-                TableRow(
-                    cells=[
-                        result.service_name,
-                        ctx.renderer.format_status(result.success, result.detail),
-                    ]
-                )
+        rows = [
+            TableRow(
+                cells=[
+                    result.service_name,
+                    ctx.renderer.format_status(result.success, result.detail),
+                ]
             )
+            for result in results
+        ]
 
         ctx.renderer.render_table("Recreate services", columns, rows)
 

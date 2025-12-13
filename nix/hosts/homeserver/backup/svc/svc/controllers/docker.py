@@ -46,6 +46,8 @@ class ImageInfo:
 class DockerController:
     """Controls docker operations needed for volume path resolution."""
 
+    _EXPECTED_FIELDS = 4
+
     def __init__(self, docker_bin: str = "/run/current-system/sw/bin/docker"):
         self.docker = docker_bin
         if not Path(self.docker).exists():
@@ -81,7 +83,6 @@ class DockerController:
         if not Path(self.docker).exists():
             return []
 
-        # Format: name|status|project|service
         fmt = '{{.Names}}|{{.Status}}|{{.Label "com.docker.compose.project"}}|{{.Label "com.docker.compose.service"}}'
         proc = await asyncio.create_subprocess_exec(
             self.docker,
@@ -102,7 +103,7 @@ class DockerController:
             if not line:
                 continue
             parts = line.split("|")
-            if len(parts) >= 4:
+            if len(parts) >= self._EXPECTED_FIELDS:
                 containers.append(
                     ContainerInfo(
                         name=parts[0],
@@ -118,7 +119,6 @@ class DockerController:
         if not Path(self.docker).exists():
             return []
 
-        # Format: id|repository|tag|size
         fmt = "{{.ID}}|{{.Repository}}|{{.Tag}}|{{.Size}}"
         proc = await asyncio.create_subprocess_exec(
             self.docker,
@@ -140,7 +140,7 @@ class DockerController:
             if not line:
                 continue
             parts = line.split("|")
-            if len(parts) >= 4:
+            if len(parts) >= self._EXPECTED_FIELDS:
                 images.append(
                     ImageInfo(
                         id=parts[0],
