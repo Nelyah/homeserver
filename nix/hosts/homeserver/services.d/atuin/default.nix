@@ -2,7 +2,7 @@
   name = "atuin";
   compose = {
     enable = true;
-    networks = [];
+    networks = ["frontend" "backend"];
     volumes = [
       "atuin_db"
       "atuin_redis"
