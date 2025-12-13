@@ -13,7 +13,8 @@ EXIT_DOCKER_ISSUES = 1
 
 
 class DockerHealthCommand(Command):
-    """Check health of deployed docker services and containers.
+    """
+    Check health of deployed docker services and containers.
 
     Reports:
     - Deployed services with no running container
@@ -85,15 +86,11 @@ class DockerHealthCommand(Command):
 
         # Report orphans
         if orphans:
-            ctx.renderer.print_heading(
-                "Orphan containers (no compose project label, not Up)"
-            )
+            ctx.renderer.print_heading("Orphan containers (no compose project label, not Up)")
             columns = [TableColumn("Name", style="bold")]
             rows = [TableRow(cells=[c.name]) for c in orphans]
             ctx.renderer.render_table("Orphans", columns, rows)
-            ctx.renderer.print_warn(
-                "Run `svc docker prune-orphans` to remove these containers."
-            )
+            ctx.renderer.print_warn("Run `svc docker prune-orphans` to remove these containers.")
 
         if not has_issues:
             ctx.renderer.print_ok(
@@ -129,7 +126,8 @@ class DockerHealthCommand(Command):
 
 
 class PruneImagesCommand(Command):
-    """Remove dangling Docker images.
+    """
+    Remove dangling Docker images.
 
     Dangling images are images tagged <none>:<none>. They are created when you
     rebuild an image with the same tag - the old image loses its tag but remains
@@ -155,9 +153,7 @@ class PruneImagesCommand(Command):
         ctx.renderer.render_table("Dangling Images", columns, rows)
 
         if ctx.dry_run:
-            ctx.renderer.print_info(
-                f"[dry-run] Would remove {len(images)} dangling image(s)."
-            )
+            ctx.renderer.print_info(f"[dry-run] Would remove {len(images)} dangling image(s).")
             return EXIT_SUCCESS
 
         # Remove images
@@ -175,7 +171,8 @@ class PruneImagesCommand(Command):
 
 
 class PruneOrphansCommand(Command):
-    """Remove orphan containers.
+    """
+    Remove orphan containers.
 
     Orphan containers are stopped containers that have no docker-compose project
     label (com.docker.compose.project). They may be leftover from removed compose
@@ -207,9 +204,7 @@ class PruneOrphansCommand(Command):
         ctx.renderer.render_table("Orphan Containers", columns, rows)
 
         if ctx.dry_run:
-            ctx.renderer.print_info(
-                f"[dry-run] Would remove {len(orphans)} orphan container(s)."
-            )
+            ctx.renderer.print_info(f"[dry-run] Would remove {len(orphans)} orphan container(s).")
             return EXIT_SUCCESS
 
         # Remove containers

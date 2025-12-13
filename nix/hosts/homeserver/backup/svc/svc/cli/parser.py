@@ -1,4 +1,5 @@
-"""Click-based CLI for svc.
+"""
+Click-based CLI for svc.
 
 This replaces the previous argparse+argcomplete implementation while keeping the
 same commands/options and dynamic completion of service names.
@@ -13,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import click
+from click.shell_completion import CompletionItem
 
 from ..config import load_config
 from .commands import (
@@ -28,11 +30,8 @@ from .commands import (
     StartCommand,
     StopCommand,
 )
-from .commands.base import AppContext
-from .commands.base import Command
+from .commands.base import AppContext, Command
 from .renderer import create_renderer
-
-from click.shell_completion import CompletionItem
 
 
 @dataclass(frozen=True)
@@ -42,9 +41,7 @@ class GlobalOptions:
     dry_run: bool
 
 
-def _load_services_for_completion(
-    config_path: str, *, backup_only: bool
-) -> list[str]:
+def _load_services_for_completion(config_path: str, *, backup_only: bool) -> list[str]:
     try:
         with open(config_path) as f:
             raw: Any = json.load(f)
@@ -54,12 +51,12 @@ def _load_services_for_completion(
     if not isinstance(raw, dict):
         return []
 
-    data = cast(dict[str, Any], raw)
+    data = cast("dict[str, Any]", raw)
     raw_services: Any = data.get("services") or {}
     if not isinstance(raw_services, dict):
         return []
 
-    services_obj = cast(dict[str, Any], raw_services)
+    services_obj = cast("dict[str, Any]", raw_services)
 
     if not backup_only:
         return list(services_obj.keys())
@@ -68,11 +65,11 @@ def _load_services_for_completion(
     for name, spec in services_obj.items():
         if not isinstance(spec, dict):
             continue
-        spec_dict = cast(dict[str, Any], spec)
+        spec_dict = cast("dict[str, Any]", spec)
         backup_obj = spec_dict.get("backup")
         if not isinstance(backup_obj, dict):
             continue
-        backup = cast(dict[str, Any], backup_obj)
+        backup = cast("dict[str, Any]", backup_obj)
         if bool(backup.get("enable", False)):
             services.append(name)
     return services
@@ -91,12 +88,8 @@ class ServiceNameParam(click.ParamType):
     ) -> list[CompletionItem]:
         params = ctx.find_root().params or {}
         config_param = params.get("config")
-        config_path = (
-            config_param if isinstance(config_param, str) else "/etc/svc/services.json"
-        )
-        services = _load_services_for_completion(
-            config_path, backup_only=self._backup_only
-        )
+        config_path = config_param if isinstance(config_param, str) else "/etc/svc/services.json"
+        services = _load_services_for_completion(config_path, backup_only=self._backup_only)
         if self._allow_all:
             services.append("all")
         matches = sorted({s for s in services if s.startswith(incomplete)})
@@ -245,9 +238,7 @@ def restart_cmd(ctx: click.Context, service: str, recreate: bool) -> None:
 @click.option("--tail", type=int, default=200, show_default=True, help="Lines to show")
 @click.option("--timestamps", is_flag=True, help="Show timestamps in log output")
 @click.pass_context
-def logs_cmd(
-    ctx: click.Context, service: str, follow: bool, tail: int, timestamps: bool
-) -> None:
+def logs_cmd(ctx: click.Context, service: str, follow: bool, tail: int, timestamps: bool) -> None:
     """Stream docker-compose logs for a service."""
     args = argparse.Namespace(
         service=service,
@@ -266,13 +257,13 @@ def logs_cmd(
 @cli.group("docker")
 def docker_group() -> None:
     """Docker maintenance commands."""
-    pass
 
 
 @docker_group.command("health")
 @click.pass_context
 def docker_health_cmd(ctx: click.Context) -> None:
-    """Check health of deployed docker services and containers.
+    """
+    Check health of deployed docker services and containers.
 
     Reports deployed services with no running container, containers not in
     Up/healthy state, and orphan containers (stopped, no compose label).
@@ -284,7 +275,8 @@ def docker_health_cmd(ctx: click.Context) -> None:
 @docker_group.command("prune-images")
 @click.pass_context
 def docker_prune_images_cmd(ctx: click.Context) -> None:
-    """Remove dangling Docker images (tagged <none>:<none>).
+    """
+    Remove dangling Docker images (tagged <none>:<none>).
 
     Dangling images are created when you rebuild an image with the same tag.
     The old image loses its tag but remains on disk. These are safe to remove
@@ -297,7 +289,8 @@ def docker_prune_images_cmd(ctx: click.Context) -> None:
 @docker_group.command("prune-orphans")
 @click.pass_context
 def docker_prune_orphans_cmd(ctx: click.Context) -> None:
-    """Remove orphan containers (stopped, no compose project label).
+    """
+    Remove orphan containers (stopped, no compose project label).
 
     Orphan containers are stopped containers that have no docker-compose
     project label. They may be leftover from removed compose stacks or

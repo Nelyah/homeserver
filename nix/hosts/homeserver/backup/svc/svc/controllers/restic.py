@@ -37,9 +37,7 @@ class ResticRunner:
         self.dry_run = dry_run
         self.restic = "/run/current-system/sw/bin/restic"
 
-    async def _run(
-        self, args: list[str], capture_output: bool = False
-    ) -> CommandResult:
+    async def _run(self, args: list[str], capture_output: bool = False) -> CommandResult:
         """Run a restic command with environment."""
         env = os.environ.copy()
         env.update(self.env_vars)
@@ -64,14 +62,11 @@ class ResticRunner:
                 stdout=stdout_bytes.decode() if stdout_bytes else "",
                 stderr=stderr_bytes.decode() if stderr_bytes else "",
             )
-        else:
-            proc = await asyncio.create_subprocess_exec(*cmd, env=env)
-            await proc.wait()
-            return CommandResult(returncode=proc.returncode or 0)
+        proc = await asyncio.create_subprocess_exec(*cmd, env=env)
+        await proc.wait()
+        return CommandResult(returncode=proc.returncode or 0)
 
-    async def backup(
-        self, paths: list[str], tags: list[str], exclude: list[str]
-    ) -> int:
+    async def backup(self, paths: list[str], tags: list[str], exclude: list[str]) -> int:
         """Run restic backup command."""
         args = ["backup"]
         args.extend(paths)
@@ -108,9 +103,7 @@ class ResticRunner:
         result = await self._run(args)
         return result.returncode
 
-    async def restore(
-        self, snapshot_id: str, include_paths: list[str], target: str = "/"
-    ) -> int:
+    async def restore(self, snapshot_id: str, include_paths: list[str], target: str = "/") -> int:
         """Run restic restore command with --delete flag."""
         args = ["restore", snapshot_id]
 
@@ -141,11 +134,11 @@ class ResticRunner:
             return []
 
         snapshots: list[ResticSnapshot] = []
-        raw_list = cast(list[Any], raw)
+        raw_list = cast("list[Any]", raw)
         for item in raw_list:
             if not isinstance(item, dict):
                 continue
-            item_dict = cast(dict[str, Any], item)
+            item_dict = cast("dict[str, Any]", item)
             snap: ResticSnapshot = {}
             snap_id = item_dict.get("id")
             if isinstance(snap_id, str):
@@ -198,9 +191,7 @@ class ResticRunner:
         best = max(snapshots_with_time, key=lambda s: s.get("time") or "")
         return best.get("id") if isinstance(best.get("id"), str) else None
 
-    async def ls(
-        self, snapshot_id: str, path: str | None = None
-    ) -> CommandResult:
+    async def ls(self, snapshot_id: str, path: str | None = None) -> CommandResult:
         """Run `restic ls` for a snapshot, optionally restricted to a path."""
         args = ["ls", snapshot_id]
         if path is not None:

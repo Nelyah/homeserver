@@ -84,9 +84,7 @@ class BackupCommand(Command):
             else:
                 ctx.renderer.print_error(result.message)
                 if result.missing_paths:
-                    ctx.renderer.print_error(
-                        "Missing paths: " + ", ".join(result.missing_paths)
-                    )
+                    ctx.renderer.print_error("Missing paths: " + ", ".join(result.missing_paths))
                 overall_status = result.exit_code
 
             if result.forget_status is not None and result.forget_status != 0:

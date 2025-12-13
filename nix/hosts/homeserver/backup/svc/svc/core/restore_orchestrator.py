@@ -21,8 +21,8 @@ class RestoreResult:
     exit_code: int
     message: str
     snapshot_id: str = ""
-    include_paths: list[str] = field(default_factory=lambda: cast(list[str], []))
-    missing_in_snapshot: list[str] = field(default_factory=lambda: cast(list[str], []))
+    include_paths: list[str] = field(default_factory=lambda: cast("list[str]", []))
+    missing_in_snapshot: list[str] = field(default_factory=lambda: cast("list[str]", []))
 
 
 class RestoreOrchestrator:
@@ -48,6 +48,7 @@ class RestoreOrchestrator:
 
         Returns:
             Tuple of (snapshot_id, error_message)
+
         """
         if snapshot_spec == "latest":
             snapshot_id = await self.restic.get_latest_snapshot_id(svc.restore.tag)
@@ -55,8 +56,7 @@ class RestoreOrchestrator:
                 return None, f"No snapshots found for {svc.name} (tag: {svc.restore.tag})"
             logger.info(f"Resolved 'latest' to snapshot {snapshot_id[:8]}")
             return snapshot_id, None
-        else:
-            return snapshot_spec, None
+        return snapshot_spec, None
 
     async def verify_snapshot_includes(
         self, snapshot_id: str, include_paths: list[str]
@@ -66,6 +66,7 @@ class RestoreOrchestrator:
 
         Returns:
             List of paths that are missing from the snapshot.
+
         """
         missing: list[str] = []
         for p in include_paths:
@@ -131,9 +132,7 @@ class RestoreOrchestrator:
         # Verify includes if requested
         missing_in_snapshot: list[str] = []
         if verify_includes:
-            missing_in_snapshot = await self.verify_snapshot_includes(
-                snapshot_id, include_paths
-            )
+            missing_in_snapshot = await self.verify_snapshot_includes(snapshot_id, include_paths)
 
         compose_unit = svc.restore.compose_unit
         was_stopped = False
@@ -151,9 +150,7 @@ class RestoreOrchestrator:
         try:
             # Run restore
             logger.info("Running restic restore...")
-            status = await self.restic.restore(
-                snapshot_id, include_paths, svc.restore.target
-            )
+            status = await self.restic.restore(snapshot_id, include_paths, svc.restore.target)
 
             if status != 0:
                 return RestoreResult(

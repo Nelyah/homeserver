@@ -99,9 +99,7 @@ class SystemctlController:
         return props
 
 
-async def unit_last_success(
-    systemctl: SystemctlController, unit: str
-) -> bool | None:
+async def unit_last_success(systemctl: SystemctlController, unit: str) -> bool | None:
     """Check if a unit's last run was successful."""
     props = await systemctl.show(
         unit,

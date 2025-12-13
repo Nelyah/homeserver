@@ -82,7 +82,7 @@ class DockerController:
             return []
 
         # Format: name|status|project|service
-        fmt = "{{.Names}}|{{.Status}}|{{.Label \"com.docker.compose.project\"}}|{{.Label \"com.docker.compose.service\"}}"
+        fmt = '{{.Names}}|{{.Status}}|{{.Label "com.docker.compose.project"}}|{{.Label "com.docker.compose.service"}}'
         proc = await asyncio.create_subprocess_exec(
             self.docker,
             "ps",
@@ -176,9 +176,7 @@ class DockerController:
 
         return removed, failed
 
-    async def remove_containers(
-        self, container_names: list[str]
-    ) -> tuple[list[str], list[str]]:
+    async def remove_containers(self, container_names: list[str]) -> tuple[list[str], list[str]]:
         """Remove containers by name. Returns (removed, failed) lists."""
         if not container_names or not Path(self.docker).exists():
             return [], []

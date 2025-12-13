@@ -22,9 +22,7 @@ class ListCommand(Command):
             return EXIT_SUCCESS
 
         backup_env = getattr(args, "backup_env", "local")
-        global_backup_unit = (
-            "backup.service" if backup_env == "local" else "backup-remote.service"
-        )
+        global_backup_unit = "backup.service" if backup_env == "local" else "backup-remote.service"
 
         global_last_ok = await unit_last_success(ctx.systemctl, global_backup_unit)
 
@@ -74,9 +72,7 @@ class ListCommand(Command):
         ctx.renderer.render_table("Services", columns, rows)
 
         if global_last_ok is None:
-            ctx.renderer.print_warn(
-                f"Could not determine last result for {global_backup_unit}"
-            )
+            ctx.renderer.print_warn(f"Could not determine last result for {global_backup_unit}")
 
         return EXIT_SUCCESS
 
@@ -91,9 +87,7 @@ class ListBackupsCommand(Command):
         svc = validate_service(ctx.config, service_name)
         path_resolver = ctx.path_resolver
 
-        resolved, missing = await path_resolver.resolve_all(
-            svc.backup.volumes, svc.backup.paths
-        )
+        resolved, missing = await path_resolver.resolve_all(svc.backup.volumes, svc.backup.paths)
 
         # Show backup contents table
         columns = [
@@ -134,9 +128,7 @@ class ListBackupsCommand(Command):
         snapshots: list[ResticSnapshot] = await restic.snapshots([tag])
 
         if not snapshots:
-            ctx.renderer.print_info(
-                f"No snapshots found for {service_name} (tag: {tag}) in {env}"
-            )
+            ctx.renderer.print_info(f"No snapshots found for {service_name} (tag: {tag}) in {env}")
             return EXIT_SUCCESS
 
         # Show snapshots table
@@ -153,8 +145,6 @@ class ListBackupsCommand(Command):
             hostname = snap.get("hostname") or ""
             snap_rows.append(TableRow(cells=[snap_id, time, hostname]))
 
-        ctx.renderer.render_table(
-            f"Snapshots for {service_name} ({env})", snap_columns, snap_rows
-        )
+        ctx.renderer.render_table(f"Snapshots for {service_name} ({env})", snap_columns, snap_rows)
 
         return EXIT_SUCCESS

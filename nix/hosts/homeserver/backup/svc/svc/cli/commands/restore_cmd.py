@@ -50,8 +50,7 @@ class RestoreCommand(Command):
         if result.missing_in_snapshot:
             ctx.renderer.print_warn(
                 "Snapshot is missing some expected paths "
-                "(likely volumes added after snapshot): "
-                + ", ".join(result.missing_in_snapshot)
+                "(likely volumes added after snapshot): " + ", ".join(result.missing_in_snapshot)
             )
 
         if result.success:

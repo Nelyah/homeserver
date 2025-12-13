@@ -56,7 +56,8 @@ def setup_logging(verbose: bool) -> None:
 
 
 def reorder_global_options(argv: list[str]) -> list[str]:
-    """Move global options (-c/-v/-n) before the subcommand.
+    """
+    Move global options (-c/-v/-n) before the subcommand.
 
     Argparse allowed these flags anywhere; click does not, so we normalize argv
     to keep the same CLI affordances.
@@ -114,7 +115,7 @@ def main() -> int:
         e.show()
         return EXIT_USAGE_ERROR
     except SvcError as e:
-        logging.error(str(e))
+        logging.exception(str(e))
         return e.exit_code
     except KeyboardInterrupt:
         logging.info("Interrupted by user")

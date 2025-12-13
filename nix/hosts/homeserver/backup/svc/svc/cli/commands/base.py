@@ -68,5 +68,6 @@ class Command(ABC):
 
         Returns:
             Exit code
+
         """
         ...

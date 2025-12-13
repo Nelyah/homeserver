@@ -78,6 +78,7 @@ class PathResolver:
         Returns:
             Tuple of (resolved_paths, missing_paths)
             where missing_paths contains descriptions of paths that don't exist.
+
         """
         resolved: list[ResolvedPath] = []
         missing: list[str] = []
@@ -104,6 +105,7 @@ class PathResolver:
 
         Returns:
             Tuple of (paths_to_backup, missing_descriptions)
+
         """
         resolved, missing = await self.resolve_all(volumes, paths)
         filesystem_paths = [r.filesystem_path for r in resolved]

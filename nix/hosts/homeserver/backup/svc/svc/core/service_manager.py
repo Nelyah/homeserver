@@ -356,9 +356,7 @@ class ServiceManager:
         """Resolve the compose file path for a service."""
         unit = self.compose_unit_for(service_name)
 
-        props = await self.systemctl.show(
-            unit, ["LoadState", "ExecStart", "WorkingDirectory"]
-        )
+        props = await self.systemctl.show(unit, ["LoadState", "ExecStart", "WorkingDirectory"])
         exec_start = props.get("ExecStart", "")
 
         match = re.search(r"(?:^|\s)-f\s+([^\s;]+)", exec_start)
@@ -411,16 +409,13 @@ class ServiceManager:
 
         logger.info(f"Streaming logs for {svc.name}...")
 
-        proc = await asyncio.create_subprocess_exec(
-            *args, cwd=str(compose_file.parent)
-        )
+        proc = await asyncio.create_subprocess_exec(*args, cwd=str(compose_file.parent))
         await proc.wait()
         return proc.returncode or 0
 
     def _docker_compose_bin(self) -> str | None:
         docker_compose = (
-            shutil.which("docker-compose")
-            or "/run/current-system/sw/bin/docker-compose"
+            shutil.which("docker-compose") or "/run/current-system/sw/bin/docker-compose"
         )
         return docker_compose if Path(docker_compose).exists() else None
 

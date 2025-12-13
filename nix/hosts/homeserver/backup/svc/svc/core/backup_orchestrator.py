@@ -20,8 +20,8 @@ class BackupResult:
     success: bool
     exit_code: int
     message: str
-    paths_backed_up: list[str] = field(default_factory=lambda: cast(list[str], []))
-    missing_paths: list[str] = field(default_factory=lambda: cast(list[str], []))
+    paths_backed_up: list[str] = field(default_factory=lambda: cast("list[str]", []))
+    missing_paths: list[str] = field(default_factory=lambda: cast("list[str]", []))
     forget_status: int | None = None
 
 
@@ -55,10 +55,9 @@ class BackupOrchestrator:
         """Get list of services to backup based on argument."""
         if service_arg == "all":
             return [svc for svc in self.config.services.values() if svc.backup.enable]
-        else:
-            from .service_helpers import validate_service
+        from .service_helpers import validate_service
 
-            return [validate_service(self.config, service_arg)]
+        return [validate_service(self.config, service_arg)]
 
     def create_backup_plan(self, svc: ServiceConfig) -> BackupPlan:
         """Create a backup plan for a service."""
@@ -70,9 +69,7 @@ class BackupOrchestrator:
             tags=list(svc.backup.tags),
         )
 
-    async def backup_service(
-        self, svc: ServiceConfig, dry_run: bool = False
-    ) -> BackupResult:
+    async def backup_service(self, svc: ServiceConfig, dry_run: bool = False) -> BackupResult:
         """
         Execute backup for a single service.
 

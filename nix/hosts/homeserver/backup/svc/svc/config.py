@@ -71,9 +71,7 @@ class PathsConfig(PydanticBase):
 
     secrets_root: str = Field(default="/var/lib/secrets", alias="secretsRoot")
     deploy_root: str = Field(default="/var/lib/docker-services", alias="deployRoot")
-    docker_volumes_root: str = Field(
-        default="/data/docker-data/volumes", alias="dockerVolumesRoot"
-    )
+    docker_volumes_root: str = Field(default="/data/docker-data/volumes", alias="dockerVolumesRoot")
 
 
 class Config(PydanticBase):
