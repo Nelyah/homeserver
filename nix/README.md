@@ -13,6 +13,14 @@ To rollback to the previous version
 ./nix-rollback.sh [hostname]
 ```
 
+## Backups / Restore (homeserver)
+
+- List restic snapshots for a service: `sudo bash -c 'source /var/lib/secrets/restic/local.env && restic snapshots --tag <service>'`
+- Restore latest snapshot: `sudo restore <local|remote> <service> latest`
+- Restore specific snapshot: `sudo restore <local|remote> <service> <SNAPSHOT_ID>`
+- Default restore does **not** delete extra files; pass `--delete` to make the target match the snapshot.
+- `restore` stops/starts `docker-compose-<service>.service` when compose is enabled.
+
 ## Resources
 
 - [nix-darwin manual](https://nix-darwin.github.io/nix-darwin/manual/)

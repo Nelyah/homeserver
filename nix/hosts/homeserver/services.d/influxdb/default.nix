@@ -22,6 +22,7 @@
   };
   backup = {
     enable = true;
+    needsServiceStopped = true;
     volumes = ["influxdb_data"];
   };
 }

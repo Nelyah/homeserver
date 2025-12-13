@@ -23,12 +23,7 @@
   };
   backup = {
     enable = true;
-    pre = ''
-      dump="/tmp/atuin_db.sql"
-      ${pkgs.docker}/bin/docker exec atuin_db sh -c "pg_dump -U atuin" > "$dump"
-    '';
-    post = ''rm -f "$dump"'';
-    paths = ["/tmp/atuin_db.sql"];
+    needsServiceStopped = true;
     volumes = [
       "atuin_db"
       "atuin_redis"

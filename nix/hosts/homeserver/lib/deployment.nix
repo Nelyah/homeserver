@@ -50,7 +50,7 @@
   '';
 
   # Generate script fragment to create symlinks for secret files
-  # secretsRoot: "/var/lib/secrets"
+  # secretsRoot: config.homeserver.paths.secretsRoot
   # deployRoot: "/var/lib/docker-services"
   # serviceName: "prometheus"
   # secretFiles: attrset of { destination = "..."; ... }
@@ -62,52 +62,4 @@
                "${deployRoot}/${serviceName}/${spec.destination}" 2>/dev/null || true
       fi
     '') (lib.attrValues secretFiles);
-
-  # Generate full deployment script
-  # This combines cleanup, copy, and symlink phases
-  mkDeployScript = {
-    deployRoot,
-    secretsRoot,
-    enabledServiceNames,
-    servicePackages,      # attrset: serviceName -> packagePath or null
-    servicesWithSecrets,  # attrset: serviceName -> { secretFiles = {...}; ... }
-    rsyncBin,
-  }: let
-    inherit (import ./deployment.nix { inherit lib; })
-      mkCleanupScript mkCopyScript mkSymlinkScript;
-  in ''
-    set -euo pipefail
-
-    DEPLOY_ROOT="${deployRoot}"
-    SECRETS_ROOT="${secretsRoot}"
-
-    if [ -z "$DEPLOY_ROOT" ]; then
-      echo "DEPLOY_ROOT is empty; aborting"
-      exit 1
-    fi
-
-    echo "Deploying docker services to $DEPLOY_ROOT..."
-
-    ${mkCleanupScript { inherit deployRoot enabledServiceNames; }}
-
-    # Deploy each service
-    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: pkg:
-      mkCopyScript {
-        inherit rsyncBin deployRoot;
-        serviceName = name;
-        packagePath = pkg;
-      }
-    ) servicePackages)}
-
-    # Create symlinks for secret files (including .env)
-    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: svc:
-      mkSymlinkScript {
-        inherit secretsRoot deployRoot;
-        serviceName = name;
-        secretFiles = svc.secretFiles or {};
-      }
-    ) servicesWithSecrets)}
-
-    echo "Docker services deployed successfully"
-  '';
 }

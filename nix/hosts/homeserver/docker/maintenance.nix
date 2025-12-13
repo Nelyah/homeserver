@@ -1,9 +1,5 @@
 # Docker maintenance tasks: log cleanup and image pruning
-{
-  pkgs,
-  config,
-  ...
-}: {
+{pkgs, ...}: {
   environment.systemPackages = [
     (pkgs.writeShellScriptBin "docker-fix-logs" ''
       #!${pkgs.bash}/bin/bash
@@ -37,7 +33,7 @@
     description = "Cleanup dangling docker images";
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${config.homeserver.homeserverRoot}/bin/docker-images-cleanup";
+      ExecStart = "/run/current-system/sw/bin/svc docker prune-images";
     };
   };
 

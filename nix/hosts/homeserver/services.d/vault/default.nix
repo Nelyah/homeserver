@@ -10,6 +10,7 @@
   };
   backup = {
     enable = true;
+    needsServiceStopped = true;
     volumes = ["vault_data"];
   };
 }

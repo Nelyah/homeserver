@@ -14,6 +14,7 @@
   };
   backup = {
     enable = true;
+    needsServiceStopped = true;
     volumes = [
       "navidrome_data"
       "navidrome_mum_data"

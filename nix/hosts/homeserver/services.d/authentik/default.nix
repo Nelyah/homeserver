@@ -29,12 +29,7 @@
   };
   backup = {
     enable = true;
-    pre = ''
-      dump="/tmp/authentik_db.sql"
-      ${pkgs.docker}/bin/docker exec authentik_db sh -c "pg_dump -U authentik" > "$dump"
-    '';
-    post = ''rm -f "$dump"'';
-    paths = ["/tmp/authentik_db.sql"];
+    needsServiceStopped = true;
     volumes = [
       "authentik_db"
       "authentik_redis"

@@ -4,7 +4,7 @@
   lib,
   ...
 }: let
-  secretsRoot = "/var/lib/secrets";
+  secretsRoot = config.homeserver.paths.secretsRoot;
   vaultComposeService = "docker-compose-vault.service";
   secrets = config.homeserver.vault.secrets;
 
@@ -51,7 +51,7 @@
   # List of expected secret files (for cleanup script)
   expectedFiles = lib.attrValues secretPaths;
 
-  # Cleanup script: remove files in /var/lib/secrets not in current config
+  # Cleanup script: remove files in secretsRoot not in current config
   cleanupScript = pkgs.writeShellScript "vault-secrets-cleanup" ''
     set -euo pipefail
     SECRETS_ROOT="${secretsRoot}"

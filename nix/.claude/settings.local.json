@@ -32,7 +32,13 @@
       "Bash(for svc in atuin audiobookshelf authentik caddy grafana blog_hugo influxdb jellyfin navidrome nextcloud ovh_dyndns_updater prometheus uptime-kuma vault)",
       "Bash(do echo \"=== $svc ===\" ls -la \"/data/homeserver/services/$svc/\")",
       "Bash(wc:*)",
-      "Bash(git -C /data/homeserver/nix rm:*)"
+      "Bash(git -C /data/homeserver/nix rm:*)",
+      "Bash(python3:*)",
+      "Bash(find:*)",
+      "Bash(nix eval:*)",
+      "Bash(nix build:*)",
+      "Bash(/nix/store/94brsrsrrralcrm2m7vyy0b5zjkgmqh4-python3-3.13.9-env/bin/python3:*)",
+      "Bash(/tmp/test-svc2/bin/svc:*)"
     ],
     "deny": [],
     "ask": []

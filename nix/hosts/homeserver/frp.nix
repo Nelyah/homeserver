@@ -1,5 +1,5 @@
-{lib, ...}: let
-  secretsRoot = "/var/lib/secrets";
+{lib, config, ...}: let
+  secretsRoot = config.homeserver.paths.secretsRoot;
 in {
   homeserver.vault.secrets.frp-token = {
     template = ''

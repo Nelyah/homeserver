@@ -19,6 +19,7 @@
   };
   backup = {
     enable = true;
+    needsServiceStopped = true;
     volumes = ["prometheus_data"];
   };
 }

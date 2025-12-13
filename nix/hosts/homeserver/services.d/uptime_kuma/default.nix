@@ -7,6 +7,7 @@
   };
   backup = {
     enable = true;
+    needsServiceStopped = true;
     volumes = ["uptime_kuma_data"];
     policy = {
       daily = 10;

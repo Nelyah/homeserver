@@ -50,13 +50,13 @@
       neomutt
       notmuch
 
-      # Media
-      beets
-
-      # Development
-      python3Packages.pip
-    ])
-    ++ [inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default];
+	      # Media
+	      beets
+	
+	      # Development
+	      python3Packages.pip
+	    ])
+	    ++ [inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default];
 
   environment.variables = {
     EDITOR = "nvim";
@@ -74,7 +74,25 @@
     alias cddd="cd ${"$"}{services_directory}"
     alias cdn="cd ${"$"}{services_directory}/nextcloud"
     alias cdw="cd ${"$"}{services_directory}/wordpress"
-  '';
+
+    if [ -n "${"$"}{ZSH_VERSION-}" ]; then
+      case "$-" in
+        *i*)
+	          __svc_completion_precmd() {
+	            if type compdef >/dev/null 2>&1 && command -v svc >/dev/null 2>&1; then
+	              eval "$(_SVC_COMPLETE=zsh_source svc)"
+	
+	              add-zsh-hook -d precmd __svc_completion_precmd >/dev/null 2>&1 || :
+	              unfunction __svc_completion_precmd >/dev/null 2>&1 || :
+	            fi
+	          }
+
+          autoload -Uz add-zsh-hook >/dev/null 2>&1 || :
+	          add-zsh-hook precmd __svc_completion_precmd >/dev/null 2>&1 || :
+	        ;;
+	      esac
+	    fi
+	  '';
 
   # Security-only auto-updates
   system.autoUpgrade = {

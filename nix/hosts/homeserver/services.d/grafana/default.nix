@@ -11,6 +11,7 @@
   };
   backup = {
     enable = true;
+    needsServiceStopped = true;
     volumes = ["grafana_data"];
   };
 }

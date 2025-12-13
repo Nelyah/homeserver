@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "svc"
+dynamic = ["version"]
+description = "Homeserver service backup/restore and lifecycle CLI"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "click>=8.1",
+  "pydantic>=2",
+  "rich>=13",
+]
+
+[dependency-groups]
+dev = [
+  "pyright>=1.1.390",
+]
+
+[project.scripts]
+svc = "svc.svc:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "svc.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["svc*"]
+
+[tool.setuptools.package-data]
+svc = ["py.typed"]
+
+[tool.pyright]
+include = ["svc"]
+strict = ["svc"]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.13"
+typeCheckingMode = "standard"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

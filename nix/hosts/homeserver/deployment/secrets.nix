@@ -1,5 +1,6 @@
 # Register vault secrets for docker services
-# Vault-agent will render these to /var/lib/secrets/docker-services/<name>/
+# Vault-agent will render these under config.homeserver.paths.secretsRoot, e.g.
+# <secretsRoot>/docker-services/<name>/
 {
   lib,
   config,

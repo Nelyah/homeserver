@@ -20,6 +20,7 @@
 
   backup = {
     enable = true;
+    needsServiceStopped = true;
     volumes = [
       "audiobookshelf_db"
       "audiobookshelf_metadata"

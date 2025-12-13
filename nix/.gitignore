@@ -7,3 +7,13 @@ result-*
 
 # macOS
 .DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.python-version

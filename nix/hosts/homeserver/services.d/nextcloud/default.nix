@@ -30,16 +30,7 @@
   };
   backup = {
     enable = true;
-    pre = ''
-      dump="/tmp/nextcloud_db.sql"
-      ${pkgs.docker}/bin/docker exec -u www-data nextcloud php /var/www/html/occ maintenance:mode --on
-      ${pkgs.docker}/bin/docker exec mariadb-nc sh -c "exec mariadb-dump -u root -p$MYSQL_ROOT_PASSWORD ${"$"}{NEXTCLOUD_DB:-nextcloud}" > "$dump"
-    '';
-    post = ''
-      ${pkgs.docker}/bin/docker exec -u www-data nextcloud php /var/www/html/occ maintenance:mode --off
-      rm -f "$dump"
-    '';
-    paths = ["/tmp/nextcloud_db.sql"];
+    needsServiceStopped = true;
     volumes = [
       "nextcloud_mariadb"
       "nextcloud_data"

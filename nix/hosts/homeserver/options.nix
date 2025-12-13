@@ -77,7 +77,7 @@ in {
           };
           destination = mkOption {
             type = types.str;
-            description = "Path relative to /var/lib/secrets/ (e.g., 'restic/local.env').";
+            description = "Path relative to homeserver.paths.secretsRoot (e.g., 'restic/local.env').";
           };
           perms = mkOption {
             type = types.str;
@@ -87,7 +87,7 @@ in {
         };
       });
       default = {};
-      description = "Vault secrets to be rendered by vault-agent under /var/lib/secrets/. All secrets are owned by root.";
+      description = "Vault secrets to be rendered by vault-agent under homeserver.paths.secretsRoot. All secrets are owned by root.";
     };
 
     services = mkOption {
@@ -179,7 +179,9 @@ in {
             description = "Secret files rendered by Vault and symlinked into the service directory.";
           };
           backup = mkOption {
-            type = types.nullOr (types.submodule {
+            type = types.nullOr (types.submodule ({config, ...}: let
+              backupCfg = config;
+            in {
               options = {
                 enable = mkOption {
                   type = types.bool;
@@ -196,21 +198,16 @@ in {
                   default = [];
                   description = "Docker volumes to back up.";
                 };
+                needsServiceStopped = mkOption {
+                  type = types.bool;
+                  default = false;
+                  description = "Stop the service's docker-compose systemd unit before backing up volumes/paths (recommended for database volumes).";
+                };
                 tags = mkOption {
                   type = types.listOf types.str;
                   default = [];
                   apply = tags: if tags == [] then [cfg.name] else tags;
                   description = "Restic tags (defaults to service name when unset).";
-                };
-                pre = mkOption {
-                  type = types.str;
-                  default = "";
-                  description = "Pre-backup hook script.";
-                };
-                post = mkOption {
-                  type = types.str;
-                  default = "";
-                  description = "Post-backup hook script.";
                 };
                 exclude = mkOption {
                   type = types.listOf types.str;
@@ -235,8 +232,60 @@ in {
                   };
                   description = "Retention policy for backups (set to null to skip forget).";
                 };
+
+                restore = mkOption {
+                  type = types.nullOr (types.submodule ({...}: {
+                    options = {
+                      tag = mkOption {
+                        type = types.str;
+                        default = cfg.name;
+                        description = "Restic tag used to select the latest snapshot for this service.";
+                      };
+
+                      volumes = mkOption {
+                        type = types.listOf types.str;
+                        default = backupCfg.volumes;
+                        description = "Docker volumes to restore (defaults to backup.volumes).";
+                      };
+
+                      paths = mkOption {
+                        type = types.listOf types.str;
+                        default = backupCfg.paths;
+                        description = "File paths to restore (defaults to backup.paths).";
+                      };
+
+                      stopCompose = mkOption {
+                        type = types.bool;
+                        default = cfg.compose != null && (cfg.compose.enable or false);
+                        description = "Stop/start the docker-compose systemd unit around restore.";
+                      };
+
+                      composeUnit = mkOption {
+                        type = types.nullOr types.str;
+                        default = null;
+                        description = "Systemd unit name to stop/start when stopCompose is enabled (defaults to docker-compose-<service>.service).";
+                      };
+
+                      restic = mkOption {
+                        type = types.submodule {
+                          options = {
+                            target = mkOption {
+                              type = types.str;
+                              default = "/";
+                              description = "Target directory passed to `restic restore --target`.";
+                            };
+                          };
+                        };
+                        default = {};
+                        description = "Restic restore options.";
+                      };
+                    };
+                  }));
+                  default = {};
+                  description = "Restore configuration for this service.";
+                };
               };
-            });
+            }));
             default = null;
             description = "Backup configuration for the service.";
           };
