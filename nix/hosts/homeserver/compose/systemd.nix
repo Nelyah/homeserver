@@ -34,11 +34,13 @@
     description = "docker-compose stack ${name}";
     after = [
       "docker.service"
+      "docker-prereqs.service"
       "network-online.target"
     ] ++ lib.optional needsVault "vault-agent.service";
     wants = [
       "network-online.target"
       "docker.service"
+      "docker-prereqs.service"
     ] ++ lib.optional needsVault "vault-agent.service";
     wantedBy = ["multi-user.target"];
     serviceConfig = {

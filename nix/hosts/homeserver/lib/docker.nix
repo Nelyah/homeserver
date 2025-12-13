@@ -29,12 +29,19 @@
   # volumes: ["prometheus_data"]
   # Returns: bash script fragment
   mkPrereqScript = { dockerBin, networks, volumes }: ''
-    set -e
+    set -euo pipefail
+
+    # Wait briefly for the Docker daemon to become responsive.
+    for _ in $(seq 1 30); do
+      ${dockerBin} info >/dev/null 2>&1 && break
+      sleep 1
+    done
+
     for n in ${lib.concatStringsSep " " networks}; do
-      ${dockerBin} network create "$n" >/dev/null 2>&1 || true
+      ${dockerBin} network inspect "$n" >/dev/null 2>&1 || ${dockerBin} network create "$n"
     done
     for v in ${lib.concatStringsSep " " volumes}; do
-      ${dockerBin} volume create "$v" >/dev/null 2>&1 || true
+      ${dockerBin} volume inspect "$v" >/dev/null 2>&1 || ${dockerBin} volume create "$v"
     done
   '';
 
