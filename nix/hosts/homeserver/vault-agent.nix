@@ -49,7 +49,14 @@
   '';
 
   # List of expected secret files (for cleanup script)
-  expectedFiles = lib.attrValues secretPaths;
+  expectedFiles =
+    lib.attrValues secretPaths
+    # These files are inputs to Vault operations, not Vault-rendered outputs,
+    # and must never be deleted by the cleanup script.
+    ++ [
+      config.homeserver.vault.tokenPath
+      config.homeserver.vault.unsealTokenPath
+    ];
 
   # Cleanup script: remove files in secretsRoot not in current config
   cleanupScript = pkgs.writeShellScript "vault-secrets-cleanup" ''
