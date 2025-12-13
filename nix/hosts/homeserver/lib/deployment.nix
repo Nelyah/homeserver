@@ -31,8 +31,18 @@
   # rsyncBin: "${pkgs.rsync}/bin/rsync"
   # serviceName: "prometheus"
   # packagePath: "/nix/store/xxx-docker-service-prometheus" or null
+  # exclude: list of patterns to exclude from rsync (e.g. [".env"])
   # Returns: bash script fragment
-  mkCopyScript = { rsyncBin, serviceName, packagePath, deployRoot }: ''
+  mkCopyScript = {
+    rsyncBin,
+    serviceName,
+    packagePath,
+    deployRoot,
+    exclude ? [],
+  }: let
+    rsyncExcludeArgs =
+      lib.concatMapStringsSep " " (d: "--exclude='${d}'") exclude;
+  in ''
     echo "Deploying ${serviceName}..."
     mkdir -p "${deployRoot}/${serviceName}"
     ${lib.optionalString (packagePath != null) ''
@@ -41,10 +51,10 @@
         exit 1
       fi
       # Copy files from nix store (preserve symlinks in target)
-      ${rsyncBin} -a --delete --exclude='.env' "${packagePath}/" "${deployRoot}/${serviceName}/"
+      ${rsyncBin} -a --delete ${rsyncExcludeArgs} "${packagePath}/" "${deployRoot}/${serviceName}/"
 
-      # Set permissions: files read-only, directories executable
-      find "${deployRoot}/${serviceName}" -type f ! -name '.env' -exec chmod 0444 {} \; 2>/dev/null || true
+      # Set permissions: keep exec bits but strip write permissions.
+      find "${deployRoot}/${serviceName}" -type f -exec chmod a-w {} \; 2>/dev/null || true
       find "${deployRoot}/${serviceName}" -type d -exec chmod 0755 {} \; 2>/dev/null || true
     ''}
   '';

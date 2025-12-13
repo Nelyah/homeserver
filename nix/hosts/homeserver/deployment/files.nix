@@ -64,57 +64,34 @@
     echo "Deploying docker services to $DEPLOY_ROOT..."
 
     # Remove stale service directories (services no longer enabled)
-    if [ -d "$DEPLOY_ROOT" ]; then
-      for dir in "$DEPLOY_ROOT"/*/; do
-        [ -d "$dir" ] || continue
-        svc_name=$(basename "$dir")
-        found=0
-        for enabled in "''${ENABLED_SERVICES[@]}"; do
-          if [ "$svc_name" = "$enabled" ]; then
-            found=1
-            break
-          fi
-        done
-        if [ $found -eq 0 ]; then
-          echo "Removing stale service directory: $dir"
-          rm -rf "$dir"
-        fi
-      done
-    fi
+    ${homeserverLib.deployment.mkCleanupScript {
+      deployRoot = "$DEPLOY_ROOT";
+      inherit enabledServiceNames;
+    }}
 
     # Deploy each service
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: svc: let
       pkg = servicePackages.${name};
-      hasPackage = pkg != null;
       secretDests = lib.mapAttrsToList (_: spec: spec.destination) (svc.secretFiles or {});
-      rsyncExcludeArgs = lib.concatStringsSep " " (map (d: "--exclude='${d}'") secretDests);
-    in ''
-      echo "Deploying ${name}..."
-      mkdir -p "$DEPLOY_ROOT/${name}"
-
-      ${lib.optionalString hasPackage ''
-        if [ -z "${pkg}" ]; then
-          echo "Package path for ${name} is empty; aborting"
-          exit 1
-        fi
-        # Copy files from nix store and prune stale entries.
-        # Exclude secret destinations so `--delete` doesn't remove secret symlinks.
-        ${pkgs.rsync}/bin/rsync -a --delete ${rsyncExcludeArgs} "${pkg}/" "$DEPLOY_ROOT/${name}/"
-
-        # Set permissions: keep exec bits but strip write permissions.
-        find "$DEPLOY_ROOT/${name}" -type f -exec chmod a-w {} \; 2>/dev/null || true
-        find "$DEPLOY_ROOT/${name}" -type d -exec chmod 0755 {} \; 2>/dev/null || true
-      ''}
-    '') enabledServices)}
+    in
+      homeserverLib.deployment.mkCopyScript {
+        rsyncBin = "${pkgs.rsync}/bin/rsync";
+        serviceName = name;
+        packagePath = pkg;
+        deployRoot = "$DEPLOY_ROOT";
+        exclude = secretDests;
+      }
+    ) enabledServices)}
 
     # Create symlinks for secret files (including .env)
-    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: svc: let
-      secretFiles = svc.secretFiles or {};
-    in lib.concatStringsSep "\n" (lib.mapAttrsToList (_fname: spec: ''
-      if [ -f "$SECRETS_ROOT/docker-services/${name}/${spec.destination}" ]; then
-        ln -sf "$SECRETS_ROOT/docker-services/${name}/${spec.destination}" "$DEPLOY_ROOT/${name}/${spec.destination}" 2>/dev/null || true
-      fi
-    '') secretFiles)) servicesWithSecretFiles)}
+    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: svc:
+      homeserverLib.deployment.mkSymlinkScript {
+        secretsRoot = "$SECRETS_ROOT";
+        deployRoot = "$DEPLOY_ROOT";
+        serviceName = name;
+        secretFiles = svc.secretFiles or {};
+      }
+    ) servicesWithSecretFiles)}
 
     # Recover failed compose units without restarting healthy/running stacks.
     # This avoids a redeploy causing a restart of every service.
