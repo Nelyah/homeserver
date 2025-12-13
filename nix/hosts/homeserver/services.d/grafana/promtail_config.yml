@@ -9,16 +9,6 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: docker
-    # use docker.sock to filter containers
-    docker_sd_configs:
-      - host: "unix:///var/run/docker.sock"
-        refresh_interval: 15s
-    # use container name to create a loki label
-    relabel_configs:
-      - source_labels: ['__meta_docker_container_name']
-        regex: '/(.*)'
-        target_label: 'container'
   - job_name: system
     static_configs:
     - targets:
@@ -29,4 +19,3 @@ scrape_configs:
   # - job_name: journal
   #   journal:
   #     max_age: 12h
-

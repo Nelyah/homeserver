@@ -26,7 +26,6 @@ services:
     stop_grace_period: 1m
     command: -config.file=/etc/promtail/promtail_config.yml
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./promtail_config.yml:/etc/promtail/promtail_config.yml:ro
       - /var/log:/var/log:ro
     restart: unless-stopped
