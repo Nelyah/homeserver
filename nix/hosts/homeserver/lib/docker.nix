@@ -59,6 +59,9 @@
   # Returns: attrset of services with non-empty secretFiles
   filterWithSecretFiles = services:
     lib.filterAttrs (
-      _: svc: (svc.compose.enable or false) && (svc.secretFiles or {}) != {}
+      _: svc:
+        (svc.compose or null) != null
+        && (svc.compose.enable or false)
+        && (svc.secretFiles or {}) != {}
     ) services;
 }

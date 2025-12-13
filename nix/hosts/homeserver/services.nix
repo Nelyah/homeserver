@@ -88,6 +88,7 @@
   builtServices = map buildService serviceNames;
 
   # Attrset keyed by service name
+  serviceNamesList = map (e: e.svcName) builtServices;
   rawServices = lib.listToAttrs (
     map (entry: {
       name = entry.svcName;
@@ -97,6 +98,13 @@
   );
 
 in {
+  config.assertions = [
+    {
+      assertion = lib.length (lib.unique serviceNamesList) == lib.length serviceNamesList;
+      message = "Duplicate service name detected in services.d/";
+    }
+  ];
+
   # Set the services config directly - options.nix provides the schema
   config.homeserver.services = rawServices;
 }

@@ -83,7 +83,7 @@ in {
   # - else, we are redirectory to the list of public DNS
   services.resolved = {
     enable = true;
-    dnssec = "false";
+    dnssec = "allow-downgrade";
     domains = ["~."];
     fallbackDns = public_dns;
   };
