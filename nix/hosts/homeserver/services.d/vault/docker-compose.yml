@@ -4,6 +4,11 @@ services:
     container_name: vault
     stop_grace_period: 1m
     restart: unless-stopped
+    ports:
+      # Vault is intentionally bound to localhost only because Vault TLS is disabled in `config.hcl`.
+      # Caddy terminates HTTPS and proxies to this local-only listener, so Vault isn't reachable from the LAN
+      # or from other containers on shared Docker networks.
+      - "127.0.0.1:8200:8200"
     cap_add:
       - IPC_LOCK # Required for mlock
     # environment:
@@ -11,14 +16,9 @@ services:
     volumes:
       - vault_data:/vault/file:rw
       - ./config:/etc/vault/:ro
-    networks:
-      - internal
+    # Note: no `networks:` section on purpose; Vault should not be reachable via container DNS (e.g. `vault:8200`).
     entrypoint: vault server -config=/etc/vault/config.hcl
 
 volumes:
   vault_data:
-    external: true
-
-networks:
-  internal:
     external: true

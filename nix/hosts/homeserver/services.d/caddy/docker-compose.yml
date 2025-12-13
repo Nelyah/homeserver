@@ -4,6 +4,10 @@ services:
     container_name: caddy
     stop_grace_period: 1m
     restart: unless-stopped
+    extra_hosts:
+      # On Linux, Docker doesn't always provide `host.docker.internal` by default.
+      # This maps it to the Docker host gateway so Caddy can reach host-bound services like Vault.
+      - "host.docker.internal:host-gateway"
     ports:
       - 443:443
       - 80:80
