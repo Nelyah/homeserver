@@ -28,9 +28,3 @@ scrape_configs:
     scrape_interval: 60s
     static_configs:
       - targets: ['cadvisor:8080']
-
-  - job_name: 'smartctl_exporter'
-    scrape_interval: 60s
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['smartctl_exporter:8000']

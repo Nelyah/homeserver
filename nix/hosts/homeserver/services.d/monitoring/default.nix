@@ -1,13 +1,22 @@
-{config, pkgs, lib, ...}: {
-  name = "influxdb";
+{...}: {
+  name = "monitoring";
   compose = {
     enable = true;
-    networks = ["grafana"];
-    volumes = ["influxdb_data"];
+    networks = ["monitoring"];
+    volumes = [
+      "grafana_data"
+      "influxdb_data"
+      "prometheus_data"
+    ];
+  };
+  files = {
+    "loki_config.yml".source = ./loki_config.yml;
+    "prometheus_config.yml".source = ./prometheus_config.yml;
+    "promtail_config.yml".source = ./promtail_config.yml;
   };
   secretFiles = {
-    ".env" = {
-      destination = ".env";
+    "influxdb.env" = {
+      destination = "influxdb.env";
       template = ''
         {{ with secret "homeserver_secrets/data/influxdb" -}}
         DOCKER_INFLUXDB_INIT_MODE=setup
@@ -23,6 +32,6 @@
   backup = {
     enable = true;
     needsServiceStopped = true;
-    volumes = ["influxdb_data"];
+    volumes = ["grafana_data" "influxdb_data" "prometheus_data"];
   };
 }

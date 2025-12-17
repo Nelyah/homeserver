@@ -6,7 +6,7 @@
       "audiobookshelf"
       "frontend"
       "emby"
-      "grafana"
+      "monitoring"
       "ghost"
       "immich"
       "internal"

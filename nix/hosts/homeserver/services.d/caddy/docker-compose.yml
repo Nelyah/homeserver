@@ -14,18 +14,12 @@ services:
     networks:
       - audiobookshelf
       - frontend
-      - emby
-      - grafana
-      - ghost
+      - monitoring
       - immich
       - internal
       - nextcloud
       - navidrome
-      - photoprism
-      - pihole
-      - bookstack
       - watchtower
-      - wordpress
 
 volumes:
   caddy_data:
@@ -42,25 +36,13 @@ networks:
     external: true
   nextcloud:
     external: true
-  bookstack:
-    external: true
-  ghost:
-    external: true
   immich:
     external: true
   internal:
     external: true
-  wordpress:
-    external: true
   navidrome:
     external: true
-  emby:
-    external: true
-  photoprism:
-    external: true
-  pihole:
-    external: true
-  grafana:
+  monitoring:
     external: true
   watchtower:
     external: true

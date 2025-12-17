@@ -1,4 +1,57 @@
 services:
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    stop_grace_period: 1m
+    depends_on:
+      - loki
+      - promtail
+      - influxdb
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - monitoring
+      - internal_monitoring
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    stop_grace_period: 1m
+    command: -config.file=/etc/loki/loki_config.yml
+    volumes:
+      - ./loki_config.yml:/etc/loki/loki_config.yml:ro
+    restart: unless-stopped
+    networks:
+      - internal_monitoring
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    stop_grace_period: 1m
+    command: -config.file=/etc/promtail/promtail_config.yml
+    volumes:
+      - ./promtail_config.yml:/etc/promtail/promtail_config.yml:ro
+      - /var/log:/var/log:ro
+    restart: unless-stopped
+    networks:
+      - internal_monitoring
+
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    stop_grace_period: 1m
+    restart: unless-stopped
+    volumes:
+      - influxdb_data:/var/lib/influxdb2:rw
+    networks:
+      - monitoring
+    env_file:
+      - influxdb.env
+    environment: 
+      - TZ="Europe/Stockholm"
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -7,10 +60,14 @@ services:
       - ./prometheus_config.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     restart: unless-stopped
+    depends_on:
+      - node_exporter
+      - cadvisor
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     networks:
-      - grafana
+      - monitoring
+      - internal_monitoring
 
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
@@ -23,7 +80,7 @@ services:
       # to avoid having the process fail on repeat
       - '--no-collector.thermal_zone'
     networks:
-      - grafana
+      - internal_monitoring
     pid: host
     restart: unless-stopped
     read_only: true
@@ -34,8 +91,7 @@ services:
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
 
   cadvisor:
-    # TODO: latest tag is not updated, check latest release https://github.com/google/cadvisor/releases
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     stop_grace_period: 1m
     read_only: true
@@ -46,7 +102,7 @@ services:
     cap_add:
       - SYS_ADMIN
     networks:
-      - grafana
+      - internal_monitoring
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -62,37 +118,16 @@ services:
       - /dev/kmsg
     restart: unless-stopped
 
-  smartctl_exporter:
-    build: exporters
-    container_name: smartctl_exporter
-    stop_grace_period: 1m
-    read_only: true
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - SYS_ADMIN
-      - SYS_RAWIO
-    restart: unless-stopped
-    command:
-      - --reload
-      - --port
-      - '8000'
-    environment:
-      SMART_DEVICES: /dev/sda:/dev/sdb:/dev/sdc
-    networks:
-      - grafana
-    volumes:
-      - /dev:/dev:ro
-
-
 volumes:
-  prometheus_data:
+  grafana_data:
     external: true
-  prometheus_config:
+  influxdb_data:
+    external: true
+  prometheus_data:
     external: true
 
 networks:
-  grafana:
+  monitoring:
     external: true
+  internal_monitoring:
+    internal: true
