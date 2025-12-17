@@ -112,10 +112,12 @@ in
       after = [
         "network-online.target"
         vaultComposeService
+        "vault-unseal.service"
       ];
       wants = [
         "network-online.target"
         vaultComposeService
+        "vault-unseal.service"
       ];
       serviceConfig = {
         Type = "simple";

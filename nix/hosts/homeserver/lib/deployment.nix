@@ -69,7 +69,11 @@
     lib.concatMapStringsSep "\n" (spec: ''
       secret_src="${secretsRoot}/docker-services/${serviceName}/${spec.destination}"
       secret_dst="${deployRoot}/${serviceName}/${spec.destination}"
-      if [ -f "$secret_src" ]; then
+
+      if [ ! -f "$secret_src" ]; then
+        echo -e "\033[33mWARNING: Secret file not rendered. Re-run vault-agent: $secret_src\033[0m" >&2
+        echo -e "\033[33mCheck vault-agent logs: journalctl -u vault-agent\033[0m" >&2
+      else
         if ! ln -sf "$secret_src" "$secret_dst"; then
           echo "Failed to create symlink for ${serviceName}/${spec.destination}" >&2
           exit 1
