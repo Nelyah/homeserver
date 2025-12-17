@@ -1,7 +1,7 @@
 {config, pkgs, lib, ...}: {
   name = "ovh_dyndns_updater";
   compose = {
-    enable = true;
+    enable = false;
     build = true;
     networks = [];
     volumes = [];
