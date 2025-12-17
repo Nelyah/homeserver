@@ -3,6 +3,9 @@ services:
     image: grafana/grafana-oss:latest
     container_name: grafana
     stop_grace_period: 1m
+    depends_on:
+      - loki
+      - promtail
     volumes:
       - grafana_data:/var/lib/grafana
     restart: unless-stopped
