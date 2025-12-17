@@ -64,6 +64,8 @@ class Renderer(ABC):
         title: str,
         columns: Sequence[TableColumn],
         rows: Sequence[TableRow],
+        *,
+        show_lines: bool = True,
     ) -> None:
         """Render a table with the given columns and rows."""
         ...
@@ -114,9 +116,11 @@ class RichRenderer(Renderer):
         title: str,
         columns: Sequence[TableColumn],
         rows: Sequence[TableRow],
+        *,
+        show_lines: bool = True,
     ) -> None:
         """Render a table to the console."""
-        table = Table(title=title, header_style="bold", show_lines=False)
+        table = Table(title=title, header_style="bold", show_lines=show_lines)
 
         for col in columns:
             table.add_column(col.name, style=col.style or None, justify=col.justify)
@@ -171,8 +175,11 @@ class PlainRenderer(Renderer):
         title: str,
         columns: Sequence[TableColumn],
         rows: Sequence[TableRow],
+        *,
+        show_lines: bool = True,
     ) -> None:
         """Render a simple text table."""
+        del show_lines
         print(f"\n{title}")
         print("-" * len(title))
 

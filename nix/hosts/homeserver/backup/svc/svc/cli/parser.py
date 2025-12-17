@@ -19,6 +19,7 @@ from click.shell_completion import CompletionItem
 from ..config import load_config
 from .args import (
     BackupArgs,
+    DoctorArgs,
     EmptyArgs,
     ListArgs,
     ListBackupsArgs,
@@ -30,6 +31,7 @@ from .args import (
 from .commands import (
     BackupCommand,
     DockerHealthCommand,
+    DoctorCommand,
     ListBackupsCommand,
     ListCommand,
     LogsCommand,
@@ -160,10 +162,17 @@ def cli(ctx: click.Context, config: str, verbose: bool, dry_run: bool) -> None:
     show_default=True,
     help="Which systemd backup unit to check for last result",
 )
+@click.option(
+    "--detailed",
+    "-d",
+    is_flag=True,
+    default=False,
+    help="Show additional container details (ports)",
+)
 @click.pass_context
-def list_cmd(ctx: click.Context, backup_env: str) -> None:
+def list_cmd(ctx: click.Context, backup_env: str, detailed: bool) -> None:
     """List services and their backup status."""
-    _run_command(ctx, ListCommand(), ListArgs(backup_env=backup_env))
+    _run_command(ctx, ListCommand(), ListArgs(backup_env=backup_env, detailed=detailed))
 
 
 @cli.command("list-backups")
@@ -263,6 +272,30 @@ def logs_cmd(ctx: click.Context, service: str, follow: bool, tail: int, timestam
         LogsCommand(),
         LogsArgs(service=service, follow=follow, tail=tail, timestamps=timestamps),
     )
+
+
+@cli.command("doctor")
+@click.option(
+    "--since",
+    default="24 hours ago",
+    show_default=True,
+    help="Time window for log scanning (e.g., '24 hours ago', '1 week ago')",
+)
+@click.option(
+    "--full",
+    is_flag=True,
+    default=False,
+    help="Include docker log scanning for errors/warnings",
+)
+@click.pass_context
+def doctor_cmd(ctx: click.Context, since: str, full: bool) -> None:
+    """
+    Run comprehensive health checks on timers and disk health.
+
+    Checks systemd timers for failures and disk SMART test results.
+    Use --full to also scan docker-compose service logs for errors and warnings.
+    """
+    _run_command(ctx, DoctorCommand(), DoctorArgs(since=since, full=full))
 
 
 # ---------------------------------------------------------------------------

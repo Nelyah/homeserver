@@ -7,6 +7,8 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+_MIN_STATUS_PARTS_FOR_UPTIME = 3
+
 
 @dataclass
 class ContainerInfo:
@@ -16,6 +18,8 @@ class ContainerInfo:
     status: str
     project: str | None  # com.docker.compose.project label
     service: str | None  # com.docker.compose.service label
+    image: str  # Image name (e.g., "nginx:1.25")
+    ports: str  # Published ports (e.g., "80/tcp, 443/tcp")
 
     @property
     def is_up(self) -> bool:
@@ -32,6 +36,23 @@ class ContainerInfo:
         """Check if container is an orphan (no compose project, not running)."""
         return self.project is None and not self.is_up
 
+    @property
+    def running_for(self) -> str:
+        """Extract uptime from status (e.g., 'Up 2 days (healthy)' → 'Up 2 days')."""
+        if not self.is_up:
+            return self.status  # Return full status for non-running containers
+        # Status format: "Up X <unit>" or "Up X <unit> (healthy)"
+        parts = self.status.split()
+        if len(parts) >= _MIN_STATUS_PARTS_FOR_UPTIME:
+            # Include "Up" and strip health info.
+            uptime_parts: list[str] = []
+            for part in parts:
+                if part.startswith("("):
+                    break
+                uptime_parts.append(part)
+            return " ".join(uptime_parts)
+        return self.status
+
 
 @dataclass
 class ImageInfo:
@@ -46,7 +67,8 @@ class ImageInfo:
 class DockerController:
     """Controls docker operations needed for volume path resolution."""
 
-    _EXPECTED_FIELDS = 4
+    _CONTAINER_FIELDS = 6  # name, status, project, service, image, ports
+    _IMAGE_FIELDS = 4  # id, repository, tag, size
 
     def __init__(self, docker_bin: str = "/run/current-system/sw/bin/docker"):
         self.docker = docker_bin
@@ -79,11 +101,17 @@ class DockerController:
         return mount or None
 
     async def list_containers(self) -> list[ContainerInfo]:
-        """List all containers with their status and compose labels."""
+        """List all containers with their status, compose labels, image, and ports."""
         if not Path(self.docker).exists():
             return []
 
-        fmt = '{{.Names}}|{{.Status}}|{{.Label "com.docker.compose.project"}}|{{.Label "com.docker.compose.service"}}'
+        # Format: name|status|project|service|image|ports
+        fmt = (
+            "{{.Names}}|{{.Status}}"
+            '|{{.Label "com.docker.compose.project"}}'
+            '|{{.Label "com.docker.compose.service"}}'
+            "|{{.Image}}|{{.Ports}}"
+        )
         proc = await asyncio.create_subprocess_exec(
             self.docker,
             "ps",
@@ -103,13 +131,15 @@ class DockerController:
             if not line:
                 continue
             parts = line.split("|")
-            if len(parts) >= self._EXPECTED_FIELDS:
+            if len(parts) >= self._CONTAINER_FIELDS:
                 containers.append(
                     ContainerInfo(
                         name=parts[0],
                         status=parts[1],
                         project=parts[2] or None,
                         service=parts[3] or None,
+                        image=parts[4],
+                        ports=parts[5],
                     )
                 )
         return containers
@@ -140,7 +170,7 @@ class DockerController:
             if not line:
                 continue
             parts = line.split("|")
-            if len(parts) >= self._EXPECTED_FIELDS:
+            if len(parts) >= self._IMAGE_FIELDS:
                 images.append(
                     ImageInfo(
                         id=parts[0],

@@ -4,5 +4,6 @@
     ./daemon.nix
     ./prerequisites.nix
     ./maintenance.nix
+    ./auto-update.nix
   ];
 }

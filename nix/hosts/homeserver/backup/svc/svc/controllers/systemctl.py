@@ -1,11 +1,46 @@
 """Systemd service controller with async support."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
+from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from ..exceptions import SystemctlError
 
+if TYPE_CHECKING:
+    from ..config import TimerConfig
+
 logger = logging.getLogger("svc.controllers.systemctl")
+
+
+class TimerResult(StrEnum):
+    """Result of a timer's associated service execution."""
+
+    SUCCESS = "success"
+    FAILED = "failed"
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class TimerStatus:
+    """Status information for a systemd timer."""
+
+    name: str
+    unit: str
+    description: str
+    last_run: str | None
+    next_run: str | None
+    last_result: TimerResult
+    is_active: bool
+
+    @property
+    def is_ok(self) -> bool:
+        """Check if timer is healthy (active and last run succeeded)."""
+        return self.is_active and self.last_result == TimerResult.SUCCESS
 
 
 class SystemctlController:
@@ -100,6 +135,96 @@ class SystemctlController:
             key, _, value = line.partition("=")
             props[key] = value
         return props
+
+    async def get_timer_status(self, timer: TimerConfig) -> TimerStatus:
+        """Get status information for a systemd timer."""
+        timer_unit = timer.unit
+        # Associated service is the timer unit minus .timer + .service
+        service_unit = timer_unit.replace(".timer", ".service")
+
+        # Query timer properties
+        timer_props = await self.show(
+            timer_unit,
+            [
+                "ActiveState",
+                "NextElapseUSecRealtime",
+                "NextElapseUSec",
+                "LastTriggerUSecRealtime",
+                "LastTriggerUSec",
+            ],
+        )
+
+        # Query associated service result
+        service_props = await self.show(service_unit, ["Result"])
+
+        # Parse last trigger time
+        last_run: str | None = None
+        last_trigger = (
+            timer_props.get("LastTriggerUSecRealtime", "")
+            or timer_props.get("LastTriggerUSec", "")
+        )
+        if last_trigger and last_trigger not in ("n/a", "0"):
+            last_run = _format_timestamp(last_trigger)
+
+        # Parse next elapse time
+        next_run: str | None = None
+        next_elapse = (
+            timer_props.get("NextElapseUSecRealtime", "")
+            or timer_props.get("NextElapseUSec", "")
+        )
+        if next_elapse and next_elapse not in ("n/a", "0"):
+            next_run = _format_timestamp(next_elapse)
+
+        # Determine last result
+        service_result = service_props.get("Result", "")
+        if service_result == "success":
+            last_result = TimerResult.SUCCESS
+        elif service_result and service_result != "":
+            last_result = TimerResult.FAILED
+        else:
+            last_result = TimerResult.UNKNOWN
+
+        # Check if timer is active
+        is_active = timer_props.get("ActiveState", "") == "active"
+
+        return TimerStatus(
+            name=timer.name,
+            unit=timer.unit,
+            description=timer.description,
+            last_run=last_run,
+            next_run=next_run,
+            last_result=last_result,
+            is_active=is_active,
+        )
+
+
+def _format_timestamp(timestamp_str: str) -> str:
+    """Format a systemd timestamp string to human-readable format."""
+    min_parts = 3
+    # systemd returns timestamps like "Sat 2025-01-11 05:00:00 UTC"
+    # or epoch microseconds - we try to parse and simplify
+    ts = timestamp_str.strip()
+    formatted = ""
+
+    if ts:
+        if ts.isdigit():
+            usec = int(ts, 10)
+            if usec > 0:
+                dt = datetime.fromtimestamp(usec / 1_000_000).astimezone()
+                formatted = dt.strftime("%Y-%m-%d %H:%M")
+        else:
+            formatted = ts[:16]
+            try:
+                # Try parsing the human-readable format
+                if " " in ts:
+                    # Take the date/time portion, skip day name
+                    parts = ts.split()
+                    if len(parts) >= min_parts:
+                        formatted = f"{parts[1]} {parts[2][:5]}"  # "2025-01-11 05:00"
+            except (ValueError, IndexError):
+                formatted = ts[:16]
+
+    return formatted
 
 
 async def unit_last_success(systemctl: SystemctlController, unit: str) -> bool | None:

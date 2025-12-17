@@ -14,5 +14,6 @@
     ./vault-unseal.nix
     ./backup                 # Reorganized with default.nix
     ./compose                # Split from compose.nix
+    ./disk-health.nix        # SMART disk health monitoring
   ];
 }

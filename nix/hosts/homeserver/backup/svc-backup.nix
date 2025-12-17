@@ -47,6 +47,7 @@ in {
   systemd.services = {
     backup = {
       description = "Restic backup (local)";
+      restartIfChanged = false;
       after = ["network-online.target" "vault-agent.service"];
       wants = ["network-online.target" "vault-agent.service"];
       requires = ["vault-agent.service"];
@@ -60,6 +61,7 @@ in {
 
     backup-remote = {
       description = "Restic backup (remote)";
+      restartIfChanged = false;
       after = ["network-online.target" "vault-agent.service"];
       wants = ["network-online.target" "vault-agent.service"];
       requires = ["vault-agent.service"];
@@ -77,6 +79,7 @@ in {
       wantedBy = ["timers.target"];
       timerConfig = {
         OnCalendar = "05:00";
+        Persistent = false;
       };
     };
 
@@ -84,8 +87,8 @@ in {
       wantedBy = ["timers.target"];
       timerConfig = {
         OnCalendar = "Mon 05:00";
+        Persistent = false;
       };
     };
   };
 }
-

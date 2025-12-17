@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from ...config import Config
-from ...controllers import DockerController, ResticRunner, SystemctlController
+from ...controllers import DockerController, LogsController, ResticRunner, SystemctlController
 from ...core import PathResolver
 from ..renderer import Renderer
 
@@ -29,6 +29,7 @@ class AppContext:
     _systemctl: SystemctlController | None = None
     _docker: DockerController | None = None
     _path_resolver: PathResolver | None = None
+    _logs: LogsController | None = None
 
     @property
     def systemctl(self) -> SystemctlController:
@@ -50,6 +51,13 @@ class AppContext:
         if self._path_resolver is None:
             self._path_resolver = PathResolver(self.config, self.docker)
         return self._path_resolver
+
+    @property
+    def logs(self) -> LogsController:
+        """Get or create a LogsController."""
+        if self._logs is None:
+            self._logs = LogsController()
+        return self._logs
 
     def create_restic_runner(self, env_vars: dict[str, str]) -> ResticRunner:
         """Create a ResticRunner with the given environment variables."""

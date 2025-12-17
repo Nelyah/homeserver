@@ -59,6 +59,22 @@
     restore = serializeRestore name svc;
   };
 
+  # Timer metadata for svc doctor command
+  # Dynamically collected from config.systemd.timers
+  timers = lib.pipe config.systemd.timers [
+    # Filter to only include timers that are enabled (wantedBy contains "timers.target")
+    (lib.filterAttrs (_name: timer:
+      lib.elem "timers.target" (timer.wantedBy or [])
+    ))
+    # Convert to list of timer metadata objects
+    (lib.mapAttrsToList (name: _timer: {
+      inherit name;
+      unit = "${name}.timer";
+      # Get description from the corresponding service
+      description = config.systemd.services.${name}.description or "";
+    }))
+  ];
+
   # Build complete config structure
   configData = {
     paths = {
@@ -67,6 +83,7 @@
       dockerVolumesRoot = config.homeserver.paths.dockerVolumesRoot;
     };
     services = lib.mapAttrs serializeService services;
+    inherit timers;
   };
 
   configJson = pkgs.writeText "svc-services.json" (builtins.toJSON configData);

@@ -28,6 +28,7 @@ class ListArgs:
     """Arguments for `svc list`."""
 
     backup_env: str
+    detailed: bool = False
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,14 @@ class LogsArgs:
     follow: bool
     tail: int
     timestamps: bool
+
+
+@dataclass(frozen=True)
+class DoctorArgs:
+    """Arguments for `svc doctor`."""
+
+    since: str = "24h"
+    full: bool = False
 
 
 @dataclass(frozen=True)

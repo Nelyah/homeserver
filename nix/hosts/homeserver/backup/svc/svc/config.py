@@ -62,12 +62,33 @@ class RestoreConfig(PydanticBase):
     target: str = "/"
 
 
+class MonitoringConfig(PydanticBase):
+    """Optional per-service monitoring configuration overrides."""
+
+    error_patterns: list[str] = Field(default_factory=list, alias="errorPatterns")
+    warning_patterns: list[str] = Field(default_factory=list, alias="warningPatterns")
+    ignore_patterns: list[str] = Field(default_factory=list, alias="ignorePatterns")
+
+
 class ServiceConfig(PydanticBase):
     """Configuration for a single service."""
 
     name: str
     backup: BackupConfig
     restore: RestoreConfig
+    monitoring: MonitoringConfig | None = None
+
+
+class TimerConfig(PydanticBase):
+    """Configuration for a systemd timer."""
+
+    name: str
+    unit: str
+    description: str
+
+
+def _empty_timer_list() -> list[TimerConfig]:
+    return []
 
 
 class PathsConfig(PydanticBase):
@@ -83,6 +104,7 @@ class Config(PydanticBase):
 
     paths: PathsConfig
     services: dict[str, ServiceConfig] = Field(default_factory=dict)
+    timers: list[TimerConfig] = Field(default_factory=_empty_timer_list)
 
 
 TModel = TypeVar("TModel", bound=BaseModel)
