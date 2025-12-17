@@ -5,6 +5,8 @@ services:
     user: 1000:1000
     networks:
       - frontend
+    env_file:
+      - .env
     volumes:
       - jellyfin_config:/config
       - jellyfin_cache:/cache

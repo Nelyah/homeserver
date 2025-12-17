@@ -8,6 +8,15 @@
       "jellyfin_cache"
     ];
   };
+  secretFiles = {
+    ".env" = {
+      destination = ".env";
+      template = ''
+      MOVIE_FOLDER=/data/Movies/
+      TVSHOWS_FOLDER=/data/TvShows/
+      '';
+    };
+  };
   backup = {
     enable = true;
     needsServiceStopped = true;
