@@ -75,7 +75,6 @@
     rsync
     unzip
     yt-dlp
-    codex
 
     # Other utilities
     atuin
@@ -90,6 +89,7 @@
     uv
     yarn
   ] ++ (with pkgs.unstable; [
+    codex
     claude-code
   ]);
 
