@@ -58,48 +58,19 @@
 	}
 }
 
-# Define reusable snippet for authentication forwarding
-(auth_forward) {
-	uri /outpost.goauthentik.io/auth/caddy
-
-	# Capitalization of the headers is important, otherwise they will be empty
-	copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Entitlements X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
-
-	# Optional, trust all private ranges (should be restricted to the outpost’s IP)
-	trusted_proxies private_ranges
-	trusted_proxies 100.64.0.0/10
-}
-
-# Define reusable snippet for reverse proxy to the outpost
-(reverse_proxy_outpost) {
-	reverse_proxy /outpost.goauthentik.io/* authentik_server:9000 {
-		header_up Host {http.reverse_proxy.upstream.hostport}
-	}
-}
-
-(sso_at_location) {
-	import reverse_proxy_outpost
-
-	@is_not_whitelist {
-		import is_not_whitelist
-	}
-
-	forward_auth {args[0]} authentik_server:9000 {
-		import auth_forward
-	}
-}
-
 (sso_if_not_whitelist) {
-	@is_not_whitelist {
+	@needs_sso {
 		import is_not_whitelist
 	}
 
-	import reverse_proxy_outpost
-
-	forward_auth @is_not_whitelist authentik_server:9000 {
-		import auth_forward
+	forward_auth @needs_sso tinyauth:3000 {
+		uri /api/auth/caddy
+		copy_headers Remote-User Remote-Name Remote-Email Remote-Groups
+		trusted_proxies private_ranges
+		trusted_proxies 100.64.0.0/10
 	}
 }
+
 
 cloud.nelyah.eu {
 	import security_headers
@@ -139,18 +110,6 @@ cloud.nelyah.eu {
 	}
 }
 
-pihole.nelyah.eu {
-	import security_headers
-	reverse_proxy pihole
-	import sso_if_not_whitelist
-}
-
-gitea.nelyah.eu {
-	import security_headers
-	reverse_proxy gitea:3000
-	import sso_if_not_whitelist
-}
-
 chloe.dequeker.me, blog.nelyah.eu {
 	import security_headers
 	reverse_proxy hugo_website:1313
@@ -167,16 +126,6 @@ influxdb.nelyah.eu {
 	import security_headers
 	reverse_proxy influxdb:8086
 	import sso_if_not_whitelist
-}
-
-wiki.nelyah.eu {
-	import security_headers
-	reverse_proxy bookstack
-}
-
-music-mum.nelyah.eu {
-	import security_headers
-	reverse_proxy navidrome_mum:8080
 }
 
 music.nelyah.eu {
@@ -209,19 +158,19 @@ photos.nelyah.eu, immich.nelyah.eu {
 	import sso_if_not_whitelist
 }
 
-watchtower.nelyah.eu {
-	import security_headers
-	import restrict_to_lan
-	reverse_proxy watchtower:8080
-}
-
 audiobookshelf.nelyah.eu {
 	import security_headers
 	reverse_proxy audiobookshelf
 }
 
-auth.nelyah.eu {
-	reverse_proxy authentik_server:9000
+pocketid.nelyah.eu {
+	import security_headers
+	reverse_proxy pocketid:1411
+}
+
+tinyauth.nelyah.eu {
+	import security_headers
+	reverse_proxy tinyauth:3000
 }
 
 vault.nelyah.eu {

@@ -42,7 +42,9 @@
       "Bash(grep:*)",
       "Bash(journalctl:*)",
       "Bash(docker ps:*)",
-      "Bash(docker compose up:*)"
+      "Bash(docker compose up:*)",
+      "WebFetch(domain:tinyauth.app)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []

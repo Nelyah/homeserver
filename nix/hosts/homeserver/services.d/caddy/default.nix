@@ -13,6 +13,7 @@
       "nextcloud"
       "navidrome"
       "pihole"
+      "pocketid"
       "bookstack"
       "watchtower"
       "wordpress"
