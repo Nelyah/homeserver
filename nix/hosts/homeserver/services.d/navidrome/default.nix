@@ -5,7 +5,6 @@
     networks = ["navidrome"];
     volumes = [
       "navidrome_data"
-      "navidrome_mum_data"
     ];
   };
   # navidrome uses paths, not secrets - include .env directly
@@ -17,7 +16,6 @@
     needsServiceStopped = true;
     volumes = [
       "navidrome_data"
-      "navidrome_mum_data"
     ];
   };
 }
