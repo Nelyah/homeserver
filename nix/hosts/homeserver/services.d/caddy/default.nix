@@ -1,6 +1,7 @@
 {config, pkgs, lib, ...}: {
   name = "caddy";
   compose = {
+    build = true;
     enable = true;
     networks = [
       "audiobookshelf"
@@ -25,6 +26,7 @@
   };
   files = {
     "Caddyfile".source = ./Caddyfile;
+    "Dockerfile".source = ./Dockerfile;
   };
   backup = {
     enable = true;

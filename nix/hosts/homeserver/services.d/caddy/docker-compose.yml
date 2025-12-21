@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: caddy:2-alpine
+    build: .
     container_name: caddy
     stop_grace_period: 1m
     restart: unless-stopped
@@ -11,6 +11,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - nextcloud_site:/php-fpm-root/nextcloud/
+      - /var/lib/geoip/GeoLite2-Country.mmdb:/data/GeoLite2-Country.mmdb:ro
     networks:
       - audiobookshelf
       - frontend

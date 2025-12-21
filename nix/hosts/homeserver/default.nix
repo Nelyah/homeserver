@@ -15,5 +15,6 @@
     ./backup                 # Reorganized with default.nix
     ./compose                # Split from compose.nix
     ./disk-health.nix        # SMART disk health monitoring
+    ./geoip-updater.nix      # Weekly GeoIP database updates for Caddy
   ];
 }

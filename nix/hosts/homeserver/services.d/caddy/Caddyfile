@@ -63,6 +63,8 @@
 		import is_not_whitelist
 	}
 
+	import geo_allow_eu_and_na
+
 	forward_auth @needs_sso tinyauth:3000 {
 		uri /api/auth/caddy
 		copy_headers Remote-User Remote-Name Remote-Email Remote-Groups
@@ -71,9 +73,73 @@
 	}
 }
 
+# Rate limit entire site
+# Usage: import rate_limit_site <zone_name> <events> <window>
+(rate_limit_site) {
+	rate_limit {
+		zone {args[0]} {
+			key {remote_host}
+			events {args[1]}
+			window {args[2]}
+		}
+	}
+}
+
+# Rate limit specific paths
+# Usage: import rate_limit_path <zone_name> <path_glob> <events> <window>
+(rate_limit_path) {
+	rate_limit {
+		zone {args[0]} {
+			match {
+				path {args[1]}
+			}
+			key {remote_host}
+			events {args[2]}
+			window {args[3]}
+		}
+	}
+}
+
+
+# Block access unless from allowed countries
+# Usage: import geo_allow FR DE BE NL
+(geo_allow) {
+	@blocked_geo {
+		not maxmind_geolocation {
+			db_path /data/GeoLite2-Country.mmdb
+			allow_countries {args[:]}
+		}
+		# Also allow private/Tailscale ranges (bypass geo check)
+		not remote_ip private_ranges
+		not remote_ip 100.64.0.0/10
+	}
+	respond @blocked_geo "Access Denied" 403 {
+		close
+	}
+}
+
+# Continent snippets - expand to country codes
+# Usage: import geo_allow_europe
+(geo_allow_europe) {
+	import geo_allow AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE GB CH NO IS LI MC AD SM VA
+}
+
+(geo_allow_north_america) {
+	import geo_allow US CA MX
+}
+
+
+(geo_allow_eu_and_na) {
+	import geo_allow AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE GB CH NO IS US CA
+}
 
 cloud.nelyah.eu {
 	import security_headers
+	import geo_allow_eu_and_na
+
+	import rate_limit_path cloud_login1 /login* 100 1m
+	import rate_limit_path cloud_login2 /index.php/login* 100 1m
+
 
 	request_body {
 		max_size 5GB
@@ -124,12 +190,16 @@ api.blog.nelyah.eu {
 
 influxdb.nelyah.eu {
 	import security_headers
-	reverse_proxy influxdb:8086
 	import sso_if_not_whitelist
+	reverse_proxy influxdb:8086
 }
 
 music.nelyah.eu {
 	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_path navidrome_login /auth/login 10 1m
+
 	reverse_proxy navidrome
 }
 
@@ -149,6 +219,12 @@ grafana.nelyah.eu {
 
 jellyfin.nelyah.eu {
 	import security_headers
+
+	import geo_allow_europe
+	import rate_limit_path jellyfin_login_name /Users/AuthenticateByName 10 1m
+	import rate_limit_path jellyfin_login_qc /Users/AuthenticateWithQuickConnect 10 1m
+	import rate_limit_path jellyfin_quickconnect /QuickConnect/* 10 1m
+
 	reverse_proxy jellyfin:8096
 }
 
@@ -160,32 +236,51 @@ photos.nelyah.eu, immich.nelyah.eu {
 
 audiobookshelf.nelyah.eu {
 	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_path abs_login /login 10 1m
+
+
 	reverse_proxy audiobookshelf
 }
 
 pocketid.nelyah.eu {
 	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_site pocketid_global 100 1m
+
 	reverse_proxy pocketid:1411
 }
 
 tinyauth.nelyah.eu {
 	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_site tinyauth_global 100 1m
+	import rate_limit_path tinyauth_oauth_cb /api/oauth/callback/* 10 1m
+	import rate_limit_path tinyauth_login_ui /login* 10 1m
+
 	reverse_proxy tinyauth:3000
 }
 
 vault.nelyah.eu {
 	import security_headers
-	reverse_proxy vault:8200
 	import sso_if_not_whitelist
+	reverse_proxy vault:8200
 }
 
 atuin.nelyah.eu {
 	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_site atuin_global 10 1m
+
 	reverse_proxy atuin:8888
 }
 
 uptime-kuma.nelyah.eu {
 	import security_headers
-	reverse_proxy uptime_kuma:3001
 	import sso_if_not_whitelist
+	reverse_proxy uptime_kuma:3001
 }
