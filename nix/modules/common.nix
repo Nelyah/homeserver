@@ -29,6 +29,7 @@
     eza
     fd
     fzf
+    dig
     htop
     jq
     lf
