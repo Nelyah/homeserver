@@ -7,7 +7,7 @@
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     codex-cli-nix = {
-      url = "path:/home/chloe/sandbox/codex-cli-nix";
+      url = "github:sadjow/codex-cli-nix";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
