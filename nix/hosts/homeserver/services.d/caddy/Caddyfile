@@ -137,8 +137,8 @@ cloud.nelyah.eu {
 	import security_headers
 	import geo_allow_eu_and_na
 
-	import rate_limit_path cloud_login1 /login* 100 1m
-	import rate_limit_path cloud_login2 /index.php/login* 100 1m
+	import rate_limit_path cloud_login1 /login* 1000 1m
+	import rate_limit_path cloud_login2 /index.php/login* 1000 1m
 
 
 	request_body {
