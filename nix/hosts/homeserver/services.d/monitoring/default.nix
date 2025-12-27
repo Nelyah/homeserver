@@ -13,6 +13,7 @@
     "loki_config.yml".source = ./loki_config.yml;
     "prometheus_config.yml".source = ./prometheus_config.yml;
     "promtail_config.yml".source = ./promtail_config.yml;
+    "grafana.ini".source = ./grafana.ini;
   };
   secretFiles = {
     "influxdb.env" = {

@@ -10,10 +10,15 @@ services:
       - prometheus
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana.ini:/etc/grafana/grafana.ini:ro
     restart: unless-stopped
     networks:
       - monitoring
       - internal_monitoring
+    environment: 
+      - TZ="Europe/Stockholm"
+      - GF_SERVER_DOMAIN=grafana.nelyah.eu
+      - GF_SERVER_ROOT_URL=https://grafana.nelyah.eu
 
   loki:
     image: grafana/loki:latest
