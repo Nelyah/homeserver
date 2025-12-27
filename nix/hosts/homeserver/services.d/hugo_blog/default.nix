@@ -9,6 +9,7 @@
   files = {
     "Dockerfile".source = ./Dockerfile;
     "ssh_config".source = ./ssh_config;
+    "entrypoint.sh".source = ./entrypoint.sh;
   };
   secretFiles = {
     ".env" = {

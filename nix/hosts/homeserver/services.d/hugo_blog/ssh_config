@@ -1,5 +1,5 @@
 Host github.com
     HostName github.com
     User git
-    IdentityFile ~/.ssh/deploy_key
+    IdentityFile ~/.ssh/deploy_key.local
     IdentitiesOnly yes

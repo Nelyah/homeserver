@@ -10,7 +10,7 @@ RUN hugo --environment production --minify --destination /site
 
 FROM alpine:latest
 
-RUN apk add --no-cache python3 uv ca-certificates git openssh-client hugo
+RUN apk add --no-cache python3 uv ca-certificates git openssh-client hugo su-exec
 WORKDIR /website
 
 # Bring in the built site and source code for the API
@@ -36,14 +36,15 @@ RUN addgroup -g ${APP_GID} app || true \
     && adduser -D -u ${APP_UID} -G app app || true \
     && chown -R app:app /website /home/app/.ssh
 
+# Copy entrypoint that handles root-only SSH key bind mount
+COPY entrypoint.sh /entrypoint.sh
+
 # Ensure the uv-managed venv is on PATH
 ENV VIRTUAL_ENV=/website/.venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 EXPOSE 1313 8000
 
-# Run as the non-root user (matches mounted key ownership)
-USER app
-
 # Serve the static site and the API
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["sh", "-c", "uvicorn api_server:app --host 0.0.0.0 --port 8000 --app-dir /website & python -m http.server 1313 --directory /website/public & wait"]
