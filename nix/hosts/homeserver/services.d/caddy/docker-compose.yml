@@ -4,6 +4,7 @@ services:
     container_name: caddy
     stop_grace_period: 1m
     restart: unless-stopped
+    user: "1001"
     ports:
       - 443:443
       - 80:80
