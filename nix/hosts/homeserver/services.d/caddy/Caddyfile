@@ -198,7 +198,7 @@ music.nelyah.eu {
 	import security_headers
 
 	import geo_allow_eu_and_na
-	import rate_limit_path navidrome_login /auth/login 10 1m
+	import rate_limit_path navidrome_login /auth/login 1000 1m
 
 	reverse_proxy navidrome
 }
@@ -221,9 +221,9 @@ jellyfin.nelyah.eu {
 	import security_headers
 
 	import geo_allow_europe
-	import rate_limit_path jellyfin_login_name /Users/AuthenticateByName 10 1m
-	import rate_limit_path jellyfin_login_qc /Users/AuthenticateWithQuickConnect 10 1m
-	import rate_limit_path jellyfin_quickconnect /QuickConnect/* 10 1m
+	import rate_limit_path jellyfin_login_name /Users/AuthenticateByName 1000 1m
+	import rate_limit_path jellyfin_login_qc /Users/AuthenticateWithQuickConnect 1000 1m
+	import rate_limit_path jellyfin_quickconnect /QuickConnect/* 1000 1m
 
 	reverse_proxy jellyfin:8096
 }
@@ -237,7 +237,7 @@ audiobookshelf.nelyah.eu {
 	import security_headers
 
 	import geo_allow_eu_and_na
-	import rate_limit_path abs_login /login 10 1m
+	import rate_limit_path abs_login /login 1000 1m
 
 
 	reverse_proxy audiobookshelf
@@ -256,9 +256,9 @@ tinyauth.nelyah.eu {
 	import security_headers
 
 	import geo_allow_eu_and_na
-	import rate_limit_site tinyauth_global 100 1m
-	import rate_limit_path tinyauth_oauth_cb /api/oauth/callback/* 10 1m
-	import rate_limit_path tinyauth_login_ui /login* 10 1m
+	import rate_limit_site tinyauth_global 1000 1m
+	import rate_limit_path tinyauth_oauth_cb /api/oauth/callback/* 1000 1m
+	import rate_limit_path tinyauth_login_ui /login* 1000 1m
 
 	reverse_proxy tinyauth:3000
 }
@@ -273,7 +273,7 @@ atuin.nelyah.eu {
 	import security_headers
 
 	import geo_allow_eu_and_na
-	import rate_limit_site atuin_global 10 1m
+	import rate_limit_site atuin_global 100 1m
 
 	reverse_proxy atuin:8888
 }
