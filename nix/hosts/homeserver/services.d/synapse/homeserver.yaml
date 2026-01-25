@@ -1,0 +1,67 @@
+server_name: "nelyah.eu"
+public_baseurl: "https://matrix.nelyah.eu/"
+pid_file: /data/homeserver.pid
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    database: synapse
+    host: synapse_db
+    cp_min: 5
+    cp_max: 10
+
+log_config: "/data/log.config"
+media_store_path: /data/media_store
+signing_key_path: /data/signing.key
+
+trusted_key_servers:
+  - server_name: "matrix.org"
+
+enable_registration: false
+registration_shared_secret_path: /run/secrets/registration_shared_secret
+
+enable_metrics: true
+report_stats: false
+
+allow_public_rooms_over_federation: true
+
+# Rate limiting
+rc_message:
+  per_second: 0.2
+  burst_count: 50
+
+rc_registration:
+  per_second: 0.17
+  burst_count: 3
+
+rc_login:
+  address:
+    per_second: 0.17
+    burst_count: 3
+  account:
+    per_second: 0.17
+    burst_count: 3
+  failed_attempts:
+    per_second: 0.17
+    burst_count: 3
+
+# Appservice registrations (bridges + double puppeting)
+app_service_config_files:
+  - /data/appservices/doublepuppet.yaml
+  - /data/appservices/signal.yaml
+  - /data/appservices/whatsapp.yaml
+
+# Enable MSC3202 for appservice encryption
+experimental_features:
+  msc3202_transaction_extensions: true
+  msc2409_to_device_messages_enabled: true

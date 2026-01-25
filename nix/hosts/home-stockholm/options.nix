@@ -173,6 +173,16 @@ in {
                   default = "0400";
                   description = "Permissions to set on rendered secret file.";
                 };
+                mountable = mkOption {
+                  type = types.bool;
+                  default = false;
+                  description = "Copy file instead of symlink, allowing Docker volume mounts.";
+                };
+                owner = mkOption {
+                  type = types.nullOr types.str;
+                  default = null;
+                  description = "Owner (uid:gid) for the deployed copy. Only applies when mountable = true.";
+                };
               };
             });
             default = {};

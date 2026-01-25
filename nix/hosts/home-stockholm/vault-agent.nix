@@ -89,10 +89,18 @@
     done < <(${pkgs.findutils}/bin/find "$SECRETS_ROOT" -type f -print0 2>/dev/null || true)
   '';
 
-  # Auto-generate tmpfiles rules for parent directories
+  # Get all parent directories for a path (up to but not including secretsRoot)
+  getAllParentDirs = path: let
+    parent = builtins.dirOf path;
+  in
+    if parent == secretsRoot || parent == "/" || parent == path
+    then []
+    else [parent] ++ getAllParentDirs parent;
+
+  # Auto-generate tmpfiles rules for all parent directories (including intermediate ones)
   secretDirs = lib.unique (
-    lib.filter (d: d != secretsRoot) (
-      map (path: builtins.dirOf path) (lib.attrValues secretPaths)
+    lib.flatten (
+      map (path: getAllParentDirs path) (lib.attrValues secretPaths)
     )
   );
 in

@@ -16,6 +16,7 @@
       "pihole"
       "pocketid"
       "bookstack"
+      "synapse"
       "watchtower"
       "wordpress"
     ];

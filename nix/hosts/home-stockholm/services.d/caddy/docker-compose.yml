@@ -21,6 +21,7 @@ services:
       - internal
       - nextcloud
       - navidrome
+      - synapse
       - watchtower
 
 volumes:
@@ -45,6 +46,8 @@ networks:
   navidrome:
     external: true
   monitoring:
+    external: true
+  synapse:
     external: true
   watchtower:
     external: true

@@ -1,0 +1,164 @@
+services:
+  synapse-init:
+    image: busybox:latest
+    container_name: synapse_init
+    user: "0:0"
+    command: ["sh", "-c", "chown -R 991:991 /data"]
+    volumes:
+      - synapse_data:/data
+
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: synapse
+    restart: unless-stopped
+    env_file:
+      - synapse.env
+    volumes:
+      - synapse_data:/data
+      - ./homeserver.yaml:/run/var/homeserver.yaml:ro
+      - ./secrets/registration_shared_secret:/run/secrets/registration_shared_secret:ro
+      - ./log.config:/data/log.config:ro
+      - ./appservices:/data/appservices:ro
+    depends_on:
+      synapse-init:
+        condition: service_completed_successfully
+      synapse_db:
+        condition: service_healthy
+    networks:
+      - synapse
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-fSs", "http://localhost:8008/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  synapse_db:
+    image: postgres:16-alpine
+    container_name: synapse_db
+    restart: unless-stopped
+    env_file:
+      - postgres.env
+    volumes:
+      - synapse_db:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Signal bridge database init container (idempotent)
+  mautrix-signal-init:
+    image: postgres:16-alpine
+    container_name: mautrix_signal_init
+    restart: "no"
+    env_file:
+      - postgres.env
+      - ./signal/signal.env
+    volumes:
+      - ./signal/init-db.sh:/init-db.sh:ro
+    entrypoint: ["/bin/sh", "/init-db.sh"]
+    networks:
+      - internal
+    depends_on:
+      synapse_db:
+        condition: service_healthy
+
+  # Signal bridge service
+  mautrix-signal:
+    image: dock.mau.dev/mautrix/signal:latest
+    container_name: mautrix-signal
+    restart: unless-stopped
+    env_file:
+      - ./signal/signal.env
+    volumes:
+      - mautrix_signal_data:/data
+      - ./signal/config.yaml:/data/config.yaml:ro
+    networks:
+      - internal
+    # TCP keepalive to prevent NAT/firewall from killing WebSocket connections
+    # Using aggressive 20s to beat potential 30s NAT timeout
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=20
+      - net.ipv4.tcp_keepalive_intvl=10
+      - net.ipv4.tcp_keepalive_probes=3
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:29328/_matrix/mau/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      mautrix-signal-init:
+        condition: service_completed_successfully
+      synapse_db:
+        condition: service_healthy
+      synapse:
+        condition: service_healthy
+
+  # WhatsApp bridge database init container (idempotent)
+  mautrix-whatsapp-init:
+    image: postgres:16-alpine
+    container_name: mautrix_whatsapp_init
+    restart: "no"
+    env_file:
+      - postgres.env
+      - ./whatsapp/whatsapp.env
+    volumes:
+      - ./whatsapp/init-db.sh:/init-db.sh:ro
+    entrypoint: ["/bin/sh", "/init-db.sh"]
+    networks:
+      - internal
+    depends_on:
+      synapse_db:
+        condition: service_healthy
+
+  # WhatsApp bridge service
+  mautrix-whatsapp:
+    image: dock.mau.dev/mautrix/whatsapp:latest
+    container_name: mautrix-whatsapp
+    restart: unless-stopped
+    env_file:
+      - ./whatsapp/whatsapp.env
+    volumes:
+      - mautrix_whatsapp_data:/data
+      - ./whatsapp/config.yaml:/data/config.yaml:ro
+    networks:
+      - internal
+    # TCP keepalive to prevent NAT/firewall from killing WebSocket connections
+    # Using aggressive 20s to beat potential 30s NAT timeout
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=20
+      - net.ipv4.tcp_keepalive_intvl=10
+      - net.ipv4.tcp_keepalive_probes=3
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:29318/_matrix/mau/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      mautrix-whatsapp-init:
+        condition: service_completed_successfully
+      synapse_db:
+        condition: service_healthy
+      synapse:
+        condition: service_healthy
+
+volumes:
+  synapse_data:
+    external: true
+  synapse_db:
+    external: true
+  mautrix_signal_data:
+    external: true
+  mautrix_whatsapp_data:
+    external: true
+
+networks:
+  synapse:
+    external: true
+  internal:

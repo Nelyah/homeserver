@@ -1,0 +1,83 @@
+# Signal bridge configuration
+# Secrets are injected via environment variables with BRIDGE_ prefix
+
+env_config_prefix: BRIDGE_
+
+homeserver:
+  address: http://synapse:8008
+  domain: nelyah.eu
+  software: standard
+
+appservice:
+  address: http://mautrix-signal:29328
+  hostname: 0.0.0.0
+  port: 29328
+  id: mautrix-signal
+  ephemeral_events: true
+  bot:
+    username: signalbot
+    displayname: Signal Bridge Bot
+    avatar: mxc://maunium.net/wPJgTQbZOtpBFmDNkiNEMDUp
+  username_template: "signal_{{.}}"
+  # as_token and hs_token set via BRIDGE_appservice__as_token and BRIDGE_appservice__hs_token
+
+database:
+  type: postgres
+  # uri set via BRIDGE_database__uri
+
+network:
+  displayname_template: '{{or .ContactName .ProfileName .PhoneNumber "Unknown"}}'
+  autocreate_contact_portal: true
+  autocreate_group_portal: true
+  use_contact_avatars: true
+  sync_contacts_on_startup: true
+  use_outdated_profiles: true
+
+backfill:
+  enabled: true
+  unread_hours_threshold: 72000
+
+bridge:
+  contact_list_names: prefer
+  command_prefix: "!signal"
+  private_chat_portal_meta: true
+  resend_bridge_info: true
+  unknown_error_auto_reconnect: 1m
+  permissions:
+    "@nelyah:nelyah.eu": admin
+
+double_puppet:
+  secrets:
+    nelyah.eu: ""
+  servers:
+    nelyah.eu: "http://synapse:8008"
+
+encryption:
+  recovery_key: overwrite
+  self_sign: true
+  msc4190: true
+  allow: true
+  default: true
+  require: false
+  appservice: true
+  allow_key_sharing: true
+  # pickle_key set via BRIDGE_encryption__pickle_key
+  verification_levels:
+    receive: unverified
+    send: unverified
+    share: unverified
+  rotation:
+    enable_custom: true
+    milliseconds: 604800000
+    messages: 100
+    disable_device_change_key_rotation: true
+
+# public_media.signing_key set via BRIDGE_public_media__signing_key
+
+# provisioning.shared_secret set via BRIDGE_provisioning__shared_secret
+
+logging:
+  min_level: debug
+  writers:
+    - type: stdout
+      format: pretty-colored

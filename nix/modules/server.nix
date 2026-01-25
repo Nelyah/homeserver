@@ -45,12 +45,10 @@
   # Security-only auto-updates
   system.autoUpgrade = {
     enable = true;
+    flake = "github:Nelyah/homeserver?dir=nix#homeserver";
     dates = "03:30";
     flags = [
-      "--upgrade"
-      "--option"
-      "upgrade-with-unsafe-packages"
-      "false"
+      "--update-input" "nixpkgs"
     ];
     allowReboot = true;
   };
