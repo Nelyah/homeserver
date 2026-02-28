@@ -7,47 +7,11 @@
 in {
   networking.hostName = "home-stockholm";
 
-  services.openssh = {
-    enable = true;
-    ports = [22];
-    settings = {
-      PasswordAuthentication = false;
-      PermitRootLogin = "no";
-      X11Forwarding = false;
-      AllowUsers = ["chloe"];
-    };
-  };
+  networking.firewall.allowedTCPPorts = [22 80 443 53];
+  networking.firewall.allowedUDPPorts = [53];
 
-  networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [
-      80
-      443
-      53
-      22
-    ];
-    allowedUDPPorts = [
-      53
-    ];
-  };
-
-  services.fail2ban = {
-    enable = true;
-    bantime = "1h";
-    ignoreIP = [
-      "127.0.0.1/8"
-      "::1"
-      "192.168.1.0/24"
-      "100.64.0.0/10"
-    ];
-    jails.sshd.settings = {
-      enabled = true;
-      port = "22";
-      maxretry = 1;
-      bantime = "-1";
-      findtime = 1800;
-    };
-  };
+  # Homeserver-specific fail2ban ignore (LAN)
+  services.fail2ban.ignoreIP = ["192.168.1.0/24"];
 
   # Because we manage network with systemd, disable the legacy dhcpd client
   # and rely on systemd-netowrkd instead

@@ -4,29 +4,13 @@
   inputs,
   ...
 }: {
-  # Homeserver-specific nix settings (common settings in modules/common.nix)
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
-  };
-
   users.users.chloe = {
     isNormalUser = true;
-    extraGroups = [
-      "wheel"
-      "docker"
-      "data"
-    ];
+    extraGroups = ["wheel" "docker" "data"];
     shell = pkgs.zsh;
   };
 
   users.users.root.shell = pkgs.zsh;
-
-  i18n = {
-    defaultLocale = "en_GB.UTF-8";
-    supportedLocales = ["en_GB.UTF-8/UTF-8"];
-  };
 
   time.timeZone = "Europe/Stockholm";
 
@@ -95,19 +79,6 @@
 	      esac
 	    fi
 	  '';
-
-  # Security-only auto-updates
-  system.autoUpgrade = {
-    enable = true;
-    dates = "03:30";
-    flags = [
-      "--upgrade"
-      "--option"
-      "upgrade-with-unsafe-packages"
-      "false"
-    ];
-    allowReboot = true;
-  };
 
   system.stateVersion = "25.11";
 }

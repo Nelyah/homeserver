@@ -1,6 +1,5 @@
 {...}: {
   imports = [
-    ./boot.nix
     ./hardware-configuration.nix
     ./options.nix
     ./services.nix           # Must come after options.nix

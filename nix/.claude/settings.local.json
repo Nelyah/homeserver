@@ -44,9 +44,14 @@
       "Bash(docker ps:*)",
       "Bash(docker compose up:*)",
       "WebFetch(domain:tinyauth.app)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(cp:*)"
     ],
     "deny": [],
     "ask": []
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
   }
 }

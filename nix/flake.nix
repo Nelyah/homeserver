@@ -64,7 +64,7 @@
       );
     };
 
-    nixosConfigurations.homeserver = nixpkgs.lib.nixosSystem {
+    nixosConfigurations.home-stockholm = nixpkgs.lib.nixosSystem {
       system = homeserverSystem;
       specialArgs = {inherit inputs;};
       modules = [
@@ -80,8 +80,30 @@
             })
           ];
         }
-        ./hosts/homeserver
+        ./hosts/home-stockholm
         ./modules/common.nix
+        ./modules/server.nix
+        ./modules/tailscale.nix
+      ];
+    };
+
+    nixosConfigurations.home-paris = nixpkgs.lib.nixosSystem {
+      system = homeserverSystem;
+      specialArgs = {inherit inputs;};
+      modules = [
+        {
+          nixpkgs.overlays = [
+            (_final: prev: {
+              unstable = import inputs.nixpkgs-unstable {
+                system = homeserverSystem;
+                config = prev.config;
+              };
+            })
+          ];
+        }
+        ./hosts/home-paris
+        ./modules/common.nix
+        ./modules/server.nix
         ./modules/tailscale.nix
       ];
     };

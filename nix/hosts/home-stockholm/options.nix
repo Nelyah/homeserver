@@ -91,7 +91,7 @@ in {
     };
 
     services = mkOption {
-      description = "Service metadata defined in hosts/homeserver/services.d";
+      description = "Service metadata defined in hosts/home-stockholm/services.d";
       default = {};
       type = types.attrsOf (types.submodule ({name, config, ...}: let
         cfg = config;
