@@ -52,6 +52,8 @@
 
     # Build tools
     cmake
+    clang
+    gcc
     gnumake
     pkg-config
     ninja

@@ -16,7 +16,7 @@
 
   time.timeZone = "Europe/Paris";
 
-  networking.firewall.allowedTCPPorts = [22 80 443];
+  networking.firewall.allowedTCPPorts = [22 80 443 7000];
 
   system.stateVersion = "25.11";
 }

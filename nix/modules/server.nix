@@ -27,6 +27,7 @@
     };
   };
 
+  environment.systemPackages = [pkgs.ghostty.terminfo];
   networking.firewall.enable = true;
 
   # fail2ban: 1 retry = permanent ban for SSH

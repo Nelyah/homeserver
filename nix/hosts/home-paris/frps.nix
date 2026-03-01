@@ -32,6 +32,8 @@
     ];
     unitConfig.StartLimitIntervalSec = 0;
     serviceConfig = {
+      # Make sure we are running this as root and not $USER
+      DynamicUser = lib.mkForce false;
       Restart = lib.mkForce "always";
       RestartSec = lib.mkForce "10s";
     };
