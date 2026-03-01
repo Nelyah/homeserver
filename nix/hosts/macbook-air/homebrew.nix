@@ -11,16 +11,16 @@
       upgrade = true;
     };
 
-    # CLI tools installed via Homebrew (when not available in nixpkgs)
+    # CLI tools installed via Homebrew
     brews = [
       "gitui" # nixos version doesn't compile on macos
     ];
 
     # macOS Applications (GUI apps)
     casks = [
-      "alacritty"
       "anki"
       "codex"
+      "calibre"
       "db-browser-for-sqlite"
       "discord"
       "easy-move+resize"
@@ -39,6 +39,9 @@
       "xld" # Audio converter
     ];
 
+    # MacOS App store apps
+    # Add the app id, in the format as below:
+    # "Xcode" = 497799835;
     masApps = {
     };
   };

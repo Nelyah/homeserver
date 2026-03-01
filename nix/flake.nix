@@ -2,6 +2,9 @@
   description = "Chloe's macOS Nix Configuration";
 
   inputs = {
+    # TODO: Figure out a way to stay up to date with latest releases. 
+
+    # *-darwin here means that packages are tested for darwin compatibility
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-25.11-darwin";
 
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -18,7 +21,7 @@
 
     nix-darwin = {
       # Use the default nix-darwin, following nixpkgs for compatibility
-      url = "github:LnL7/nix-darwin";
+      url = "github:LnL7/nix-darwin/nix-darwin-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -35,11 +38,11 @@
     darwinSystem = "aarch64-darwin";
     linuxSystem = "x86_64-linux";
     # Shared overlay that makes nixpkgs-unstable available as pkgs.unstable
-    unstableOverlay = {
+    unstableOverlay = system: {
       nixpkgs.overlays = [
         (_final: prev: {
           unstable = import inputs.nixpkgs-unstable {
-            system = linuxSystem;
+            system = system;
             config = prev.config;
           };
         })
@@ -50,6 +53,7 @@
       system = darwinSystem;
       specialArgs = {inherit inputs username hostname;};
       modules = [
+        (unstableOverlay darwinSystem)
         ./hosts/macbook-air
         ./modules/common.nix
         home-manager.darwinModules.home-manager
@@ -68,7 +72,7 @@
       system = linuxSystem;
       specialArgs = {inherit inputs;};
       modules = [
-        unstableOverlay
+        (unstableOverlay linuxSystem)
         ./hosts/home-stockholm
         ./modules/common.nix
         ./modules/server.nix
@@ -80,7 +84,7 @@
       system = linuxSystem;
       specialArgs = {inherit inputs;};
       modules = [
-        unstableOverlay
+        (unstableOverlay linuxSystem)
         ./hosts/home-paris
         ./modules/common.nix
         ./modules/server.nix

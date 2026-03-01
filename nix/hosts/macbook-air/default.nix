@@ -8,77 +8,14 @@
     ./homebrew.nix
   ];
 
-  nix = {
-    settings = {
-      experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
-      warn-dirty = false;
-    };
-    gc = {
-      automatic = true;
-      interval = {
-        Weekday = 0;
-        Hour = 2;
-        Minute = 0;
-      };
-      options = "--delete-older-than 30d";
-    };
-  };
-
-  nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
-    alejandra # formatter for nix files
-    ansible
-    atuin
-    bat
-    cmake
-    coreutils
-    curl
-    delta
-    exiftool
-    eza
-    fd
-    ffmpeg
-    flac
-    fzf
-    gettext
-    git
-    gnupg
-    go
-    htop
-    hugo
-    imagemagick
-    jq
-    lf
+    # character encoding conversion library
+    # Linux has it by default, but not macos
     libiconv
+    # Used for i18n localisation
+    # Linux has it with gettext, but not macos
     libintl
-    lua
-    ncdu
-    neovim
-    ninja
-    nixd
-    nixfmt-rfc-style
-    nmap
-    nodejs
-    pkg-config
-    pre-commit
-    ripgrep
-    rsync
-    rustup
-    tig
-    tmux
-    tree
-    tree-sitter
-    uv
-    vim
-    wget
-    yadm
-    yarn
-    yq
-    yt-dlp
   ];
 
   # Enable Touch ID for sudo
@@ -127,7 +64,7 @@
             app = "/System/Applications/Mail.app";
           }
           {
-            app = "/Applications/iTerm.app";
+            app = "/Applications/Ghostty.app";
           }
           {
             app = "/Applications/Obsidian.app";

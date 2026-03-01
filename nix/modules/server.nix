@@ -9,12 +9,6 @@
     supportedLocales = ["en_GB.UTF-8/UTF-8"];
   };
 
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
-  };
-
   # SSH hardening
   services.openssh = {
     enable = true;
