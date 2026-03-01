@@ -1,0 +1,6 @@
+---
+- name: Configure Pi Zeros
+  hosts: pizeros
+  become: true
+  roles:
+    - pizero

@@ -31,6 +31,7 @@
 
   environment.systemPackages = with pkgs; [
     alejandra # formatter for nix files
+    ansible
     atuin
     bat
     cmake

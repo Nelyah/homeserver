@@ -81,6 +81,7 @@
 
     # Other utilities
     atuin
+    ansible
     cacert
     coreutils
     gettext

@@ -1,0 +1,14 @@
+---
+timezone: Europe/Paris
+
+packages:
+  - python3
+  - python3-pip
+  - git
+  - htop
+  - curl
+  - neovim
+  - tmux
+  - unattended-upgrades
+
+ssh_port: 22

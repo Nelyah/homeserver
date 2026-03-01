@@ -1,0 +1,9 @@
+all:
+  children:
+    pizeros:
+      hosts:
+        pizero-1:
+          ansible_host: rpi-stockholm
+      vars:
+        ansible_user: pi
+        ansible_python_interpreter: /usr/bin/python3

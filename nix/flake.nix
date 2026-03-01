@@ -32,11 +32,22 @@
   }: let
     username = "chloe";
     hostname = "chloe-macbook-air";
-    system = "aarch64-darwin";
-    homeserverSystem = "x86_64-linux";
+    darwinSystem = "aarch64-darwin";
+    linuxSystem = "x86_64-linux";
+    # Shared overlay that makes nixpkgs-unstable available as pkgs.unstable
+    unstableOverlay = {
+      nixpkgs.overlays = [
+        (_final: prev: {
+          unstable = import inputs.nixpkgs-unstable {
+            system = linuxSystem;
+            config = prev.config;
+          };
+        })
+      ];
+    };
   in {
     darwinConfigurations.${hostname} = nix-darwin.lib.darwinSystem {
-      inherit system;
+      system = darwinSystem;
       specialArgs = {inherit inputs username hostname;};
       modules = [
         ./hosts/macbook-air
@@ -53,33 +64,11 @@
       ];
     };
 
-    # Convenience output for `nix run .#switch`
-    apps.${system}.default = {
-      type = "app";
-      meta.description = "Switch nix-darwin configuration";
-      program = toString (
-        nixpkgs.legacyPackages.${system}.writeShellScript "switch" ''
-          darwin-rebuild switch --flake .#${hostname}
-        ''
-      );
-    };
-
     nixosConfigurations.home-stockholm = nixpkgs.lib.nixosSystem {
-      system = homeserverSystem;
+      system = linuxSystem;
       specialArgs = {inherit inputs;};
       modules = [
-        {
-          # With nixpkgs.overlay, the resulting attribute set is merged
-          # into `pkgs.` before we proceed further
-          nixpkgs.overlays = [
-            (_final: prev: {
-              unstable = import inputs.nixpkgs-unstable {
-                system = homeserverSystem;
-                config = prev.config;
-              };
-            })
-          ];
-        }
+        unstableOverlay
         ./hosts/home-stockholm
         ./modules/common.nix
         ./modules/server.nix
@@ -88,24 +77,53 @@
     };
 
     nixosConfigurations.home-paris = nixpkgs.lib.nixosSystem {
-      system = homeserverSystem;
+      system = linuxSystem;
       specialArgs = {inherit inputs;};
       modules = [
-        {
-          nixpkgs.overlays = [
-            (_final: prev: {
-              unstable = import inputs.nixpkgs-unstable {
-                system = homeserverSystem;
-                config = prev.config;
-              };
-            })
-          ];
-        }
+        unstableOverlay
         ./hosts/home-paris
         ./modules/common.nix
         ./modules/server.nix
         ./modules/tailscale.nix
       ];
     };
+
+    apps.${darwinSystem} = {
+      default = {
+        type = "app";
+        meta.description = "Switch nix-darwin configuration";
+        program = toString (
+          nixpkgs.legacyPackages.${darwinSystem}.writeShellScript "switch" ''
+            darwin-rebuild switch --flake .#${hostname}
+          ''
+        );
+      };
+
+      ansible-deploy = {
+        type = "app";
+        meta.description = "Run Ansible playbook against Pi Zeros";
+        program = toString (
+          nixpkgs.legacyPackages.${darwinSystem}.writeShellScript "ansible-deploy" ''
+            cd "$(${nixpkgs.legacyPackages.${darwinSystem}.git}/bin/git rev-parse --show-toplevel)/ansible"
+            ${nixpkgs.legacyPackages.${darwinSystem}.ansible}/bin/ansible-playbook -i inventory.yml site.yml "$@"
+          ''
+        );
+      };
+    };
+
+    apps.${linuxSystem} = {
+      default = {
+        type = "app";
+        meta.description = "Switch NixOS configuration";
+        program = toString (
+          nixpkgs.legacyPackages.${linuxSystem}.writeShellScript "switch" ''
+            set -euo pipefail
+            HOSTNAME=$(${nixpkgs.legacyPackages.${linuxSystem}.hostname}/bin/hostname)
+            nixos-rebuild switch --flake ".#$HOSTNAME"
+          ''
+        );
+      };
+    };
+
   };
 }
