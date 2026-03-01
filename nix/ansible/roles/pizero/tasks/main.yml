@@ -1,4 +1,13 @@
 ---
+- name: Clean apt cache
+  ansible.builtin.command: apt-get clean
+  changed_when: false
+
+- name: Remove unused packages
+  ansible.builtin.apt:
+    autoremove: true
+    purge: true
+
 - name: Update apt cache and upgrade packages
   ansible.builtin.apt:
     update_cache: true

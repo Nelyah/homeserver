@@ -108,7 +108,7 @@
         meta.description = "Run Ansible playbook against Pi Zeros";
         program = toString (
           nixpkgs.legacyPackages.${darwinSystem}.writeShellScript "ansible-deploy" ''
-            cd "$(${nixpkgs.legacyPackages.${darwinSystem}.git}/bin/git rev-parse --show-toplevel)/ansible"
+            cd "$(${nixpkgs.legacyPackages.${darwinSystem}.git}/bin/git rev-parse --show-toplevel)/nix/ansible"
             ${nixpkgs.legacyPackages.${darwinSystem}.ansible}/bin/ansible-playbook -i inventory.yml site.yml "$@"
           ''
         );
