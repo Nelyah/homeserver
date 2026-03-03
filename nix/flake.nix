@@ -2,7 +2,7 @@
   description = "Chloe's macOS Nix Configuration";
 
   inputs = {
-    # TODO: Figure out a way to stay up to date with latest releases. 
+    # TODO: Figure out a way to stay up to date with latest releases.
 
     # *-darwin here means that packages are tested for darwin compatibility
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-25.11-darwin";
@@ -33,8 +33,6 @@
     home-manager,
     ...
   }: let
-    username = "chloe";
-    hostname = "chloe-macbook-air";
     darwinSystem = "aarch64-darwin";
     linuxSystem = "x86_64-linux";
     # Shared overlay that makes nixpkgs-unstable available as pkgs.unstable
@@ -48,24 +46,41 @@
         })
       ];
     };
+
+    mkDarwinHost = {
+      hostname,
+      username,
+      hostPath,
+    }:
+      nix-darwin.lib.darwinSystem {
+        system = darwinSystem;
+        specialArgs = {inherit inputs username hostname;};
+        modules = [
+          (unstableOverlay darwinSystem)
+          hostPath
+          ./modules/darwin.nix
+          ./modules/common.nix
+          home-manager.darwinModules.home-manager
+          {
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              extraSpecialArgs = {inherit username;};
+            };
+          }
+        ];
+      };
   in {
-    darwinConfigurations.${hostname} = nix-darwin.lib.darwinSystem {
-      system = darwinSystem;
-      specialArgs = {inherit inputs username hostname;};
-      modules = [
-        (unstableOverlay darwinSystem)
-        ./hosts/macbook-air
-        ./modules/common.nix
-        home-manager.darwinModules.home-manager
-        {
-          home-manager = {
-            useGlobalPkgs = true;
-            useUserPackages = true;
-            extraSpecialArgs = {inherit username;};
-            users.${username} = import ./home;
-          };
-        }
-      ];
+    darwinConfigurations.chloe-macbook-air = mkDarwinHost {
+      hostname = "chloe-macbook-air";
+      username = "chloe";
+      hostPath = ./hosts/macbook-air;
+    };
+
+    darwinConfigurations.PLACEHOLDER-HOSTNAME = mkDarwinHost {
+      hostname = "PLACEHOLDER-HOSTNAME";
+      username = "PLACEHOLDER";
+      hostPath = ./hosts/work-macbook;
     };
 
     nixosConfigurations.home-stockholm = nixpkgs.lib.nixosSystem {
@@ -98,7 +113,9 @@
         meta.description = "Switch nix-darwin configuration";
         program = toString (
           nixpkgs.legacyPackages.${darwinSystem}.writeShellScript "switch" ''
-            darwin-rebuild switch --flake .#${hostname}
+            set -euo pipefail
+            HOSTNAME=$(${nixpkgs.legacyPackages.${darwinSystem}.hostname}/bin/hostname)
+            darwin-rebuild switch --flake ".#$HOSTNAME"
           ''
         );
       };
