@@ -21,7 +21,7 @@ in {
       auth.tokenSource.file.path = "/run/credentials/frp.service/frp-token";
       transport.tls.enable = true;
 
-      serverAddr = "100.75.232.42"; # tailscale IP
+      serverAddr = "100.65.3.16"; # tailscale IP
       serverPort = 7000;
 
       proxies = [
