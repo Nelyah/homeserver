@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{pkgs, config, ...}: {
   # Shared NixOS server config (boot, users, locale, security, auto-updates)
 
   boot.loader.systemd-boot.enable = true;
@@ -43,12 +43,20 @@
   };
 
   # Security-only auto-updates
+  programs.git = {
+    enable = true;
+    config = {
+      safe.directory = "${config.homeserver.homeserverRoot}";
+    };
+  };
+
+  # Security-only auto-updates
   system.autoUpgrade = {
     enable = true;
-    flake = "github:Nelyah/homeserver?dir=nix#homeserver";
+    flake = "${config.homeserver.homeserverRoot}/nix#homeserver";
     dates = "03:30";
     flags = [
-      "--update-input" "nixpkgs"
+      "--print-build-logs"
     ];
     allowReboot = true;
   };
