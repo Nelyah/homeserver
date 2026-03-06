@@ -4,6 +4,8 @@
   inputs,
   ...
 }: {
+  server.repoRoot = "/data/homeserver";
+
   users.users.chloe = {
     isNormalUser = true;
     extraGroups = ["wheel" "docker" "data"];
@@ -53,7 +55,7 @@
   };
 
   environment.shellInit = ''
-    git_repo_path=${config.homeserver.homeserverRoot}
+    git_repo_path=${config.server.repoRoot}
     services_directory="${"$"}{git_repo_path}/services"
     export PATH="${"$"}{git_repo_path}/bin:${"$"}{PATH}"
     alias cdd="cd ${"$"}{git_repo_path}"

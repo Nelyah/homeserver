@@ -3,6 +3,14 @@
   lib,
   ...
 }: {
+  options.server.repoRoot = lib.mkOption {
+    type = lib.types.str;
+    default = "~/homeserver";
+    description = "Root path of the homeserver repo on the host.";
+  };
+
+  config = {
+
   # Nix settings shared across all hosts
   nix = {
     settings = {
@@ -15,13 +23,16 @@
 
     gc = {
       automatic = true;
+      options = "--delete-older-than 30d";
+    } // (if pkgs.stdenv.isLinux then {
+      dates = "Sun *-*-* 02:00:00";
+    } else {
       interval = {
         Weekday = 0;
         Hour = 2;
         Minute = 0;
       };
-      options = "--delete-older-than 30d";
-    };
+    });
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -111,4 +122,6 @@
 
   # Enable zsh on all hosts
   programs.zsh.enable = true;
+
+  };
 }

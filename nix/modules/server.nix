@@ -46,18 +46,19 @@
   programs.git = {
     enable = true;
     config = {
-      safe.directory = "${config.homeserver.homeserverRoot}";
+      safe.directory = "${config.server.repoRoot}";
     };
   };
 
   # Security-only auto-updates
   system.autoUpgrade = {
     enable = true;
-    flake = "${config.homeserver.homeserverRoot}/nix#homeserver";
+    flake = "${config.server.repoRoot}/nix#${config.networking.hostName}";
     dates = "03:30";
     flags = [
       "--print-build-logs"
     ];
     allowReboot = true;
   };
+
 }

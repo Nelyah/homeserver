@@ -19,12 +19,6 @@ in {
       description = "Mount point for backup drive.";
     };
 
-    homeserverRoot = mkOption {
-      type = types.str;
-      default = "/data/homeserver";
-      description = "Root path of the homeserver repo on the host.";
-    };
-
     # Centralized path configuration
     paths = {
       deployRoot = mkOption {
