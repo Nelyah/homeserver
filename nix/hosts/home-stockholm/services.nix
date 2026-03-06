@@ -97,6 +97,11 @@
     builtServices
   );
 
+  # Collect and merge systemd configs from all services
+  mergedSystemd = lib.foldl' lib.recursiveUpdate {} (
+    lib.mapAttrsToList (_: svc: svc.systemd or {}) rawServices
+  );
+
 in {
   config.assertions = [
     {
@@ -107,4 +112,7 @@ in {
 
   # Set the services config directly - options.nix provides the schema
   config.homeserver.services = rawServices;
+
+  # Apply systemd units contributed by service definitions
+  config.systemd = mergedSystemd;
 }

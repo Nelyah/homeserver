@@ -1,7 +1,7 @@
 # Options can be imported standalone (by services.nix for validation)
 # or as a NixOS module (by default.nix). When imported standalone,
 # config is empty and the config block is skipped.
-{lib, config ? {}, ...}: let
+{lib, config ? {}, utils, ...}: let
   inherit (lib) mkOption mkDefault types mkIf;
   # Check if we're being used as a NixOS module (config.homeserver exists)
   isNixOSModule = config ? homeserver;
@@ -298,6 +298,24 @@ in {
             }));
             default = null;
             description = "Backup configuration for the service.";
+          };
+          systemd = mkOption {
+            type = types.submodule {
+              options = {
+                services = mkOption {
+                  type = utils.systemdUtils.types.services;
+                  default = {};
+                  description = "Systemd service units contributed by this service.";
+                };
+                timers = mkOption {
+                  type = utils.systemdUtils.types.timers;
+                  default = {};
+                  description = "Systemd timer units contributed by this service.";
+                };
+              };
+            };
+            default = {};
+            description = "Custom systemd units (services and timers) for this service.";
           };
         };
       }));
