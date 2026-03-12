@@ -27,18 +27,19 @@
       template = ''
           {{ with secret "homeserver_secrets/data/tinyauth" -}}
           # TinyAuth
-          APP_URL=https://tinyauth.nelyah.eu
-          USERS={{ .Data.data.USER_PASSWD_HASH }}
+          TINYAUTH_APPURL=https://tinyauth.nelyah.eu
+          TINYAUTH_AUTH_USERS={{ .Data.data.USER_PASSWD_HASH }}
           TINYAUTH_SECRET={{ .Data.data.SECRET }}
-          OAUTH_AUTO_REDIRECT=pocketid
-          PROVIDERS_POCKETID_CLIENT_ID={{ .Data.data.POCKETID_CLIENT_ID }}
-          PROVIDERS_POCKETID_CLIENT_SECRET={{ .Data.data.POCKETID_CLIENT_SECRET }}
-          PROVIDERS_POCKETID_AUTH_URL=https://pocketid.nelyah.eu/authorize
-          PROVIDERS_POCKETID_TOKEN_URL=https://pocketid.nelyah.eu/api/oidc/token
-          PROVIDERS_POCKETID_USER_INFO_URL=https://pocketid.nelyah.eu/api/oidc/userinfo
-          PROVIDERS_POCKETID_REDIRECT_URL=https://tinyauth.nelyah.eu/api/oauth/callback/pocketid
-          PROVIDERS_POCKETID_SCOPES=openid email profile groups
-          PROVIDERS_POCKETID_NAME=Pocket ID
+          TINYAUTH_OAUTH_AUTOREDIRECT=pocketid
+
+          TINYAUTH_OAUTH_PROVIDERS_POCKETID_CLIENTID={{ .Data.data.POCKETID_CLIENT_ID }}
+          TINYAUTH_OAUTH_PROVIDERS_POCKETID_CLIENTSECRET={{ .Data.data.POCKETID_CLIENT_SECRET }}
+          TINYAUTH_OAUTH_PROVIDERS_POCKETID_AUTHURL=https://pocketid.nelyah.eu/authorize
+          TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL=https://pocketid.nelyah.eu/api/oidc/token
+          TINYAUTH_OAUTH_PROVIDERS_POCKETID_USERINFOURL=https://pocketid.nelyah.eu/api/oidc/userinfo
+          TINYAUTH_OAUTH_PROVIDERS_POCKETID_REDIRECTURL=https://tinyauth.nelyah.eu/api/oauth/callback/pocketid
+          TINYAUTH_OAUTH_PROVIDERS_POCKETID_SCOPES=openid email profile groups
+          TINYAUTH_OAUTH_PROVIDERS_POCKETID_NAME=Pocket ID
           {{ end -}}
       '';
     };
