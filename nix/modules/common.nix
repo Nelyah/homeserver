@@ -61,6 +61,8 @@
       tree
       yq
       zsh
+      lefthook
+      taplo # TOML formatter
 
       # Version control
       git
@@ -118,6 +120,7 @@
     ++ (with pkgs.unstable; [
       codex
       claude-code
+      claude-code-acp
     ]);
 
   # Enable zsh on all hosts
