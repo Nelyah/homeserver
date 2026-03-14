@@ -47,7 +47,8 @@
         NSAutomaticDashSubstitutionEnabled = false;
         NSAutomaticPeriodSubstitutionEnabled = false;
         NSAutomaticSpellingCorrectionEnabled = false;
-        AppleInterfaceStyleSwitchesAutomatically = true;
+        AppleInterfaceStyle = "Dark";
+        AppleInterfaceStyleSwitchesAutomatically = false;
 
         AppleMeasurementUnits = "Centimeters";
         AppleMetricUnits = 1;
