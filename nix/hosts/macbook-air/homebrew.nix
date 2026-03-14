@@ -26,7 +26,7 @@
       "easy-move+resize"
       "firefox"
       "font-hack-nerd-font"
-      "ghostty"
+      # "ghostty" # built from custom fork via activation script
       "iterm2"
       "karabiner-elements"
       "obsidian"

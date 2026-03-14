@@ -21,7 +21,7 @@
       "easy-move+resize"
       "firefox"
       "font-hack-nerd-font"
-      "ghostty"
+      # "ghostty" # built from custom fork via activation script
       "karabiner-elements"
       "raycast"
       "tailscale-app"

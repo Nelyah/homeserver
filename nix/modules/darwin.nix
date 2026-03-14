@@ -13,6 +13,22 @@
     libintl
   ];
 
+  # Build custom Ghostty fork and install to /Applications
+  system.activationScripts.postActivation.text = ''
+    echo "Building Ghostty from custom fork..."
+    GHOSTTY_SRC="/Users/${username}/builds/ghostty"
+    if [ -d "$GHOSTTY_SRC" ]; then
+      sudo -u ${username} HOME="/Users/${username}" /nix/var/nix/profiles/default/bin/nix develop "$GHOSTTY_SRC" --command bash -c "cd $GHOSTTY_SRC && zig build -Doptimize=ReleaseFast -Demit-macos-app && cd macos && ./build.nu --configuration Release" 2>&1 || { echo "Ghostty build failed"; exit 1; }
+      rm -rf /Applications/Ghostty.app
+      cp -R "$GHOSTTY_SRC/zig-out/Ghostty.app" /Applications/Ghostty.app
+      # Force ad-hoc codesign so macOS accepts the binary
+      /usr/bin/codesign --force --deep --sign - /Applications/Ghostty.app
+      echo "Ghostty installed and signed."
+    else
+      echo "WARNING: Ghostty source not found at $GHOSTTY_SRC"
+    fi
+  '';
+
   # Enable Touch ID for sudo
   security.pam.services.sudo_local.touchIdAuth = true;
 
