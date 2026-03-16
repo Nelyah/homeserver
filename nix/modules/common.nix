@@ -49,6 +49,7 @@
       bat
       delta
       eza
+      graphviz
       fd
       fzf
       dig
@@ -63,6 +64,7 @@
       zsh
       lefthook
       taplo # TOML formatter
+      gh # github cli
 
       # Version control
       git
