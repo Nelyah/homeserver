@@ -24,6 +24,11 @@
       url = "github:LnL7/nix-darwin/nix-darwin-25.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # Pinned independently so neovim version is controlled separately from nixpkgs.
+    # To upgrade: find the nixpkgs commit for the desired neovim version and update this URL.
+    # neovim 0.11.6 commit: fda6b0917a502c8198ef2de613dbad0efa411dca
+    nixpkgs-neovim.url = "github:NixOS/nixpkgs/fda6b0917a502c8198ef2de613dbad0efa411dca";
   };
 
   outputs = inputs @ {
@@ -47,6 +52,17 @@
       ];
     };
 
+    neovimOverlay = system: {
+      nixpkgs.overlays = [
+        (_final: _prev: {
+          neovim = (import inputs.nixpkgs-neovim {
+            system = system;
+            config.allowUnfree = true;
+          }).neovim;
+        })
+      ];
+    };
+
     mkDarwinHost = {
       hostname,
       username,
@@ -57,6 +73,7 @@
         specialArgs = {inherit inputs username hostname;};
         modules = [
           (unstableOverlay darwinSystem)
+          (neovimOverlay darwinSystem)
           hostPath
           ./modules/common.nix
           ./modules/darwin.nix
@@ -88,6 +105,7 @@
       specialArgs = {inherit inputs;};
       modules = [
         (unstableOverlay linuxSystem)
+        (neovimOverlay linuxSystem)
         ./hosts/home-stockholm
         ./modules/common.nix
         ./modules/server.nix
@@ -100,6 +118,7 @@
       specialArgs = {inherit inputs;};
       modules = [
         (unstableOverlay linuxSystem)
+        (neovimOverlay linuxSystem)
         ./hosts/home-paris
         ./modules/common.nix
         ./modules/server.nix
