@@ -58,8 +58,8 @@
         modules = [
           (unstableOverlay darwinSystem)
           hostPath
-          ./modules/darwin.nix
           ./modules/common.nix
+          ./modules/darwin.nix
           home-manager.darwinModules.home-manager
           {
             home-manager = {
@@ -77,9 +77,9 @@
       hostPath = ./hosts/macbook-air;
     };
 
-    darwinConfigurations.PLACEHOLDER-HOSTNAME = mkDarwinHost {
-      hostname = "PLACEHOLDER-HOSTNAME";
-      username = "PLACEHOLDER";
+    darwinConfigurations.cdequeker-macbook-pro = mkDarwinHost {
+      hostname = "cdequeker-macbook-pro";
+      username = "cdequeker";
       hostPath = ./hosts/work-macbook;
     };
 

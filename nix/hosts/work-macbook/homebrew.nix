@@ -14,6 +14,7 @@
     # CLI tools installed via Homebrew
     brews = [
       "gitui" # nixos version doesn't compile on macos
+      "glab"
     ];
 
     # macOS Applications (GUI apps)
@@ -22,10 +23,12 @@
       "firefox"
       "font-hack-nerd-font"
       # "ghostty" # built from custom fork via activation script
+      "spotify"
       "karabiner-elements"
       "raycast"
-      "tailscale-app"
-      # TODO: Add work-specific apps here
+      "rectangle-pro"
+      "element"
+      "claude"
     ];
 
     masApps = {

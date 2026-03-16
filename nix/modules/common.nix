@@ -77,6 +77,7 @@
 
       # Build tools
       cmake
+      ccache
       clang
       gcc
       gnumake

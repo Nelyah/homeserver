@@ -19,7 +19,7 @@
     # macOS Applications (GUI apps)
     casks = [
       "anki"
-      "codex"
+      "rectangle-pro"
       "calibre"
       "db-browser-for-sqlite"
       "discord"
