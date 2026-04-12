@@ -10,6 +10,10 @@ in {
   networking.firewall.allowedTCPPorts = [22 80 443 53];
   networking.firewall.allowedUDPPorts = [53];
 
+  # Allow Docker containers to reach host-networked services (e.g. node_exporter:9100)
+  networking.firewall.interfaces."docker+".allowedTCPPorts = [9100];
+  networking.firewall.interfaces."br-+".allowedTCPPorts = [9100];
+
   # Homeserver-specific fail2ban ignore (LAN)
   services.fail2ban.ignoreIP = ["192.168.1.0/24"];
 
