@@ -50,13 +50,17 @@
     };
   };
 
-  # Security-only auto-updates
+  # Auto-updates with nixpkgs security patches
   system.autoUpgrade = {
     enable = true;
     flake = "${config.server.repoRoot}/nix#${config.networking.hostName}";
     dates = "03:30";
     flags = [
       "--print-build-logs"
+      "--update-input"
+      "nixpkgs"
+      "--update-input"
+      "nixpkgs-unstable"
     ];
     allowReboot = true;
   };

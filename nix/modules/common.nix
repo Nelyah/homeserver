@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  inputs,
   ...
 }: {
   options.server.repoRoot = lib.mkOption {
@@ -91,6 +92,7 @@
       python3
       lua
       rustup
+      cargo
 
       # Network & web
       curl
