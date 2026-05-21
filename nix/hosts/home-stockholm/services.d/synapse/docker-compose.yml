@@ -72,11 +72,9 @@ services:
     image: dock.mau.dev/mautrix/signal:latest
     container_name: mautrix-signal
     restart: unless-stopped
-    env_file:
-      - ./signal/signal.env
     volumes:
       - mautrix_signal_data:/data
-      - ./signal/config.yaml:/data/config.yaml:ro
+      - ./signal/config.yaml:/data/config.yaml
     networks:
       - internal
     # TCP keepalive to prevent NAT/firewall from killing WebSocket connections
@@ -121,11 +119,9 @@ services:
     image: dock.mau.dev/mautrix/whatsapp:latest
     container_name: mautrix-whatsapp
     restart: unless-stopped
-    env_file:
-      - ./whatsapp/whatsapp.env
     volumes:
       - mautrix_whatsapp_data:/data
-      - ./whatsapp/config.yaml:/data/config.yaml:ro
+      - ./whatsapp/config.yaml:/data/config.yaml
     networks:
       - internal
     # TCP keepalive to prevent NAT/firewall from killing WebSocket connections
