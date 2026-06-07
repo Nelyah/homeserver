@@ -284,6 +284,11 @@ uptime-kuma.nelyah.eu {
 	reverse_proxy uptime_kuma:3001
 }
 
+homeassistant.nelyah.eu {
+	import security_headers
+	reverse_proxy host.docker.internal:8123
+}
+
 matrix.nelyah.eu {
 	import security_headers
 	import geo_allow_eu_and_na

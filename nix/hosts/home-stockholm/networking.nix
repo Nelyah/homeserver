@@ -10,9 +10,17 @@ in {
   networking.firewall.allowedTCPPorts = [22 80 443 53];
   networking.firewall.allowedUDPPorts = [53];
 
-  # Allow Docker containers to reach host-networked services (e.g. node_exporter:9100)
-  networking.firewall.interfaces."docker+".allowedTCPPorts = [9100];
-  networking.firewall.interfaces."br-+".allowedTCPPorts = [9100];
+  # Allow Docker containers to reach host-networked services
+  # - 9100: node_exporter
+  # - 8123: home-assistant (reached by caddy via host.docker.internal)
+  networking.firewall.interfaces."docker+".allowedTCPPorts = [9100 8123];
+  networking.firewall.interfaces."br-+".allowedTCPPorts = [9100 8123];
+
+  # Home Assistant / Matter discovery + commissioning on the LAN only
+  networking.firewall.interfaces."enp1s0".allowedUDPPorts = [
+    5353 # mDNS (device discovery)
+    5540 # Matter commissioning
+  ];
 
   # Homeserver-specific fail2ban ignore (LAN)
   services.fail2ban.ignoreIP = ["192.168.1.0/24"];

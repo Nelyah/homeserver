@@ -1,0 +1,35 @@
+name: homeassistant
+
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - homeassistant_config:/config
+      - /etc/localtime:/etc/localtime:ro
+      # - ./configuration.yaml:/config/configuration.yaml:ro
+    environment:
+      - TZ=Europe/Stockholm
+    restart: unless-stopped
+
+  matter-server:
+    container_name: matter-server
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    network_mode: host
+    security_opt:
+      - apparmor=unconfined
+    volumes:
+      - homeassistant_matter:/data
+    environment:
+      - TZ=Europe/Stockholm
+    restart: unless-stopped
+
+volumes:
+  homeassistant_config:
+    external: true
+  homeassistant_matter:
+    external: true
