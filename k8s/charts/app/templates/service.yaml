@@ -1,0 +1,13 @@
+{{- $namespace := required "name is required" (default .Values.name .Values.namespace) -}}
+{{- range $service := .Values.services }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ required "services[].name is required" $service.name }}
+  namespace: {{ $namespace }}
+spec:
+{{- with $service.spec }}
+{{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}

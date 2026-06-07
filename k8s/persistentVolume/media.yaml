@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: movies
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ""
+  persistentVolumeReclaimPolicy: Retain
+  local:
+    path: /data/Movies
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - home-stockholm
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tv-shows
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ""
+  persistentVolumeReclaimPolicy: Retain
+  local:
+    path: /data/TvShows
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - home-stockholm

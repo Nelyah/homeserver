@@ -15,11 +15,12 @@ To rollback to the previous version
 
 ## Backups / Restore (homeserver)
 
-- List restic snapshots for a service: `sudo bash -c 'source /var/lib/secrets/restic/local.env && restic snapshots --tag <service>'`
-- Restore latest snapshot: `sudo restore <local|remote> <service> latest`
-- Restore specific snapshot: `sudo restore <local|remote> <service> <SNAPSHOT_ID>`
-- Default restore does **not** delete extra files; pass `--delete` to make the target match the snapshot.
-- `restore` stops/starts `docker-compose-<service>.service` when compose is enabled.
+- List configured backup services: `svc list`
+- List restic snapshots for a service: `svc list-backups <local|remote> <service>`
+- Run backups: `sudo svc backup <local|remote> <service|all>`
+- Restore latest snapshot: `sudo svc restore <local|remote> <service> latest`
+- Restore specific snapshot: `sudo svc restore <local|remote> <service> <SNAPSHOT_ID>`
+- Kubernetes PVC backups scale configured deployments down, back up the PVC backing paths, and restore deployments afterwards.
 
 ## Resources
 

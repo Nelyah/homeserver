@@ -1,0 +1,152 @@
+name: immich
+
+secrets:
+  vaultPath: immich
+  includeKeys:
+    - DB_PASSWORD
+    - DB_USERNAME
+    - DB_DATABASE_NAME
+
+persistentVolumeClaims:
+  - name: immich-library
+    spec:
+      volumeName: photo-library
+      storageClassName: ""
+      resources:
+        requests:
+          storage: 1Ti
+      accessModes:
+        - ReadWriteOnce
+  - name: immich-model-cache
+    storage: 2Gi
+  - name: immich-db
+    storage: 2Gi
+
+services:
+  - name: immich-server
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: immich-server
+  - name: immich-machine-learning
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 3003
+          targetPort: http
+      selector:
+        app: immich-machine-learning
+  - name: redis
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: redis
+          port: 6379
+          targetPort: redis
+      selector:
+        app: redis
+  - name: database
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: postgresql
+          port: 5432
+          targetPort: postgres
+      selector:
+        app: database
+
+deployments:
+  - name: immich-server
+    replicas: 1
+    spec:
+      enableServiceLinks: false
+      volumes:
+        - name: immich-library
+          persistentVolumeClaim:
+            claimName: immich-library
+      containers:
+        - name: immich-server
+          image: ghcr.io/immich-app/immich-server:release
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: immich
+          env:
+            - name: TZ
+              value: Europe/Stockholm
+          volumeMounts:
+            - mountPath: /data
+              name: immich-library
+          ports:
+            - containerPort: 2283
+              name: http
+
+  - name: immich-machine-learning
+    replicas: 1
+    spec:
+      enableServiceLinks: false
+      volumes:
+        - name: immich-model-cache
+          persistentVolumeClaim:
+            claimName: immich-model-cache
+      containers:
+        - name: immich-machine-learning
+          image: ghcr.io/immich-app/immich-machine-learning:release
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: immich
+          volumeMounts:
+            - mountPath: /cache
+              name: immich-model-cache
+          ports:
+            - containerPort: 3003
+              name: http
+
+  - name: redis
+    replicas: 1
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: redis
+          image: docker.io/valkey/valkey:8@sha256:81db6d39e1bba3b3ff32bd3a1b19a6d69690f94a3954ec131277b9a26b95b3aa
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 6379
+              name: redis
+
+  - name: database
+    replicas: 1
+    spec:
+      enableServiceLinks: false
+      volumes:
+        - name: immich-db
+          persistentVolumeClaim:
+            claimName: immich-db
+        - name: database-shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 128Mi
+      containers:
+        - name: database
+          image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: immich
+          env:
+            - name: POSTGRES_INITDB_ARGS
+              value: --data-checksums
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: immich-db
+            - mountPath: /dev/shm
+              name: database-shm
+          ports:
+            - containerPort: 5432
+              name: postgres

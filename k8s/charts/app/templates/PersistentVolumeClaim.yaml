@@ -1,0 +1,37 @@
+{{- $namespace := required "name is required" (default .Values.name .Values.namespace) -}}
+{{- $pvcDefaults := default dict .Values.persistentVolumeClaimDefaults -}}
+{{- range $pvc := .Values.persistentVolumeClaims }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ required "persistentVolumeClaims[].name is required" $pvc.name }}
+  namespace: {{ $namespace }}
+spec:
+{{- if $pvc.spec }}
+{{- toYaml $pvc.spec | nindent 2 }}
+{{- else }}
+  accessModes:
+{{- toYaml (default (list "ReadWriteOnce") $pvc.accessModes) | nindent 4 }}
+{{- if hasKey $pvc "storageClassName" }}
+  storageClassName: {{ $pvc.storageClassName | quote }}
+{{- else if hasKey $pvcDefaults "storageClassName" }}
+  storageClassName: {{ $pvcDefaults.storageClassName | quote }}
+{{- else }}
+  storageClassName: local-path-retain
+{{- end }}
+{{- with $pvc.volumeName }}
+  volumeName: {{ . }}
+{{- end }}
+{{- with $pvc.volumeMode }}
+  volumeMode: {{ . }}
+{{- end }}
+{{- with $pvc.selector }}
+  selector:
+{{- toYaml . | nindent 4 }}
+{{- end }}
+  resources:
+    requests:
+      storage: {{ required (printf "persistentVolumeClaims[%s].storage is required" $pvc.name) $pvc.storage }}
+{{- end }}
+{{- end }}

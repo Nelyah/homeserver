@@ -27,11 +27,9 @@ in {
   systemd.services.vault-unseal = {
     description = "Unseal Vault instance";
     after = [
-      "docker-compose-vault.service"
       "network-online.target"
     ];
     wants = [
-      "docker-compose-vault.service"
       "network-online.target"
     ];
     serviceConfig = {

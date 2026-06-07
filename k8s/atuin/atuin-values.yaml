@@ -1,0 +1,96 @@
+name: atuin
+secrets:
+  vaultPath: atuin
+  includeKeys:
+    - DB_PASSWORD
+
+persistentVolumeClaims:
+  - name: atuin-db
+    storage: 1Gi
+  - name: atuin-config
+    storage: 1Gi
+
+services:
+  - name: atuin
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: atuin
+  - name: atuin-db
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: postgresql
+          port: 5432
+          targetPort: postgres
+      selector:
+        app: atuin-db
+
+deployments:
+  - name: atuin
+    replicas: 1
+    spec:
+      volumes:
+        - name: atuin-config
+          persistentVolumeClaim:
+            claimName: atuin-config
+      containers:
+        - name: atuin
+          image: ghcr.io/atuinsh/atuin:latest
+          imagePullPolicy: Always
+          args:
+            - start
+          env:
+            - name: ATUIN_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: atuin
+                  key: DB_PASSWORD
+            - name: ATUIN_HOST
+              value: 0.0.0.0
+            - name: ATUIN_PORT
+              value: "8888"
+            - name: ATUIN_OPEN_REGISTRATION
+              value: "false"
+            - name: ATUIN_DB_URI
+              value: postgres://atuin:$(ATUIN_DB_PASSWORD)@atuin-db/atuin
+            - name: RUST_LOG
+              value: info
+          volumeMounts:
+            - mountPath: /config
+              name: atuin-config
+          ports:
+            - containerPort: 8888
+              name: http
+
+  - name: atuin-db
+    replicas: 1
+    spec:
+      volumes:
+        - name: atuin-db
+          persistentVolumeClaim:
+            claimName: atuin-db
+      containers:
+        - name: postgres
+          image: postgres:14
+          imagePullPolicy: Always
+          env:
+            - name: POSTGRES_USER
+              value: atuin
+            - name: POSTGRES_DB
+              value: atuin
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: atuin
+                  key: DB_PASSWORD
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: atuin-db
+          ports:
+            - containerPort: 5432
+              name: postgres

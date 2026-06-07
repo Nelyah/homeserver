@@ -1,0 +1,73 @@
+app:
+  name: caddy
+  namespace: caddy
+
+  secrets:
+    enabled: false
+
+  persistentVolumeClaims:
+    - name: caddy-data
+      storage: 1Gi
+
+  services:
+    - name: caddy
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            name: http
+            port: 80
+            targetPort: http
+          - appProtocol: https
+            name: https
+            port: 443
+            targetPort: https
+        selector:
+          app: caddy
+
+  deployments:
+    - name: caddy
+      replicas: 1
+      spec:
+        hostNetwork: true
+        dnsPolicy: ClusterFirstWithHostNet
+        terminationGracePeriodSeconds: 60
+        securityContext:
+          fsGroup: 1001
+        volumes:
+          - name: caddy-data
+            persistentVolumeClaim:
+              claimName: caddy-data
+          - name: caddy-config
+            configMap:
+              name: caddy-config
+          - name: geoip-country-db
+            hostPath:
+              path: /var/lib/geoip/GeoLite2-Country.mmdb
+              type: File
+        containers:
+          - name: caddy
+            image: homeserver/caddy:latest
+            imagePullPolicy: IfNotPresent
+            securityContext:
+              runAsUser: 1001
+              runAsGroup: 1001
+              allowPrivilegeEscalation: false
+              capabilities:
+                add:
+                  - NET_BIND_SERVICE
+            volumeMounts:
+              - mountPath: /etc/caddy/Caddyfile
+                name: caddy-config
+                subPath: Caddyfile
+                readOnly: true
+              - mountPath: /data
+                name: caddy-data
+              - mountPath: /data/GeoLite2-Country.mmdb
+                name: geoip-country-db
+                readOnly: true
+            ports:
+              - containerPort: 80
+                name: http
+              - containerPort: 443
+                name: https

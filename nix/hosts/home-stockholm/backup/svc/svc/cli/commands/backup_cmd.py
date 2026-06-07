@@ -34,15 +34,15 @@ class BackupCommand(Command[BackupArgs]):
         return BackupOrchestrator(
             config=ctx.config,
             restic=restic,
-            systemctl=ctx.systemctl,
+            kubernetes=ctx.kubernetes,
             path_resolver=ctx.path_resolver,
         )
 
     def _require_root_if_needed(self, services: list[ServiceConfig]) -> None:
-        """Require root if any service needs to be stopped for backup."""
+        """Require root if backup needs host or Kubernetes state access."""
         for svc in services:
-            if svc.backup.needs_service_stopped:
-                require_root(f"backup {svc.name} (needsServiceStopped)")
+            if svc.backup.kubernetes is not None or svc.backup.pre_backup_commands:
+                require_root(f"backup {svc.name}")
 
     def _render_plan(
         self,
@@ -54,23 +54,23 @@ class BackupCommand(Command[BackupArgs]):
         """Render the backup plan table."""
         columns = [
             TableColumn("Service", style="bold"),
-            TableColumn("Stop", justify="center"),
-            TableColumn("Volumes", justify="right"),
+            TableColumn("Scale down", justify="center"),
             TableColumn("Paths", justify="right"),
+            TableColumn("PVCs", justify="right"),
             TableColumn("Tags"),
         ]
 
         rows: list[TableRow] = []
         for svc in services:
             plan = orchestrator.create_backup_plan(svc)
-            stop_display = "yes" if plan.needs_stop else "no"
+            scale_display = "yes" if plan.scales_down else "no"
             rows.append(
                 TableRow(
                     cells=[
                         plan.service_name,
-                        stop_display,
-                        str(plan.volumes_count),
+                        scale_display,
                         str(plan.paths_count),
+                        str(plan.pvcs_count),
                         ", ".join(plan.tags),
                     ]
                 )

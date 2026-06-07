@@ -1,7 +1,0 @@
-services:
-  ovh-dyndns-updater:
-    build: .
-    container_name: ovh-dns-update
-    image: ovh-dns-update
-    restart: unless-stopped
-    env_file: .env

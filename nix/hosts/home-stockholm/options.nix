@@ -1,7 +1,7 @@
 # Options can be imported standalone (by services.nix for validation)
 # or as a NixOS module (by default.nix). When imported standalone,
 # config is empty and the config block is skipped.
-{lib, config ? {}, utils, ...}: let
+{lib, config ? {}, ...}: let
   inherit (lib) mkOption mkDefault types mkIf;
   # Check if we're being used as a NixOS module (config.homeserver exists)
   isNixOSModule = config ? homeserver;
@@ -19,14 +19,7 @@ in {
       description = "Mount point for backup drive.";
     };
 
-    # Centralized path configuration
     paths = {
-      deployRoot = mkOption {
-        type = types.str;
-        default = "/var/lib/docker-services";
-        description = "Root directory for deployed docker service files.";
-      };
-
       secretsRoot = mkOption {
         type = types.str;
         default = "/var/lib/secrets";
@@ -36,11 +29,6 @@ in {
       dockerDataRoot = mkOption {
         type = types.str;
         description = "Docker data root directory.";
-      };
-
-      dockerVolumesRoot = mkOption {
-        type = types.str;
-        description = "Docker volumes directory.";
       };
     };
 
@@ -96,92 +84,6 @@ in {
             default = name;
             description = "Service name (defaults to the attribute name).";
           };
-          compose = mkOption {
-            type = types.nullOr (types.submodule {
-              options = {
-                enable = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Enable docker-compose for this service.";
-                };
-                path = mkOption {
-                  type = types.nullOr types.str;
-                  default = null;
-                  description = "Path to docker-compose.yml; null to auto-derive /var/lib/docker-services/<name>/docker-compose.yml.";
-                };
-                networks = mkOption {
-                  type = types.listOf types.str;
-                  default = [];
-                  description = "External docker networks used by the service.";
-                };
-                volumes = mkOption {
-                  type = types.listOf types.str;
-                  default = [];
-                  description = "External docker volumes used by the service.";
-                };
-                build = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Run docker-compose with --build.";
-                };
-              };
-            });
-            default = null;
-            description = "Compose configuration for the service.";
-          };
-          files = mkOption {
-            type = types.attrsOf (types.submodule {
-              options = {
-                source = mkOption {
-                  type = types.path;
-                  description = "Source file or directory to deploy.";
-                };
-                destination = mkOption {
-                  type = types.nullOr types.str;
-                  default = null;
-                  description = "Destination relative path; null uses the attribute name.";
-                };
-                executable = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Mark the deployed file as executable.";
-                };
-              };
-            });
-            default = {};
-            description = "Files/directories to deploy for the service.";
-          };
-          secretFiles = mkOption {
-            type = types.attrsOf (types.submodule {
-              options = {
-                template = mkOption {
-                  type = types.str;
-                  description = "Vault template content for the secret file.";
-                };
-                destination = mkOption {
-                  type = types.str;
-                  description = "Destination path relative to the service deploy dir.";
-                };
-                perms = mkOption {
-                  type = types.str;
-                  default = "0400";
-                  description = "Permissions to set on rendered secret file.";
-                };
-                mountable = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Copy file instead of symlink, allowing Docker volume mounts.";
-                };
-                owner = mkOption {
-                  type = types.nullOr types.str;
-                  default = null;
-                  description = "Owner (uid:gid) for the deployed copy. Only applies when mountable = true.";
-                };
-              };
-            });
-            default = {};
-            description = "Secret files rendered by Vault and symlinked into the service directory.";
-          };
           backup = mkOption {
             type = types.nullOr (types.submodule ({config, ...}: let
               backupCfg = config;
@@ -197,15 +99,32 @@ in {
                   default = [];
                   description = "File paths to back up.";
                 };
-                volumes = mkOption {
-                  type = types.listOf types.str;
-                  default = [];
-                  description = "Docker volumes to back up.";
+                kubernetes = mkOption {
+                  type = types.nullOr (types.submodule {
+                    options = {
+                      namespace = mkOption {
+                        type = types.str;
+                        description = "Kubernetes namespace containing the backed-up resources.";
+                      };
+                      deployments = mkOption {
+                        type = types.listOf types.str;
+                        default = [];
+                        description = "Kubernetes deployments to scale down/up when the service is stopped for backup.";
+                      };
+                      pvcs = mkOption {
+                        type = types.listOf types.str;
+                        default = [];
+                        description = "Kubernetes PersistentVolumeClaims to back up.";
+                      };
+                    };
+                  });
+                  default = null;
+                  description = "Kubernetes backup targets for this service.";
                 };
-                needsServiceStopped = mkOption {
-                  type = types.bool;
-                  default = false;
-                  description = "Stop the service's docker-compose systemd unit before backing up volumes/paths (recommended for database volumes).";
+                preBackupCommands = mkOption {
+                  type = types.listOf (types.listOf types.str);
+                  default = [];
+                  description = "Commands to run immediately before resolving and backing up targets.";
                 };
                 tags = mkOption {
                   type = types.listOf types.str;
@@ -246,28 +165,33 @@ in {
                         description = "Restic tag used to select the latest snapshot for this service.";
                       };
 
-                      volumes = mkOption {
-                        type = types.listOf types.str;
-                        default = backupCfg.volumes;
-                        description = "Docker volumes to restore (defaults to backup.volumes).";
-                      };
-
                       paths = mkOption {
                         type = types.listOf types.str;
                         default = backupCfg.paths;
                         description = "File paths to restore (defaults to backup.paths).";
                       };
 
-                      stopCompose = mkOption {
-                        type = types.bool;
-                        default = cfg.compose != null && (cfg.compose.enable or false);
-                        description = "Stop/start the docker-compose systemd unit around restore.";
-                      };
-
-                      composeUnit = mkOption {
-                        type = types.nullOr types.str;
-                        default = null;
-                        description = "Systemd unit name to stop/start when stopCompose is enabled (defaults to docker-compose-<service>.service).";
+                      kubernetes = mkOption {
+                        type = types.nullOr (types.submodule {
+                          options = {
+                            namespace = mkOption {
+                              type = types.str;
+                              description = "Kubernetes namespace containing the restored resources.";
+                            };
+                            deployments = mkOption {
+                              type = types.listOf types.str;
+                              default = [];
+                              description = "Kubernetes deployments to scale down/up during restore.";
+                            };
+                            pvcs = mkOption {
+                              type = types.listOf types.str;
+                              default = [];
+                              description = "Kubernetes PersistentVolumeClaims to restore.";
+                            };
+                          };
+                        });
+                        default = backupCfg.kubernetes;
+                        description = "Kubernetes restore targets (defaults to backup.kubernetes).";
                       };
 
                       restic = mkOption {
@@ -293,24 +217,6 @@ in {
             default = null;
             description = "Backup configuration for the service.";
           };
-          systemd = mkOption {
-            type = types.submodule {
-              options = {
-                services = mkOption {
-                  type = utils.systemdUtils.types.services;
-                  default = {};
-                  description = "Systemd service units contributed by this service.";
-                };
-                timers = mkOption {
-                  type = utils.systemdUtils.types.timers;
-                  default = {};
-                  description = "Systemd timer units contributed by this service.";
-                };
-              };
-            };
-            default = {};
-            description = "Custom systemd units (services and timers) for this service.";
-          };
         };
       }));
     };
@@ -320,7 +226,6 @@ in {
   config = mkIf isNixOSModule {
     homeserver.paths = {
       dockerDataRoot = mkDefault "${config.homeserver.mainDrive}/docker-data";
-      dockerVolumesRoot = mkDefault "${config.homeserver.paths.dockerDataRoot}/volumes";
     };
   };
 }

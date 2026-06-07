@@ -1,0 +1,77 @@
+name: jellyfin
+
+persistentVolumeClaims:
+  - name: jellyfin-config
+    storage: 2Gi
+  - name: jellyfin-cache
+    storage: 1Gi
+  - name: jellyfin-movies
+    spec:
+      volumeName: movies
+      storageClassName: ""
+      resources:
+        requests:
+          storage: 1Ti
+      accessModes:
+        - ReadWriteOnce
+  - name: jellyfin-tv-shows
+    spec:
+      volumeName: tv-shows
+      storageClassName: ""
+      resources:
+        requests:
+          storage: 1Ti
+      accessModes:
+        - ReadWriteOnce
+
+services:
+  - name: jellyfin
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: jellyfin
+
+deployments:
+  - name: jellyfin
+    replicas: 1
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      volumes:
+        - name: jellyfin-config
+          persistentVolumeClaim:
+            claimName: jellyfin-config
+        - name: jellyfin-cache
+          persistentVolumeClaim:
+            claimName: jellyfin-cache
+        - name: jellyfin-movies
+          persistentVolumeClaim:
+            claimName: jellyfin-movies
+        - name: jellyfin-tv-shows
+          persistentVolumeClaim:
+            claimName: jellyfin-tv-shows
+      containers:
+        - name: jellyfin
+          image: jellyfin/jellyfin
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /config
+              name: jellyfin-config
+            - mountPath: /cache
+              name: jellyfin-cache
+            - mountPath: /movies
+              name: jellyfin-movies
+            - mountPath: /tv_shows
+              name: jellyfin-tv-shows
+          ports:
+            - containerPort: 8096
+              name: http
+
+secrets:
+  enabled: false

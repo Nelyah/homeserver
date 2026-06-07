@@ -1,0 +1,75 @@
+name: vault
+
+secrets:
+  enabled: false
+
+configMaps:
+  - name: vault-config
+    data:
+      config.hcl: |-
+        storage "file" {
+          path = "/vault/file"
+        }
+
+        listener "tcp" {
+          address     = "0.0.0.0:8200"
+          tls_disable = 1
+        }
+
+        api_addr = "https://vault.nelyah.eu"
+
+        default_lease_ttl = "168h"
+        max_lease_ttl = "720h"
+        disable_mlock = true
+        ui = true
+
+persistentVolumeClaims:
+  - name: vault-data
+    storage: 2Gi
+
+services:
+  - name: vault
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: vault
+
+deployments:
+  - name: vault
+    replicas: 1
+    spec:
+      terminationGracePeriodSeconds: 60
+      volumes:
+        - name: vault-data
+          persistentVolumeClaim:
+            claimName: vault-data
+        - name: vault-config
+          configMap:
+            name: vault-config
+      containers:
+        - name: vault
+          image: hashicorp/vault:latest
+          imagePullPolicy: Always
+          command:
+            - vault
+          args:
+            - server
+            - -config=/etc/vault/config.hcl
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK
+          volumeMounts:
+            - mountPath: /vault/file
+              name: vault-data
+            - mountPath: /etc/vault/config.hcl
+              name: vault-config
+              subPath: config.hcl
+              readOnly: true
+          ports:
+            - containerPort: 8200
+              name: http

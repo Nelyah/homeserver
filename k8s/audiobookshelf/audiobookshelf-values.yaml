@@ -1,0 +1,59 @@
+name: audiobookshelf
+
+persistentVolumeClaims:
+  - name: audiobookshelf-db
+    storage: 1Gi
+  - name: audiobookshelf-metadata
+    storage: 1Gi
+  - name: audiobookshelf-library
+    spec:
+      volumeName: audiobook-library
+      storageClassName: ""
+      resources:
+        requests:
+          storage: 1Ti
+      accessModes:
+        - ReadWriteOnce
+
+services:
+  - name: audiobookshelf
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: audiobookshelf
+
+deployments:
+  - name: audiobookshelf
+    replicas: 1
+    spec:
+      volumes:
+        - name: audiobookshelf-db
+          persistentVolumeClaim:
+            claimName: audiobookshelf-db
+        - name: audiobookshelf-metadata
+          persistentVolumeClaim:
+            claimName: audiobookshelf-metadata
+        - name: audiobookshelf-library
+          persistentVolumeClaim:
+            claimName: audiobookshelf-library
+      containers:
+        - name: audiobookshelf
+          image: ghcr.io/advplyr/audiobookshelf:latest
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /config
+              name: audiobookshelf-db
+            - mountPath: /metadata
+              name: audiobookshelf-metadata
+            - mountPath: /audiobooks
+              name: audiobookshelf-library
+          ports:
+            - containerPort: 80
+              name: http
+
+secrets:
+  enabled: false

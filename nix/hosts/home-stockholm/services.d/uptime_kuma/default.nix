@@ -1,14 +1,12 @@
-{config, pkgs, lib, ...}: {
+{...}: {
   name = "uptime_kuma";
-  compose = {
-    enable = true;
-    networks = ["internal"];
-    volumes = ["uptime_kuma_data"];
-  };
   backup = {
     enable = true;
-    needsServiceStopped = true;
-    volumes = ["uptime_kuma_data"];
+    kubernetes = {
+      namespace = "uptime-kuma";
+      deployments = ["uptime-kuma"];
+      pvcs = ["uptime-kuma-data"];
+    };
     policy = {
       daily = 10;
       weekly = 25;

@@ -1,0 +1,38 @@
+name: uptime-kuma
+
+persistentVolumeClaims:
+  - name: uptime-kuma-data
+    storage: 1Gi
+
+services:
+  - name: uptime-kuma
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: uptime-kuma
+
+deployments:
+  - name: uptime-kuma
+    replicas: 1
+    spec:
+      volumes:
+        - name: uptime-kuma-data
+          persistentVolumeClaim:
+            claimName: uptime-kuma-data
+      containers:
+        - name: uptime-kuma
+          image: louislam/uptime-kuma:latest
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /app/data
+              name: uptime-kuma-data
+          ports:
+            - containerPort: 3001
+              name: http
+
+secrets:
+  enabled: false

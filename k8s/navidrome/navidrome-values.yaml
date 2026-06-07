@@ -1,0 +1,73 @@
+name: navidrome
+
+persistentVolumeClaims:
+  - name: navidrome-data
+    storage: 2Gi
+  - name: navidrome-music
+    spec:
+      volumeName: music-library
+      storageClassName: ""
+      resources:
+        requests:
+          storage: 600Gi
+      accessModes:
+        - ReadOnlyMany
+
+services:
+  - name: navidrome
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: navidrome
+
+deployments:
+  - name: navidrome
+    replicas: 1
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      volumes:
+        - name: navidrome-data
+          persistentVolumeClaim:
+            claimName: navidrome-data
+        - name: navidrome-music
+          persistentVolumeClaim:
+            claimName: navidrome-music
+            readOnly: true
+      containers:
+        - name: navidrome
+          image: docker.io/deluan/navidrome:develop
+          imagePullPolicy: Always
+          env:
+            - name: ND_MUSICFOLDER
+              value: /music
+            - name: ND_DATAFOLDER
+              value: /data
+            - name: ND_DEVACTIVITYPANEL
+              value: "true"
+            - name: ND_SCANINTERVAL
+              value: 744h
+            - name: ND_PORT
+              value: "80"
+            - name: ND_TRANSCODINGCACHESIZE
+              value: 100MB
+            - name: ND_SESSIONTIMEOUT
+              value: 744h
+          volumeMounts:
+            - mountPath: /data
+              name: navidrome-data
+            - mountPath: /music
+              name: navidrome-music
+              readOnly: true
+          ports:
+            - containerPort: 80
+              name: http
+
+secrets:
+  enabled: false

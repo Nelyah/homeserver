@@ -19,28 +19,15 @@ from click.shell_completion import CompletionItem
 from ..config import load_config
 from .args import (
     BackupArgs,
-    DoctorArgs,
-    EmptyArgs,
     ListArgs,
     ListBackupsArgs,
-    LogsArgs,
-    RestartArgs,
     RestoreArgs,
-    ServiceActionArgs,
 )
 from .commands import (
     BackupCommand,
-    DockerHealthCommand,
-    DoctorCommand,
     ListBackupsCommand,
     ListCommand,
-    LogsCommand,
-    PruneImagesCommand,
-    PruneOrphansCommand,
-    RestartCommand,
     RestoreCommand,
-    StartCommand,
-    StopCommand,
 )
 from .commands.base import AppContext, Command
 from .renderer import create_renderer
@@ -162,17 +149,10 @@ def cli(ctx: click.Context, config: str, verbose: bool, dry_run: bool) -> None:
     show_default=True,
     help="Which systemd backup unit to check for last result",
 )
-@click.option(
-    "--detailed",
-    "-d",
-    is_flag=True,
-    default=False,
-    help="Show additional container details (ports)",
-)
 @click.pass_context
-def list_cmd(ctx: click.Context, backup_env: str, detailed: bool) -> None:
+def list_cmd(ctx: click.Context, backup_env: str) -> None:
     """List services and their backup status."""
-    _run_command(ctx, ListCommand(), ListArgs(backup_env=backup_env, detailed=detailed))
+    _run_command(ctx, ListCommand(), ListArgs(backup_env=backup_env))
 
 
 @cli.command("list-backups")
@@ -200,7 +180,7 @@ def backup_cmd(ctx: click.Context, env: str, service: str) -> None:
 @click.option(
     "--verify-includes",
     is_flag=True,
-    help="Check snapshot contains each configured volume/path before restoring",
+    help="Check snapshot contains each configured path/PVC before restoring",
 )
 @click.pass_context
 def restore_cmd(
@@ -222,125 +202,3 @@ def restore_cmd(
         ),
     )
 
-
-@cli.command("start")
-@click.argument("service", type=ServiceNameParam(backup_only=False, allow_all=True))
-@click.option("--build", is_flag=True, help="Build images before starting")
-@click.pass_context
-def start_cmd(ctx: click.Context, service: str, build: bool) -> None:
-    """Start a docker-compose services."""
-    _run_command(ctx, StartCommand(), ServiceActionArgs(service=service, build=build))
-
-
-@cli.command("stop")
-@click.argument("service", type=ServiceNameParam(backup_only=False, allow_all=True))
-@click.pass_context
-def stop_cmd(ctx: click.Context, service: str) -> None:
-    """Stop a docker-compose services."""
-    _run_command(ctx, StopCommand(), ServiceActionArgs(service=service, build=False))
-
-
-@cli.command("restart")
-@click.argument("service", type=ServiceNameParam(backup_only=False, allow_all=True))
-@click.option(
-    "--recreate",
-    is_flag=True,
-    help="Perform docker compose down/up instead of systemctl restart",
-)
-@click.option("--build", is_flag=True, help="Build images before starting")
-@click.pass_context
-def restart_cmd(ctx: click.Context, service: str, recreate: bool, build: bool) -> None:
-    """Restart a docker-compose service."""
-    _run_command(ctx, RestartCommand(), RestartArgs(service=service, recreate=recreate, build=build))
-
-
-@cli.command("logs")
-@click.argument("service", type=ServiceNameParam(backup_only=False, allow_all=False))
-@click.option(
-    "--follow/--no-follow",
-    default=True,
-    show_default=True,
-    help="Follow logs",
-)
-@click.option("--tail", type=int, default=200, show_default=True, help="Lines to show")
-@click.option("--timestamps", is_flag=True, help="Show timestamps in log output")
-@click.pass_context
-def logs_cmd(ctx: click.Context, service: str, follow: bool, tail: int, timestamps: bool) -> None:
-    """Stream docker-compose logs for a service."""
-    _run_command(
-        ctx,
-        LogsCommand(),
-        LogsArgs(service=service, follow=follow, tail=tail, timestamps=timestamps),
-    )
-
-
-@cli.command("doctor")
-@click.option(
-    "--since",
-    default="24 hours ago",
-    show_default=True,
-    help="Time window for log scanning (e.g., '24 hours ago', '1 week ago')",
-)
-@click.option(
-    "--full",
-    is_flag=True,
-    default=False,
-    help="Include docker log scanning for errors/warnings",
-)
-@click.pass_context
-def doctor_cmd(ctx: click.Context, since: str, full: bool) -> None:
-    """
-    Run comprehensive health checks on timers and disk health.
-
-    Checks systemd timers for failures and disk SMART test results.
-    Use --full to also scan docker-compose service logs for errors and warnings.
-    """
-    _run_command(ctx, DoctorCommand(), DoctorArgs(since=since, full=full))
-
-
-# ---------------------------------------------------------------------------
-# Docker maintenance commands
-# ---------------------------------------------------------------------------
-
-
-@cli.group("docker")
-def docker_group() -> None:
-    """Docker maintenance commands."""
-
-
-@docker_group.command("health")
-@click.pass_context
-def docker_health_cmd(ctx: click.Context) -> None:
-    """
-    Check health of deployed docker services and containers.
-
-    Reports deployed services with no running container, containers not in
-    Up/healthy state, and orphan containers (stopped, no compose label).
-    """
-    _run_command(ctx, DockerHealthCommand(), EmptyArgs())
-
-
-@docker_group.command("prune-images")
-@click.pass_context
-def docker_prune_images_cmd(ctx: click.Context) -> None:
-    """
-    Remove dangling Docker images (tagged <none>:<none>).
-
-    Dangling images are created when you rebuild an image with the same tag.
-    The old image loses its tag but remains on disk. These are safe to remove
-    as they are not used by any container.
-    """
-    _run_command(ctx, PruneImagesCommand(), EmptyArgs())
-
-
-@docker_group.command("prune-orphans")
-@click.pass_context
-def docker_prune_orphans_cmd(ctx: click.Context) -> None:
-    """
-    Remove orphan containers (stopped, no compose project label).
-
-    Orphan containers are stopped containers that have no docker-compose
-    project label. They may be leftover from removed compose stacks or
-    one-off test runs. Only stopped containers without labels are removed.
-    """
-    _run_command(ctx, PruneOrphansCommand(), EmptyArgs())

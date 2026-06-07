@@ -1,6 +1,6 @@
 # svc
 
-Python CLI for managing homeserver service backups/restores (restic) and basic service lifecycle actions.
+Python CLI for homeserver Restic backups and restores.
 
 ## Development (uv + nvim)
 

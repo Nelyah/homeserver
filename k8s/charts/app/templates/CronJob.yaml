@@ -1,0 +1,25 @@
+{{- $namespace := required "name is required" (default .Values.name .Values.namespace) -}}
+{{- range $cronJob := .Values.cronJobs }}
+{{- $spec := deepCopy (default dict $cronJob.spec) -}}
+{{- $jobTemplate := default dict (get $spec "jobTemplate") -}}
+{{- $jobSpec := default dict (get $jobTemplate "spec") -}}
+{{- $template := default dict (get $jobSpec "template") -}}
+{{- $podSpec := default dict (get $template "spec") -}}
+{{- if not (hasKey $podSpec "automountServiceAccountToken") -}}
+{{- $_ := set $podSpec "automountServiceAccountToken" false -}}
+{{- $_ := set $template "spec" $podSpec -}}
+{{- $_ := set $jobSpec "template" $template -}}
+{{- $_ := set $jobTemplate "spec" $jobSpec -}}
+{{- $_ := set $spec "jobTemplate" $jobTemplate -}}
+{{- end }}
+---
+kind: CronJob
+apiVersion: batch/v1
+metadata:
+  name: {{ required "cronJobs[].name is required" $cronJob.name }}
+  namespace: {{ $namespace }}
+spec:
+{{- with $spec }}
+{{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}

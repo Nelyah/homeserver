@@ -1,9 +1,5 @@
 # Docker daemon configuration
-{
-  pkgs,
-  config,
-  ...
-}: {
+{config, ...}: {
   virtualisation.docker = {
     enable = true;
     enableOnBoot = true;
@@ -12,8 +8,4 @@
       "log-driver" = "journald";
     };
   };
-
-  environment.systemPackages = [
-    pkgs.docker-compose
-  ];
 }

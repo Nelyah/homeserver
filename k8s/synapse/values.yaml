@@ -1,0 +1,438 @@
+app:
+  name: synapse
+
+  secrets:
+    enabled: false
+
+  persistentVolumeClaims:
+    - name: synapse-data
+      storage: 100Gi
+    - name: synapse-db
+      storage: 10Gi
+    - name: mautrix-signal-data
+      storage: 5Gi
+    - name: mautrix-whatsapp-data
+      storage: 5Gi
+
+  services:
+    - name: synapse
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            port: 80
+            targetPort: http
+        selector:
+          app: synapse
+    - name: synapse-db
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: postgresql
+            port: 5432
+            targetPort: postgres
+        selector:
+          app: synapse-db
+    - name: mautrix-signal
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            port: 29328
+            targetPort: http
+        selector:
+          app: mautrix-signal
+    - name: mautrix-whatsapp
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            port: 29318
+            targetPort: http
+        selector:
+          app: mautrix-whatsapp
+
+  deployments:
+    - name: synapse-db
+      replicas: 1
+      spec:
+        volumes:
+          - name: synapse-db
+            persistentVolumeClaim:
+              claimName: synapse-db
+        containers:
+          - name: synapse-db
+            image: postgres:16-alpine
+            imagePullPolicy: Always
+            env:
+              - name: POSTGRES_USER
+                value: synapse
+              - name: POSTGRES_DB
+                value: synapse
+              - name: POSTGRES_INITDB_ARGS
+                value: --encoding=UTF-8 --lc-collate=C --lc-ctype=C
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: synapse
+                    key: POSTGRES_PASSWORD
+            volumeMounts:
+              - mountPath: /var/lib/postgresql/data
+                name: synapse-db
+            ports:
+              - containerPort: 5432
+                name: postgres
+            readinessProbe:
+              exec:
+                command:
+                  - pg_isready
+                  - -U
+                  - synapse
+              periodSeconds: 10
+              timeoutSeconds: 5
+
+    - name: synapse
+      replicas: 1
+      spec:
+        volumes:
+          - name: synapse-data
+            persistentVolumeClaim:
+              claimName: synapse-data
+          - name: synapse-config
+            configMap:
+              name: synapse-config
+          - name: synapse-runtime
+            emptyDir: {}
+        initContainers:
+          - name: synapse-volume-permissions
+            image: busybox:latest
+            imagePullPolicy: Always
+            command:
+              - sh
+              - -c
+              - chown -R 991:991 /data
+            volumeMounts:
+              - mountPath: /data
+                name: synapse-data
+          - name: synapse-runtime-config
+            image: alpine:3.20
+            imagePullPolicy: Always
+            command:
+              - sh
+              - /config/render-synapse-runtime.sh
+            env:
+              - name: REGISTRATION_SHARED_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: synapse
+                    key: REGISTRATION_SHARED_SECRET
+              - name: DOUBLEPUPPET_AS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: doublepuppet
+                    key: AS_TOKEN
+              - name: DOUBLEPUPPET_HS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: doublepuppet
+                    key: HS_TOKEN
+              - name: SIGNAL_AS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-signal
+                    key: AS_TOKEN
+              - name: SIGNAL_HS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-signal
+                    key: HS_TOKEN
+              - name: WHATSAPP_AS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-whatsapp
+                    key: AS_TOKEN
+              - name: WHATSAPP_HS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-whatsapp
+                    key: HS_TOKEN
+            volumeMounts:
+              - mountPath: /config
+                name: synapse-config
+                readOnly: true
+              - mountPath: /runtime
+                name: synapse-runtime
+        containers:
+          - name: synapse
+            image: matrixdotorg/synapse:latest
+            imagePullPolicy: Always
+            env:
+              - name: SYNAPSE_CONFIG_PATH
+                value: /run/var/homeserver.yaml
+              - name: TZ
+                value: Europe/Stockholm
+              - name: PGPASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: synapse
+                    key: POSTGRES_PASSWORD
+            volumeMounts:
+              - mountPath: /data
+                name: synapse-data
+              - mountPath: /run/var/homeserver.yaml
+                name: synapse-config
+                subPath: homeserver.yaml
+                readOnly: true
+              - mountPath: /data/log.config
+                name: synapse-config
+                subPath: log.config
+                readOnly: true
+              - mountPath: /run/secrets
+                name: synapse-runtime
+                subPath: secrets
+                readOnly: true
+              - mountPath: /data/appservices
+                name: synapse-runtime
+                subPath: appservices
+                readOnly: true
+            ports:
+              - containerPort: 8008
+                name: http
+            readinessProbe:
+              httpGet:
+                path: /health
+                port: http
+              initialDelaySeconds: 10
+              periodSeconds: 15
+              timeoutSeconds: 5
+
+    - name: mautrix-signal
+      replicas: 1
+      spec:
+        securityContext:
+          sysctls:
+            - name: net.ipv4.tcp_keepalive_time
+              value: "20"
+            - name: net.ipv4.tcp_keepalive_intvl
+              value: "10"
+            - name: net.ipv4.tcp_keepalive_probes
+              value: "3"
+        volumes:
+          - name: mautrix-signal-data
+            persistentVolumeClaim:
+              claimName: mautrix-signal-data
+          - name: synapse-config
+            configMap:
+              name: synapse-config
+          - name: signal-runtime
+            emptyDir: {}
+        initContainers:
+          - name: render-config
+            image: alpine:3.20
+            imagePullPolicy: Always
+            command:
+              - sh
+              - /config/render-signal-config.sh
+            env:
+              - name: AS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-signal
+                    key: AS_TOKEN
+              - name: HS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-signal
+                    key: HS_TOKEN
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-signal
+                    key: POSTGRES_PASSWORD
+              - name: PICKLE_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-signal
+                    key: PICKLE_KEY
+              - name: PUBLIC_MEDIA_SIGNING_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-signal
+                    key: PUBLIC_MEDIA_SIGNING_KEY
+              - name: PROVISIONING_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-signal
+                    key: PROVISIONING_SECRET
+              - name: DOUBLEPUPPET_AS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: doublepuppet
+                    key: AS_TOKEN
+            volumeMounts:
+              - mountPath: /config
+                name: synapse-config
+                readOnly: true
+              - mountPath: /runtime
+                name: signal-runtime
+          - name: init-db
+            image: postgres:16-alpine
+            imagePullPolicy: Always
+            command:
+              - sh
+              - -c
+            args:
+              - |
+                until pg_isready -h synapse-db -U synapse; do
+                  sleep 2
+                done
+                sh /config/signal-init-db.sh
+            env:
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: synapse
+                    key: POSTGRES_PASSWORD
+              - name: MAUTRIX_POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-signal
+                    key: POSTGRES_PASSWORD
+            volumeMounts:
+              - mountPath: /config
+                name: synapse-config
+                readOnly: true
+        containers:
+          - name: mautrix-signal
+            image: dock.mau.dev/mautrix/signal:latest
+            imagePullPolicy: Always
+            volumeMounts:
+              - mountPath: /data
+                name: mautrix-signal-data
+              - mountPath: /data/config.yaml
+                name: signal-runtime
+                subPath: config.yaml
+                readOnly: true
+            ports:
+              - containerPort: 29328
+                name: http
+            readinessProbe:
+              httpGet:
+                path: /_matrix/mau/live
+                port: http
+              initialDelaySeconds: 30
+              periodSeconds: 15
+              timeoutSeconds: 5
+
+    - name: mautrix-whatsapp
+      replicas: 1
+      spec:
+        securityContext:
+          sysctls:
+            - name: net.ipv4.tcp_keepalive_time
+              value: "20"
+            - name: net.ipv4.tcp_keepalive_intvl
+              value: "10"
+            - name: net.ipv4.tcp_keepalive_probes
+              value: "3"
+        volumes:
+          - name: mautrix-whatsapp-data
+            persistentVolumeClaim:
+              claimName: mautrix-whatsapp-data
+          - name: synapse-config
+            configMap:
+              name: synapse-config
+          - name: whatsapp-runtime
+            emptyDir: {}
+        initContainers:
+          - name: render-config
+            image: alpine:3.20
+            imagePullPolicy: Always
+            command:
+              - sh
+              - /config/render-whatsapp-config.sh
+            env:
+              - name: AS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-whatsapp
+                    key: AS_TOKEN
+              - name: HS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-whatsapp
+                    key: HS_TOKEN
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-whatsapp
+                    key: POSTGRES_PASSWORD
+              - name: PICKLE_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-whatsapp
+                    key: PICKLE_KEY
+              - name: PROVISIONING_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-whatsapp
+                    key: PROVISIONING_SECRET
+              - name: DOUBLEPUPPET_AS_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: doublepuppet
+                    key: AS_TOKEN
+            volumeMounts:
+              - mountPath: /config
+                name: synapse-config
+                readOnly: true
+              - mountPath: /runtime
+                name: whatsapp-runtime
+          - name: init-db
+            image: postgres:16-alpine
+            imagePullPolicy: Always
+            command:
+              - sh
+              - -c
+            args:
+              - |
+                until pg_isready -h synapse-db -U synapse; do
+                  sleep 2
+                done
+                sh /config/whatsapp-init-db.sh
+            env:
+              - name: POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: synapse
+                    key: POSTGRES_PASSWORD
+              - name: MAUTRIX_POSTGRES_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: mautrix-whatsapp
+                    key: POSTGRES_PASSWORD
+            volumeMounts:
+              - mountPath: /config
+                name: synapse-config
+                readOnly: true
+        containers:
+          - name: mautrix-whatsapp
+            image: dock.mau.dev/mautrix/whatsapp:latest
+            imagePullPolicy: Always
+            volumeMounts:
+              - mountPath: /data
+                name: mautrix-whatsapp-data
+              - mountPath: /data/config.yaml
+                name: whatsapp-runtime
+                subPath: config.yaml
+                readOnly: true
+            ports:
+              - containerPort: 29318
+                name: http
+            readinessProbe:
+              httpGet:
+                path: /_matrix/mau/live
+                port: http
+              initialDelaySeconds: 30
+              periodSeconds: 15
+              timeoutSeconds: 5

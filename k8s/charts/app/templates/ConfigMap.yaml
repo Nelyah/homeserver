@@ -1,0 +1,13 @@
+{{- $namespace := required "name is required" (default .Values.name .Values.namespace) -}}
+{{- range $configMap := .Values.configMaps }}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ required "configMaps[].name is required" $configMap.name }}
+  namespace: {{ $namespace }}
+{{- with $configMap.data }}
+data:
+{{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}

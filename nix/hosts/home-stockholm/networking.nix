@@ -13,8 +13,9 @@ in {
   # Allow Docker containers to reach host-networked services
   # - 9100: node_exporter
   # - 8123: home-assistant (reached by caddy via host.docker.internal)
-  networking.firewall.interfaces."docker+".allowedTCPPorts = [9100 8123];
-  networking.firewall.interfaces."br-+".allowedTCPPorts = [9100 8123];
+  # - 6443: k3s API, used by Vault Kubernetes auth TokenReview
+  networking.firewall.interfaces."docker+".allowedTCPPorts = [9100 8123 6443];
+  networking.firewall.interfaces."br-+".allowedTCPPorts = [9100 8123 6443];
 
   # Home Assistant / Matter discovery + commissioning on the LAN only
   networking.firewall.interfaces."enp1s0".allowedUDPPorts = [
@@ -70,7 +71,9 @@ in {
     enable = true;
     resolveLocalQueries = false;
     settings = {
-      interface = ["lo" "tailscale0"];
+      # cni0 is the k8s interface. Pods might need to query this host's dnsmasq
+      # to retrieve tailscale IP of an address
+      interface = ["lo" "tailscale0" "cni0"];
       bind-dynamic = true;
       log-queries = true;
       no-resolv = true;

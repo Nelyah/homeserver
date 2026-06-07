@@ -117,6 +117,21 @@ class ResticRunner:
         result = await self._run(args)
         return result.returncode
 
+    async def restore_subfolder(
+        self, snapshot_id: str, snapshot_path: str, target: str, *, delete: bool = True
+    ) -> int:
+        """Restore a snapshot subfolder directly into a target directory."""
+        args = ["restore", f"{snapshot_id}:{snapshot_path}", "--target", target]
+        if delete:
+            args.append("--delete")
+
+        result = await self._run(args)
+        return result.returncode
+
+    async def dump_file(self, snapshot_id: str, path: str) -> CommandResult:
+        """Dump a file from a snapshot."""
+        return await self._run(["dump", snapshot_id, path], capture_output=True)
+
     async def snapshots(self, tags: list[str]) -> list[ResticSnapshot]:
         """List snapshots for given tags."""
         args = ["snapshots", "--json"]

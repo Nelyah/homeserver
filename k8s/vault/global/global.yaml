@@ -1,0 +1,24 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultConnection
+metadata:
+  name: vault
+  namespace: vault-secrets-operator-system
+spec:
+  address: http://vault.vault.svc.cluster.local
+  skipTLSVerify: false
+
+---
+
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuthGlobal
+metadata:
+  name: homeserver
+  namespace: vault-secrets-operator-system
+spec:
+  allowedNamespaces:
+    - "*"
+  vaultConnectionRef: vault-secrets-operator-system/vault
+  defaultAuthMethod: kubernetes
+  defaultMount: kubernetes
+  kubernetes:
+    tokenExpirationSeconds: 600

@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: $0 [-n namespace] <copy|move> <old_pvc> <new_pvc>" >&2
+}
+
+namespace=default
+if [[ "${1:-}" == "-n" ]]; then
+  namespace="$2"
+  shift 2
+fi
+
+if [[ $# -ne 3 ]]; then
+  usage
+  exit 2
+fi
+
+mode="$1"
+old_pvc="$2"
+new_pvc="$3"
+pod="data-transfer-$(date +%s)"
+
+case "$mode" in
+  copy)
+    rsync_extra=""
+    old_read_only=true
+    ;;
+  move)
+    rsync_extra="--remove-source-files"
+    old_read_only=false
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
+
+kubectl apply -f - >/dev/null <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ${pod}
+  namespace: ${namespace}
+spec:
+  restartPolicy: Never
+  containers:
+    - name: rsync
+      image: eeacms/rsync:2.3
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          set -eu
+          rsync -a --numeric-ids --info=progress2 ${rsync_extra} /old/ /new/
+          if [ "${mode}" = "move" ]; then
+            find /old -mindepth 1 -depth -type d -empty -delete
+          fi
+      volumeMounts:
+        - name: old
+          mountPath: /old
+          readOnly: ${old_read_only}
+        - name: new
+          mountPath: /new
+  volumes:
+    - name: old
+      persistentVolumeClaim:
+        claimName: ${old_pvc}
+    - name: new
+      persistentVolumeClaim:
+        claimName: ${new_pvc}
+EOF
+
+echo "pod: $pod"
+
+if ! kubectl wait -n "$namespace" --for=condition=PodScheduled "pod/$pod" --timeout=10m >/dev/null; then
+  echo "pod did not schedule: $pod" >&2
+  echo "inspect: kubectl describe pod -n $namespace $pod" >&2
+  exit 1
+fi
+
+while [[ -z "$(kubectl get pod -n "$namespace" "$pod" -o jsonpath='{.status.containerStatuses[0].state.running.startedAt}{.status.containerStatuses[0].state.terminated.finishedAt}')" ]]; do
+  sleep 1
+done
+
+kubectl logs -n "$namespace" -f "$pod" --pod-running-timeout=10m || true
+
+while true; do
+  phase="$(kubectl get pod -n "$namespace" "$pod" -o jsonpath='{.status.phase}')"
+  case "$phase" in
+    Succeeded)
+      break
+      ;;
+    Failed)
+      echo "pod failed: $pod" >&2
+      echo "logs: kubectl logs -n $namespace $pod" >&2
+      echo "inspect: kubectl describe pod -n $namespace $pod" >&2
+      exit 1
+      ;;
+  esac
+  sleep 1
+done
+
+kubectl delete pod -n "$namespace" "$pod" --wait=false >/dev/null
+echo "done"

@@ -1,0 +1,91 @@
+name: homeassistant
+
+secrets:
+  enabled: false
+
+persistentVolumeClaims:
+  - name: homeassistant-config
+    storage: 5Gi
+  - name: homeassistant-matter
+    storage: 1Gi
+
+services:
+  - name: homeassistant
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: homeassistant
+  - name: matter-server
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 5580
+          targetPort: matter
+      selector:
+        app: matter-server
+
+deployments:
+  - name: homeassistant
+    replicas: 1
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      volumes:
+        - name: homeassistant-config
+          persistentVolumeClaim:
+            claimName: homeassistant-config
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: File
+      containers:
+        - name: homeassistant
+          image: ghcr.io/home-assistant/home-assistant:stable
+          imagePullPolicy: Always
+          env:
+            - name: TZ
+              value: Europe/Stockholm
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
+          volumeMounts:
+            - mountPath: /config
+              name: homeassistant-config
+            - mountPath: /etc/localtime
+              name: localtime
+              readOnly: true
+          ports:
+            - containerPort: 8123
+              name: http
+
+  - name: matter-server
+    replicas: 1
+    podAnnotations:
+      container.apparmor.security.beta.kubernetes.io/matter-server: unconfined
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      volumes:
+        - name: homeassistant-matter
+          persistentVolumeClaim:
+            claimName: homeassistant-matter
+      containers:
+        - name: matter-server
+          image: ghcr.io/home-assistant-libs/python-matter-server:stable
+          imagePullPolicy: Always
+          env:
+            - name: TZ
+              value: Europe/Stockholm
+          volumeMounts:
+            - mountPath: /data
+              name: homeassistant-matter
+          ports:
+            - containerPort: 5580
+              name: matter

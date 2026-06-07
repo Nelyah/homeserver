@@ -1,0 +1,80 @@
+name: hugo-blog
+
+secrets:
+  vaultPath: hugo_blog
+  includeKeys:
+    - HUGO_API_TOKEN
+    - SSH_PRIVATE_KEY
+    - SSH_PUBLIC_KEY
+
+configMaps:
+  - name: hugo-blog-ssh-config
+    data:
+      config: |-
+        Host github.com
+            HostName github.com
+            User git
+            IdentityFile ~/.ssh/deploy_key.local
+            IdentitiesOnly yes
+
+services:
+  - name: hugo-website
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          name: site
+          port: 80
+          targetPort: site
+      selector:
+        app: hugo-website
+  - name: hugo-api
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          name: api
+          port: 80
+          targetPort: api
+      selector:
+        app: hugo-website
+
+deployments:
+  - name: hugo-website
+    replicas: 1
+    spec:
+      volumes:
+        - name: ssh-key
+          secret:
+            secretName: hugo-blog
+            defaultMode: 0400
+            items:
+              - key: SSH_PRIVATE_KEY
+                path: deploy_key
+        - name: ssh-config
+          configMap:
+            name: hugo-blog-ssh-config
+      containers:
+        - name: hugo-website
+          image: homeserver/hugo-blog:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hugo-blog
+                  key: HUGO_API_TOKEN
+          volumeMounts:
+            - mountPath: /home/app/.ssh/deploy_key
+              name: ssh-key
+              subPath: deploy_key
+              readOnly: true
+            - mountPath: /home/app/.ssh/config
+              name: ssh-config
+              subPath: config
+              readOnly: true
+          ports:
+            - containerPort: 1313
+              name: site
+            - containerPort: 8000
+              name: api

@@ -7,10 +7,6 @@ Commands:
   svc restore <local|remote> <service> [latest|SNAPSHOT_ID]
   svc list
   svc list-backups <local|remote> <service>
-  svc start <service|all>
-  svc stop <service|all>
-  svc restart <service|all>
-  svc logs <service> [--no-follow] [--tail N] [--timestamps]
 """
 
 import logging

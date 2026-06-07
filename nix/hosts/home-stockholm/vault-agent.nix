@@ -5,7 +5,6 @@
   ...
 }: let
   secretsRoot = config.homeserver.paths.secretsRoot;
-  vaultComposeService = "docker-compose-vault.service";
   secrets = config.homeserver.vault.secrets;
 
   # Build absolute paths from relative destinations
@@ -119,12 +118,10 @@ in
       description = "Vault Agent for homeserver secrets";
       after = [
         "network-online.target"
-        vaultComposeService
         "vault-unseal.service"
       ];
       wants = [
         "network-online.target"
-        vaultComposeService
         "vault-unseal.service"
       ];
       serviceConfig = {

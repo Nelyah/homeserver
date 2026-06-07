@@ -32,7 +32,7 @@ class RestoreCommand(Command[RestoreArgs]):
         orchestrator = RestoreOrchestrator(
             config=ctx.config,
             restic=restic,
-            systemctl=ctx.systemctl,
+            kubernetes=ctx.kubernetes,
             path_resolver=ctx.path_resolver,
         )
 

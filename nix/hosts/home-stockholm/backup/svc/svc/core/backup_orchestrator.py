@@ -1,13 +1,21 @@
 """Backup orchestration logic."""
 
+import asyncio
+import json
 import logging
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import cast
 
-from ..config import Config, ServiceConfig
-from ..controllers import ResticRunner, SystemctlController
-from ..exceptions import EXIT_CONFIG_ERROR, EXIT_RESTIC_ERROR, EXIT_SUCCESS, SystemctlError
-from .path_resolver import PathResolver
+from ..config import Config, KubernetesBackupConfig, ServiceConfig
+from ..controllers import DeploymentScale, KubernetesController, ResticRunner
+from ..exceptions import (
+    EXIT_CONFIG_ERROR,
+    EXIT_RESTIC_ERROR,
+    EXIT_SUCCESS,
+    KubernetesError,
+)
+from .path_resolver import PathResolver, ResolvedPath
 from .service_helpers import validate_service
 
 logger = logging.getLogger("svc.core.backup")
@@ -31,9 +39,9 @@ class BackupPlan:
     """Plan for backing up a service."""
 
     service_name: str
-    needs_stop: bool
-    volumes_count: int
+    scales_down: bool
     paths_count: int
+    pvcs_count: int
     tags: list[str]
 
 
@@ -44,12 +52,12 @@ class BackupOrchestrator:
         self,
         config: Config,
         restic: ResticRunner,
-        systemctl: SystemctlController,
+        kubernetes: KubernetesController,
         path_resolver: PathResolver,
     ):
         self.config = config
         self.restic = restic
-        self.systemctl = systemctl
+        self.kubernetes = kubernetes
         self.path_resolver = path_resolver
 
     def get_backup_services(self, service_arg: str) -> list[ServiceConfig]:
@@ -60,11 +68,12 @@ class BackupOrchestrator:
 
     def create_backup_plan(self, svc: ServiceConfig) -> BackupPlan:
         """Create a backup plan for a service."""
+        kubernetes = svc.backup.kubernetes
         return BackupPlan(
             service_name=svc.name,
-            needs_stop=svc.backup.needs_service_stopped,
-            volumes_count=len(svc.backup.volumes),
+            scales_down=kubernetes is not None and len(kubernetes.deployments) > 0,
             paths_count=len(svc.backup.paths),
+            pvcs_count=len(kubernetes.pvcs) if kubernetes else 0,
             tags=list(svc.backup.tags),
         )
 
@@ -74,49 +83,21 @@ class BackupOrchestrator:
 
         Handles:
         - Path resolution
-        - Service stopping (if needed)
+        - Kubernetes deployment scaling (if configured)
         - Restic backup execution
         - Retention policy application
-        - Service restart
         """
         dry_run_prefix = "[dry-run] " if self.restic.dry_run else ""
 
-        paths, missing = await self.path_resolver.get_backup_paths(
-            svc.backup.volumes, svc.backup.paths
-        )
+        paths, invalid = await self._prepare_backup_paths(svc, dry_run_prefix)
+        if invalid is not None:
+            return invalid
 
-        # Validate paths
-        if not paths:
-            return BackupResult(
-                service_name=svc.name,
-                success=False,
-                exit_code=EXIT_CONFIG_ERROR,
-                message=f"{dry_run_prefix}No backup paths configured for {svc.name}",
-            )
-
-        if missing:
-            return BackupResult(
-                service_name=svc.name,
-                success=False,
-                exit_code=EXIT_CONFIG_ERROR,
-                message="Configured backup targets are missing",
-                missing_paths=missing,
-            )
-
-        compose_unit = f"docker-compose-{svc.name}.service"
-        was_stopped = False
-
-        # Stop service if needed
-        if svc.backup.needs_service_stopped:
-            is_loaded = await self.systemctl.is_loaded(compose_unit)
-            is_active = await self.systemctl.is_active(compose_unit)
-
-            if is_loaded and is_active:
-                logger.info("Stopping %s...", compose_unit)
-                await self.systemctl.stop(compose_unit)
-                was_stopped = True
+        deployment_scales: list[DeploymentScale] = []
 
         try:
+            deployment_scales = await self._scale_down_kubernetes_deployments(svc)
+
             # Run backup
             logger.info("Running restic backup...")
             status = await self.restic.backup(paths, svc.backup.tags, svc.backup.exclude)
@@ -146,10 +127,185 @@ class BackupOrchestrator:
             )
 
         finally:
-            # Restart service if we stopped it
-            if was_stopped:
-                try:
-                    logger.info("Starting %s...", compose_unit)
-                    await self.systemctl.start(compose_unit)
-                except SystemctlError as e:
-                    logger.warning("Failed to restart %s: %s", compose_unit, e)
+            await self._restore_kubernetes_deployments(deployment_scales)
+
+    async def _prepare_backup_paths(
+        self, svc: ServiceConfig, dry_run_prefix: str
+    ) -> tuple[list[str], BackupResult | None]:
+        """Run preparation commands, resolve targets, and write metadata."""
+        pre_backup_status = await self._run_pre_backup_commands(svc)
+        if pre_backup_status != 0:
+            return [], BackupResult(
+                service_name=svc.name,
+                success=False,
+                exit_code=EXIT_CONFIG_ERROR,
+                message=f"{dry_run_prefix}Pre-backup command failed for {svc.name}",
+            )
+
+        resolved, missing = await self.path_resolver.resolve_all(
+            svc.backup.paths, svc.backup.kubernetes
+        )
+        paths = [r.filesystem_path for r in resolved]
+        invalid = self._validate_backup_paths(svc, dry_run_prefix, paths, missing)
+        if invalid is not None:
+            return [], invalid
+
+        try:
+            metadata_path = self._write_kubernetes_backup_metadata(svc, resolved)
+        except OSError as error:
+            return [], BackupResult(
+                service_name=svc.name,
+                success=False,
+                exit_code=EXIT_CONFIG_ERROR,
+                message=f"Failed to write Kubernetes backup metadata: {error}",
+            )
+        if metadata_path is not None:
+            paths.append(metadata_path)
+
+        return paths, None
+
+    def _validate_backup_paths(
+        self,
+        svc: ServiceConfig,
+        dry_run_prefix: str,
+        paths: list[str],
+        missing: list[str],
+    ) -> BackupResult | None:
+        """Validate resolved backup paths."""
+        if not paths:
+            return BackupResult(
+                service_name=svc.name,
+                success=False,
+                exit_code=EXIT_CONFIG_ERROR,
+                message=f"{dry_run_prefix}No backup paths configured for {svc.name}",
+            )
+
+        if missing:
+            return BackupResult(
+                service_name=svc.name,
+                success=False,
+                exit_code=EXIT_CONFIG_ERROR,
+                message="Configured backup targets are missing",
+                missing_paths=missing,
+            )
+
+        return None
+
+    async def _run_pre_backup_commands(self, svc: ServiceConfig) -> int:
+        """Run commands configured to prepare backup targets."""
+        for command in svc.backup.pre_backup_commands:
+            if not command:
+                continue
+
+            logger.info("Running pre-backup command: %s", " ".join(command))
+            if self.restic.dry_run:
+                continue
+
+            proc = await asyncio.create_subprocess_exec(*command)
+            await proc.wait()
+            if proc.returncode != 0:
+                return proc.returncode or 1
+
+        return 0
+
+    def _write_kubernetes_backup_metadata(
+        self, svc: ServiceConfig, resolved: list[ResolvedPath]
+    ) -> str | None:
+        """Write metadata needed to restore PVCs whose backing paths later change."""
+        kubernetes = svc.backup.kubernetes
+        if kubernetes is None or self.restic.dry_run:
+            return None
+
+        metadata_path = self._backup_metadata_path(svc.name)
+        metadata_path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+        metadata = self._kubernetes_backup_metadata(svc.name, kubernetes, resolved)
+        metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True))
+        metadata_path.chmod(0o600)
+        return str(metadata_path)
+
+    def _backup_metadata_path(self, service_name: str) -> Path:
+        """Return the local path used for the service backup metadata file."""
+        return Path(self.config.paths.backup_metadata_root) / f"{service_name}.json"
+
+    def _kubernetes_backup_metadata(
+        self,
+        service_name: str,
+        kubernetes: KubernetesBackupConfig,
+        resolved: list[ResolvedPath],
+    ) -> dict[str, object]:
+        """Build snapshot metadata for Kubernetes backup targets."""
+        pvc_entries: list[dict[str, str]] = []
+        for item in resolved:
+            if item.source_type != "kubernetes-pvc":
+                continue
+
+            namespace, _, pvc = item.source_name.partition("/")
+            pvc_entries.append(
+                {
+                    "namespace": namespace,
+                    "name": pvc,
+                    "source": item.source_name,
+                    "path": item.filesystem_path,
+                }
+            )
+
+        return {
+            "version": 1,
+            "service": service_name,
+            "kubernetes": {
+                "namespace": kubernetes.namespace,
+                "deployments": list(kubernetes.deployments),
+                "pvcs": pvc_entries,
+            },
+        }
+
+    async def _scale_down_kubernetes_deployments(
+        self, svc: ServiceConfig
+    ) -> list[DeploymentScale]:
+        """Scale configured Kubernetes deployments to zero for a consistent backup."""
+        kubernetes = svc.backup.kubernetes
+        if kubernetes is None:
+            return []
+
+        original_scales: list[DeploymentScale] = []
+        try:
+            for deployment in kubernetes.deployments:
+                scale = await self.kubernetes.deployment_scale(kubernetes.namespace, deployment)
+                original_scales.append(scale)
+                if scale.replicas == 0:
+                    continue
+
+                await self.kubernetes.scale_deployment(scale, 0)
+                await self.kubernetes.wait_for_deployment_replicas(
+                    scale.namespace,
+                    scale.name,
+                    0,
+                )
+        except KubernetesError:
+            await self._restore_kubernetes_deployments(original_scales)
+            raise
+
+        return original_scales
+
+    async def _restore_kubernetes_deployments(
+        self, deployment_scales: list[DeploymentScale]
+    ) -> None:
+        """Restore Kubernetes deployments to their original replica counts."""
+        for scale in reversed(deployment_scales):
+            if scale.replicas == 0:
+                continue
+
+            try:
+                await self.kubernetes.scale_deployment(scale, scale.replicas)
+                await self.kubernetes.wait_for_deployment_replicas(
+                    scale.namespace,
+                    scale.name,
+                    scale.replicas,
+                )
+            except KubernetesError as error:
+                logger.warning(
+                    "Failed to restore deployment/%s in %s: %s",
+                    scale.name,
+                    scale.namespace,
+                    error,
+                )

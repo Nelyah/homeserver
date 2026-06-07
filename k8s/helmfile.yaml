@@ -1,0 +1,129 @@
+helmDefaults:
+  createNamespace: true
+  skipRefresh: true
+  wait: true
+  timeout: 600
+
+releases:
+  - name: vault
+    namespace: vault
+    chart: ./charts/app
+    values:
+      - ./vault/vault-values.yaml
+
+  - name: atuin
+    namespace: atuin
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./atuin/atuin-values.yaml
+
+  - name: audiobookshelf
+    namespace: audiobookshelf
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./audiobookshelf/audiobookshelf-values.yaml
+
+  - name: homeassistant
+    namespace: homeassistant
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./homeassistant/homeassistant-values.yaml
+
+  - name: hugo-blog
+    namespace: hugo-blog
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./hugo-blog/hugo-blog-values.yaml
+
+  - name: immich
+    namespace: immich
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./immich/immich-values.yaml
+
+  - name: jellyfin
+    namespace: jellyfin
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./jellyfin/jellyfin-values.yaml
+
+  - name: monitoring
+    namespace: monitoring
+    chart: ./monitoring
+    needs:
+      - vault/vault
+
+  - name: navidrome
+    namespace: navidrome
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./navidrome/navidrome-values.yaml
+
+  - name: nextcloud
+    namespace: nextcloud
+    chart: ./nextcloud
+    needs:
+      - vault/vault
+
+  - name: pocketid
+    namespace: pocketid
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./pocketid/pocketid-values.yaml
+
+  - name: synapse
+    namespace: synapse
+    chart: ./synapse
+    needs:
+      - vault/vault
+
+  - name: tinyauth
+    namespace: pocketid
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./pocketid/tinyauth-values.yaml
+
+  - name: uptime-kuma
+    namespace: uptime-kuma
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./uptime-kuma/uptime-kuma-values.yaml
+
+  - name: caddy
+    namespace: caddy
+    chart: ./caddy
+    needs:
+      - atuin/atuin
+      - audiobookshelf/audiobookshelf
+      - homeassistant/homeassistant
+      - hugo-blog/hugo-blog
+      - immich/immich
+      - jellyfin/jellyfin
+      - monitoring/monitoring
+      - navidrome/navidrome
+      - nextcloud/nextcloud
+      - pocketid/pocketid
+      - pocketid/tinyauth
+      - synapse/synapse
+      - uptime-kuma/uptime-kuma
+      - vault/vault

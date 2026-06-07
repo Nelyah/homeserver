@@ -1,0 +1,39 @@
+{{- $namespace := required "name is required" (default .Values.name .Values.namespace) -}}
+{{- range $deployment := .Values.deployments }}
+{{- $podSpec := default dict $deployment.spec }}
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ required "deployments[].name is required" $deployment.name }}
+  namespace: {{ $namespace }}
+{{- with $deployment.labels }}
+  labels:
+{{- toYaml . | nindent 4 }}
+{{- end }}
+spec:
+  replicas: {{ default 1 $deployment.replicas }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ $deployment.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $deployment.name }}
+{{- with $deployment.podLabels }}
+{{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with $deployment.podAnnotations }}
+      annotations:
+{{- toYaml . | nindent 8 }}
+{{- end }}
+    spec:
+{{- if not (hasKey $podSpec "automountServiceAccountToken") }}
+      automountServiceAccountToken: false
+{{- end }}
+{{- with $podSpec }}
+{{- toYaml . | nindent 6 }}
+{{- end }}
+{{- end }}

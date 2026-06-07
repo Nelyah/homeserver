@@ -5,10 +5,10 @@
   config,
   ...
 }: let
-  homeserverLib = import ../lib {inherit lib;};
-
   services = config.homeserver.services;
-  selected = homeserverLib.docker.filterEnabledBackup services;
+  selected = lib.filterAttrs (
+    _: svc: (svc.backup or null) != null && (svc.backup.enable or false)
+  ) services;
 
   secretsRoot = config.homeserver.paths.secretsRoot;
   resticEnv = env: "${secretsRoot}/restic/${env}.env";
@@ -39,8 +39,11 @@ in {
 
   assertions =
     lib.mapAttrsToList (name: svc: {
-      assertion = (svc.backup.volumes or []) != [] || (svc.backup.paths or []) != [];
-      message = "Service '${name}' has backup.enable = true but backup.volumes and backup.paths are both empty.";
+      assertion =
+        (svc.backup.paths or []) != []
+        || (((svc.backup.kubernetes or null) != null)
+          && ((svc.backup.kubernetes.pvcs or []) != []));
+      message = "Service '${name}' has backup.enable = true but backup.paths and backup.kubernetes.pvcs are both empty.";
     })
     selected;
 

@@ -1,0 +1,81 @@
+name: tinyauth
+namespace: pocketid
+
+secrets:
+  vaultPath: tinyauth
+  includeKeys:
+    - USER_PASSWD_HASH
+    - SECRET
+    - POCKETID_CLIENT_ID
+    - POCKETID_CLIENT_SECRET
+
+persistentVolumeClaims:
+  - name: tinyauth-data
+    storage: 1Gi
+
+services:
+  - name: tinyauth
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: tinyauth
+
+deployments:
+  - name: tinyauth
+    replicas: 1
+    spec:
+      volumes:
+        - name: tinyauth-data
+          persistentVolumeClaim:
+            claimName: tinyauth-data
+      containers:
+        - name: tinyauth
+          image: ghcr.io/steveiliop56/tinyauth:latest
+          imagePullPolicy: Always
+          env:
+            - name: TINYAUTH_APPURL
+              value: https://tinyauth.nelyah.eu
+            - name: TINYAUTH_AUTH_USERS
+              valueFrom:
+                secretKeyRef:
+                  name: tinyauth
+                  key: USER_PASSWD_HASH
+            - name: TINYAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: tinyauth
+                  key: SECRET
+            - name: TINYAUTH_OAUTH_AUTOREDIRECT
+              value: pocketid
+            - name: TINYAUTH_OAUTH_PROVIDERS_POCKETID_CLIENTID
+              valueFrom:
+                secretKeyRef:
+                  name: tinyauth
+                  key: POCKETID_CLIENT_ID
+            - name: TINYAUTH_OAUTH_PROVIDERS_POCKETID_CLIENTSECRET
+              valueFrom:
+                secretKeyRef:
+                  name: tinyauth
+                  key: POCKETID_CLIENT_SECRET
+            - name: TINYAUTH_OAUTH_PROVIDERS_POCKETID_AUTHURL
+              value: https://pocketid.nelyah.eu/authorize
+            - name: TINYAUTH_OAUTH_PROVIDERS_POCKETID_TOKENURL
+              value: https://pocketid.nelyah.eu/api/oidc/token
+            - name: TINYAUTH_OAUTH_PROVIDERS_POCKETID_USERINFOURL
+              value: https://pocketid.nelyah.eu/api/oidc/userinfo
+            - name: TINYAUTH_OAUTH_PROVIDERS_POCKETID_REDIRECTURL
+              value: https://tinyauth.nelyah.eu/api/oauth/callback/pocketid
+            - name: TINYAUTH_OAUTH_PROVIDERS_POCKETID_SCOPES
+              value: openid email profile groups
+            - name: TINYAUTH_OAUTH_PROVIDERS_POCKETID_NAME
+              value: Pocket ID
+          volumeMounts:
+            - mountPath: /data
+              name: tinyauth-data
+          ports:
+            - containerPort: 3000
+              name: http

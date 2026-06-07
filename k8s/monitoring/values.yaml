@@ -1,0 +1,333 @@
+app:
+  name: monitoring
+
+  secrets:
+    vaultPath: influxdb
+    includeKeys:
+      - DOCKER_INFLUXDB_INIT_USERNAME
+      - DOCKER_INFLUXDB_INIT_PASSWORD
+      - DOCKER_INFLUXDB_INIT_ORG
+
+  persistentVolumeClaims:
+    - name: grafana-data
+      storage: 1Gi
+    - name: influxdb-data
+      storage: 1Gi
+    - name: prometheus-data
+      storage: 5Gi
+
+  services:
+    - name: grafana
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            port: 80
+            targetPort: http
+        selector:
+          app: grafana
+    - name: loki
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            port: 3100
+            targetPort: http
+        selector:
+          app: loki
+    - name: influxdb
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            port: 80
+            targetPort: http
+        selector:
+          app: influxdb
+    - name: prometheus
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            port: 80
+            targetPort: http
+        selector:
+          app: prometheus
+    - name: node-exporter
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            port: 9100
+            targetPort: metrics
+        selector:
+          app: node-exporter
+    - name: cadvisor
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: http
+            port: 8080
+            targetPort: http
+        selector:
+          app: cadvisor
+
+  deployments:
+    - name: grafana
+      replicas: 1
+      spec:
+        volumes:
+          - name: grafana-data
+            persistentVolumeClaim:
+              claimName: grafana-data
+          - name: grafana-config
+            configMap:
+              name: grafana-config
+              items:
+                - key: grafana.ini
+                  path: grafana.ini
+        containers:
+          - name: grafana
+            image: grafana/grafana-oss:latest
+            imagePullPolicy: Always
+            env:
+              - name: TZ
+                value: Europe/Stockholm
+              - name: GF_SERVER_DOMAIN
+                value: grafana.nelyah.eu
+              - name: GF_SERVER_ROOT_URL
+                value: https://grafana.nelyah.eu
+            volumeMounts:
+              - mountPath: /var/lib/grafana
+                name: grafana-data
+              - mountPath: /etc/grafana/grafana.ini
+                name: grafana-config
+                subPath: grafana.ini
+                readOnly: true
+            ports:
+              - containerPort: 3000
+                name: http
+
+    - name: loki
+      replicas: 1
+      spec:
+        volumes:
+          - name: loki-config
+            configMap:
+              name: loki-config
+              items:
+                - key: loki_config.yml
+                  path: loki_config.yml
+        containers:
+          - name: loki
+            image: grafana/loki:latest
+            imagePullPolicy: Always
+            args:
+              - -config.file=/etc/loki/loki_config.yml
+            volumeMounts:
+              - mountPath: /etc/loki/loki_config.yml
+                name: loki-config
+                subPath: loki_config.yml
+                readOnly: true
+            ports:
+              - containerPort: 3100
+                name: http
+
+    - name: promtail
+      replicas: 1
+      spec:
+        volumes:
+          - name: promtail-config
+            configMap:
+              name: promtail-config
+              items:
+                - key: promtail_config.yml
+                  path: promtail_config.yml
+          - name: host-var-log
+            hostPath:
+              path: /var/log
+              type: Directory
+        containers:
+          - name: promtail
+            image: grafana/promtail:latest
+            imagePullPolicy: Always
+            args:
+              - -config.file=/etc/promtail/promtail_config.yml
+            volumeMounts:
+              - mountPath: /etc/promtail/promtail_config.yml
+                name: promtail-config
+                subPath: promtail_config.yml
+                readOnly: true
+              - mountPath: /var/log
+                name: host-var-log
+                readOnly: true
+
+    - name: influxdb
+      replicas: 1
+      spec:
+        volumes:
+          - name: influxdb-data
+            persistentVolumeClaim:
+              claimName: influxdb-data
+        containers:
+          - name: influxdb
+            image: influxdb:latest
+            imagePullPolicy: Always
+            envFrom:
+              - secretRef:
+                  name: monitoring
+            env:
+              - name: TZ
+                value: Europe/Stockholm
+              - name: DOCKER_INFLUXDB_INIT_MODE
+                value: setup
+              - name: DOCKER_INFLUXDB_INIT_BUCKET
+                value: Measurements
+              - name: DOCKER_INFLUXDB_INIT_CLI_CONFIG_NAME
+                value: homeserver
+            volumeMounts:
+              - mountPath: /var/lib/influxdb2
+                name: influxdb-data
+            ports:
+              - containerPort: 8086
+                name: http
+
+    - name: prometheus
+      replicas: 1
+      spec:
+        volumes:
+          - name: prometheus-data
+            persistentVolumeClaim:
+              claimName: prometheus-data
+          - name: prometheus-config
+            configMap:
+              name: prometheus-config
+              items:
+                - key: prometheus.yml
+                  path: prometheus.yml
+        containers:
+          - name: prometheus
+            image: prom/prometheus:latest
+            imagePullPolicy: Always
+            args:
+              - --config.file=/etc/prometheus/prometheus.yml
+            volumeMounts:
+              - mountPath: /prometheus
+                name: prometheus-data
+              - mountPath: /etc/prometheus/prometheus.yml
+                name: prometheus-config
+                subPath: prometheus.yml
+                readOnly: true
+            ports:
+              - containerPort: 9090
+                name: http
+
+    - name: node-exporter
+      replicas: 1
+      spec:
+        hostNetwork: true
+        hostPID: true
+        volumes:
+          - name: host-root
+            hostPath:
+              path: /
+              type: Directory
+          - name: dbus-system
+            hostPath:
+              path: /var/run/dbus/system_bus_socket
+              type: Socket
+        containers:
+          - name: node-exporter
+            image: quay.io/prometheus/node-exporter:latest
+            imagePullPolicy: Always
+            args:
+              - --path.rootfs=/host
+              - --path.procfs=/host/proc
+              - --path.sysfs=/host/sys
+              - --web.listen-address=:19100
+              - --collector.systemd
+              # this is causing some issues with the collector failing because of
+              # "invalid argument." since I am not using it especially, I disable it
+              # to avoid having the process fail on repeat
+              - --no-collector.thermal_zone
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+            volumeMounts:
+              - mountPath: /host
+                name: host-root
+                readOnly: true
+                mountPropagation: HostToContainer
+              - mountPath: /var/run/dbus/system_bus_socket
+                name: dbus-system
+            ports:
+              - containerPort: 19100
+                name: metrics
+
+    - name: cadvisor
+      replicas: 1
+      spec:
+        volumes:
+          - name: host-root
+            hostPath:
+              path: /
+              type: Directory
+          - name: host-var-run
+            hostPath:
+              path: /var/run
+              type: Directory
+          - name: host-sys
+            hostPath:
+              path: /sys
+              type: Directory
+          - name: docker-data
+            hostPath:
+              path: /data/docker-data
+              type: Directory
+          - name: dev-disk
+            hostPath:
+              path: /dev/disk
+              type: Directory
+          - name: dev-kmsg
+            hostPath:
+              path: /dev/kmsg
+              type: CharDevice
+        containers:
+          - name: cadvisor
+            image: gcr.io/cadvisor/cadvisor:latest
+            imagePullPolicy: Always
+            args:
+              - --housekeeping_interval=1m0s
+              # The reference_memory metrics is disable because I was getting an error
+              # when reading smap files... see https://github.com/google/cadvisor/issues/3139
+              - --disable_metrics=disk,referenced_memory
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+                add:
+                  - SYS_ADMIN
+            volumeMounts:
+              - mountPath: /rootfs
+                name: host-root
+                readOnly: true
+              - mountPath: /var/run
+                name: host-var-run
+                readOnly: true
+              - mountPath: /sys
+                name: host-sys
+                readOnly: true
+              - mountPath: /var/lib/docker
+                name: docker-data
+                readOnly: true
+              - mountPath: /dev/disk
+                name: dev-disk
+                readOnly: true
+              - mountPath: /dev/kmsg
+                name: dev-kmsg
+                readOnly: true
+            ports:
+              - containerPort: 8080
+                name: http

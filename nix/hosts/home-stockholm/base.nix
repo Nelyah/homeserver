@@ -39,12 +39,12 @@
       notmuch
 
 	      # Media
-	      beets
 	
 	      # Development
 	      python3Packages.pip
 	    ])
-	    ++ [inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default];
+	    ++ [inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default]
+      ++ (with pkgs.unstable; [beets]);
 
   environment.variables = {
     EDITOR = "nvim";

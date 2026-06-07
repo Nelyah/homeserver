@@ -4,7 +4,7 @@
 # - disk-health-short: Weekly short self-test (~2 min)
 # - disk-health-long: Semi-annual long self-test (hours)
 #
-# Results are written to /var/lib/disk-health/status.json for svc doctor to read.
+# Results are written to /var/lib/disk-health/status.json for manual inspection.
 # JSON structure tracks each test type separately per drive:
 # {
 #   "lastUpdate": "timestamp",

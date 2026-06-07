@@ -1,0 +1,10 @@
+{{- $namespace := required "app.name is required" (default .Values.app.name .Values.app.namespace) -}}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nextcloud-mariadb-config
+  namespace: {{ $namespace }}
+data:
+  my.cnf: |-
+{{ .Files.Get "config/mariadb.conf" | nindent 4 }}

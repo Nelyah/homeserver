@@ -1,0 +1,43 @@
+# Resource name used for VaultAuth and VaultStaticSecret.
+name: ""
+
+# Kubernetes namespace for generated resources. Defaults to name.
+namespace: ""
+
+secrets:
+  enabled: true
+
+  # Vault KV path inside the configured mount, for example homeserver_secrets/data/<vaultPath>.
+  vaultPath: ""
+
+  # Exact Vault keys to sync from vaultPath. Must contain at least one key.
+  includeKeys: []
+
+  # Vault KV mount that contains vaultPath.
+  mount: homeserver_secrets
+
+# name: service name
+# namespace (defaults to name)
+# spec: Kubernetes ServiceSpec
+services: []
+
+# name: ConfigMap name
+# data: ConfigMap data
+configMaps: []
+
+# name: CronJob name
+# spec: Kubernetes CronJobSpec
+cronJobs: []
+
+# name: volume name
+# accessModes: [] - defaults to ReadWriteOnce
+# storage: required
+# volumeName: optional static PV binding
+# spec: optional Kubernetes PersistentVolumeClaimSpec
+persistentVolumeClaims: []
+
+# name
+# replicas: int
+# labels: optional Deployment metadata labels. Set homeserver.nelyah.eu/image-refresh: "false" to opt out of image refresh.
+# spec: Kubernetes PodSpec. automountServiceAccountToken defaults to false unless explicitly set here.
+deployments: []

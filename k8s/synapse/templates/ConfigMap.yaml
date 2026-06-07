@@ -1,0 +1,22 @@
+{{- $namespace := required "app.name is required" (default .Values.app.name .Values.app.namespace) -}}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: synapse-config
+  namespace: {{ $namespace }}
+data:
+  homeserver.yaml: |-
+{{ .Files.Get "config/homeserver.yaml" | nindent 4 }}
+  log.config: |-
+{{ .Files.Get "config/log.config" | nindent 4 }}
+  render-synapse-runtime.sh: |-
+{{ .Files.Get "config/render-synapse-runtime.sh" | nindent 4 }}
+  render-signal-config.sh: |-
+{{ .Files.Get "config/render-signal-config.sh" | nindent 4 }}
+  render-whatsapp-config.sh: |-
+{{ .Files.Get "config/render-whatsapp-config.sh" | nindent 4 }}
+  signal-init-db.sh: |-
+{{ .Files.Get "config/signal-init-db.sh" | nindent 4 }}
+  whatsapp-init-db.sh: |-
+{{ .Files.Get "config/whatsapp-init-db.sh" | nindent 4 }}

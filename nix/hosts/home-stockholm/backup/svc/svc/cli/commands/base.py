@@ -5,7 +5,11 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from ...config import Config
-from ...controllers import DockerController, LogsController, ResticRunner, SystemctlController
+from ...controllers import (
+    KubernetesController,
+    ResticRunner,
+    SystemctlController,
+)
 from ...core import PathResolver
 from ..renderer import Renderer
 
@@ -27,9 +31,8 @@ class AppContext:
 
     # Lazily initialized controllers
     _systemctl: SystemctlController | None = None
-    _docker: DockerController | None = None
+    _kubernetes: KubernetesController | None = None
     _path_resolver: PathResolver | None = None
-    _logs: LogsController | None = None
 
     @property
     def systemctl(self) -> SystemctlController:
@@ -39,25 +42,18 @@ class AppContext:
         return self._systemctl
 
     @property
-    def docker(self) -> DockerController:
-        """Get or create a DockerController."""
-        if self._docker is None:
-            self._docker = DockerController()
-        return self._docker
+    def kubernetes(self) -> KubernetesController:
+        """Get or create a KubernetesController."""
+        if self._kubernetes is None:
+            self._kubernetes = KubernetesController(dry_run=self.dry_run)
+        return self._kubernetes
 
     @property
     def path_resolver(self) -> PathResolver:
         """Get or create a PathResolver."""
         if self._path_resolver is None:
-            self._path_resolver = PathResolver(self.config, self.docker)
+            self._path_resolver = PathResolver(self.kubernetes)
         return self._path_resolver
-
-    @property
-    def logs(self) -> LogsController:
-        """Get or create a LogsController."""
-        if self._logs is None:
-            self._logs = LogsController()
-        return self._logs
 
     def create_restic_runner(self, env_vars: dict[str, str]) -> ResticRunner:
         """Create a ResticRunner with the given environment variables."""

@@ -1,0 +1,312 @@
+app:
+  name: nextcloud
+
+  secrets:
+    vaultPath: nextcloud
+    includeKeys:
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+
+  persistentVolumeClaims:
+    - name: nextcloud-data
+      storage: 500Gi
+    - name: nextcloud-site
+      storage: 5Gi
+    - name: nextcloud-mariadb
+      storage: 5Gi
+    - name: nextcloud-redis-data
+      storage: 1Gi
+
+  configMaps:
+    - name: nextcloud-web-config
+      data:
+        Caddyfile: |-
+          :8080 {
+            request_body {
+              max_size 5GB
+            }
+
+            root * /var/www/html
+
+            redir /.well-known/carddav /remote.php/dav 301
+            redir /.well-known/caldav /remote.php/dav 301
+
+            @forbidden {
+              path /.htaccess
+              path /data/*
+              path /config/*
+              path /db_structure
+              path /.xml
+              path /README
+              path /3rdparty/*
+              path /lib/*
+              path /templates/*
+              path /occ
+              path /console.php
+            }
+            respond @forbidden "Access Denied" 403 {
+              close
+            }
+
+            php_fastcgi 127.0.0.1:9000 {
+              root /var/www/html
+              env modHeadersAvailable true
+            }
+
+            file_server
+          }
+
+  services:
+    - name: nextcloud
+      spec:
+        type: ClusterIP
+        ports:
+          - port: 80
+            targetPort: fpm
+            name: fpm
+        selector:
+          app: nextcloud
+    - name: nextcloud-web
+      spec:
+        type: ClusterIP
+        ports:
+          - port: 80
+            targetPort: http
+            name: http
+        selector:
+          app: nextcloud
+    - name: mariadb-nc
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: mysql
+            port: 3306
+            targetPort: mysql
+        selector:
+          app: mariadb-nc
+    - name: redis
+      spec:
+        type: ClusterIP
+        ports:
+          - appProtocol: redis
+            port: 6379
+            targetPort: redis
+        selector:
+          app: redis
+
+  deployments:
+    - name: mariadb-nc
+      replicas: 1
+      spec:
+        terminationGracePeriodSeconds: 60
+        volumes:
+          - name: nextcloud-mariadb
+            persistentVolumeClaim:
+              claimName: nextcloud-mariadb
+          - name: mariadb-config
+            configMap:
+              name: nextcloud-mariadb-config
+        containers:
+          - name: mariadb-nc
+            image: docker.io/mariadb:lts
+            imagePullPolicy: Always
+            envFrom:
+              - secretRef:
+                  name: nextcloud
+            env:
+              - name: MARIADB_AUTO_UPGRADE
+                value: "yes"
+            volumeMounts:
+              - mountPath: /var/lib/mysql
+                name: nextcloud-mariadb
+              - mountPath: /etc/mysql/my.cnf
+                name: mariadb-config
+                subPath: my.cnf
+            ports:
+              - containerPort: 3306
+                name: mysql
+
+    - name: nextcloud
+      replicas: 1
+      spec:
+        terminationGracePeriodSeconds: 60
+        volumes:
+          - name: nextcloud-site
+            persistentVolumeClaim:
+              claimName: nextcloud-site
+          - name: nextcloud-data
+            persistentVolumeClaim:
+              claimName: nextcloud-data
+          - name: nextcloud-web-config
+            configMap:
+              name: nextcloud-web-config
+          - name: nextcloud-web-data
+            emptyDir: {}
+          - name: nextcloud-web-runtime
+            emptyDir: {}
+        containers:
+          - name: nextcloud
+            image: docker.io/nextcloud:stable-fpm
+            imagePullPolicy: Always
+            env:
+              - name: MYSQL_HOST
+                value: mariadb-nc
+              - name: MYSQL_DATABASE
+                valueFrom:
+                  secretKeyRef:
+                    name: nextcloud
+                    key: MYSQL_DATABASE
+              - name: MYSQL_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: nextcloud
+                    key: MYSQL_USER
+              - name: MYSQL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: nextcloud
+                    key: MYSQL_PASSWORD
+              - name: NEXTCLOUD_DATA_DIR
+                value: /data
+            volumeMounts:
+              - mountPath: /var/www/html
+                name: nextcloud-site
+              - mountPath: /data
+                name: nextcloud-data
+            ports:
+              - containerPort: 9000
+                name: fpm
+          - name: nextcloud-web
+            image: docker.io/caddy:2-alpine
+            imagePullPolicy: IfNotPresent
+            volumeMounts:
+              - mountPath: /etc/caddy/Caddyfile
+                name: nextcloud-web-config
+                subPath: Caddyfile
+                readOnly: true
+              - mountPath: /var/www/html
+                name: nextcloud-site
+                readOnly: true
+              - mountPath: /data
+                name: nextcloud-web-data
+              - mountPath: /config
+                name: nextcloud-web-runtime
+            ports:
+              - containerPort: 8080
+                name: http
+
+    - name: nextcloud-cron
+      replicas: 1
+      spec:
+        terminationGracePeriodSeconds: 60
+        volumes:
+          - name: nextcloud-site
+            persistentVolumeClaim:
+              claimName: nextcloud-site
+          - name: nextcloud-data
+            persistentVolumeClaim:
+              claimName: nextcloud-data
+        containers:
+          - name: nextcloud-cron
+            image: docker.io/nextcloud:stable-fpm
+            imagePullPolicy: Always
+            command:
+              - /cron.sh
+            volumeMounts:
+              - mountPath: /var/www/html
+                name: nextcloud-site
+              - mountPath: /data
+                name: nextcloud-data
+
+    - name: redis
+      replicas: 1
+      spec:
+        terminationGracePeriodSeconds: 60
+        volumes:
+          - name: nextcloud-redis-data
+            persistentVolumeClaim:
+              claimName: nextcloud-redis-data
+        containers:
+          - name: redis
+            image: docker.io/redis:latest
+            imagePullPolicy: Always
+            args:
+              - --save
+              - "60"
+              - "1"
+            volumeMounts:
+              - mountPath: /data
+                name: nextcloud-redis-data
+            ports:
+              - containerPort: 6379
+                name: redis
+
+  cronJobs:
+    - name: nextcloud-index-update
+      spec:
+        schedule: "0 0 * * *"
+        concurrencyPolicy: Forbid
+        jobTemplate:
+          spec:
+            template:
+              spec:
+                restartPolicy: OnFailure
+                volumes:
+                  - name: nextcloud-site
+                    persistentVolumeClaim:
+                      claimName: nextcloud-site
+                  - name: nextcloud-data
+                    persistentVolumeClaim:
+                      claimName: nextcloud-data
+                containers:
+                  - name: nextcloud-index-update
+                    image: docker.io/nextcloud:stable-fpm
+                    imagePullPolicy: Always
+                    command:
+                      - php
+                      - /var/www/html/occ
+                      - db:add-missing-indices
+                    securityContext:
+                      runAsUser: 33
+                      runAsGroup: 33
+                    volumeMounts:
+                      - mountPath: /var/www/html
+                        name: nextcloud-site
+                      - mountPath: /data
+                        name: nextcloud-data
+
+    - name: nextcloud-mimetype-update
+      spec:
+        schedule: "0 1 * * *"
+        concurrencyPolicy: Forbid
+        jobTemplate:
+          spec:
+            template:
+              spec:
+                restartPolicy: OnFailure
+                volumes:
+                  - name: nextcloud-site
+                    persistentVolumeClaim:
+                      claimName: nextcloud-site
+                  - name: nextcloud-data
+                    persistentVolumeClaim:
+                      claimName: nextcloud-data
+                containers:
+                  - name: nextcloud-mimetype-update
+                    image: docker.io/nextcloud:stable-fpm
+                    imagePullPolicy: Always
+                    command:
+                      - php
+                      - /var/www/html/occ
+                      - maintenance:repair
+                      - --include-expensive
+                    securityContext:
+                      runAsUser: 33
+                      runAsGroup: 33
+                    volumeMounts:
+                      - mountPath: /var/www/html
+                        name: nextcloud-site
+                      - mountPath: /data
+                        name: nextcloud-data

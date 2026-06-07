@@ -1,0 +1,308 @@
+{
+	servers {
+		trusted_proxies static private_ranges
+		listener_wrappers {
+			# The proxy_protocol wrapper tells Caddy to expect a PROXY header
+			# (which carries the real client IP) from upstream proxies.
+			proxy_protocol {
+				# Set a timeout of 2 seconds for receiving the PROXY header.
+				# This ensures that Caddy won’t wait indefinitely if the header isn’t sent.
+				timeout 2s
+
+				# Allow connections from the 100.64.0.0/10 IP range.
+				# This is typically the range used by the upstream proxy (e.g. FRP server)
+				# that sends the correct PROXY header; it prevents headers from untrusted sources.
+				# In this case, this includes any address from my tailnet
+				allow 100.64.0.0/10
+
+				# Set fallback_policy to "use".
+				# With this policy, if a valid PROXY header is present, Caddy will use its values (e.g. the client's real IP).
+				# If the header isn’t present, Caddy will simply use the connection’s original remote address.
+				# This provides flexibility, ensuring that connections without the header are still processed.
+				fallback_policy use
+			}
+			# The tls wrapper follows, ensuring that after handling the PROXY header,
+			# Caddy proceeds with the TLS handshake (i.e. it wraps the connection in TLS).
+			tls
+		}
+	}
+}
+
+(security_headers) {
+	header {
+		X-Robots-Tag "noindex, nofollow"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "no-referrer"
+		Strict-Transport-Security "max-age=15552000; includeSubDomains; preload"
+		X-XSS-Protection: "1; mode=block"
+
+		# https://www.adobe.com/devnet/adobe-media-server/articles/cross-domain-xml-for-streaming.html
+		X-Permitted-Cross-Domain-Policies "none"
+	}
+}
+
+(is_not_whitelist) {
+	not remote_ip private_ranges
+	# Allowing Tailscale subnet
+	not remote_ip 100.64.0.0/10
+}
+
+(restrict_to_lan) {
+	@restricted_location {
+		path /*
+		import is_not_whitelist
+	}
+	respond @restricted_location "Access Denied" 403 {
+		close
+	}
+}
+
+(sso_if_not_whitelist) {
+	@needs_sso {
+		import is_not_whitelist
+	}
+
+	import geo_allow_eu_and_na
+
+	forward_auth @needs_sso http://tinyauth.pocketid.svc.cluster.local {
+		uri /api/auth/caddy
+		copy_headers Remote-User Remote-Name Remote-Email Remote-Groups
+		trusted_proxies private_ranges
+		trusted_proxies 100.64.0.0/10
+	}
+}
+
+# Rate limit entire site
+# Usage: import rate_limit_site <zone_name> <events> <window>
+(rate_limit_site) {
+	rate_limit {
+		zone {args[0]} {
+			key {remote_host}
+			events {args[1]}
+			window {args[2]}
+		}
+	}
+}
+
+# Rate limit specific paths
+# Usage: import rate_limit_path <zone_name> <path_glob> <events> <window>
+(rate_limit_path) {
+	rate_limit {
+		zone {args[0]} {
+			match {
+				path {args[1]}
+			}
+			key {remote_host}
+			events {args[2]}
+			window {args[3]}
+		}
+	}
+}
+
+
+# Block access unless from allowed countries
+# Usage: import geo_allow FR DE BE NL
+(geo_allow) {
+	@blocked_geo {
+		not maxmind_geolocation {
+			db_path /data/GeoLite2-Country.mmdb
+			allow_countries {args[:]}
+		}
+		# Also allow private/Tailscale ranges (bypass geo check)
+		not remote_ip private_ranges
+		not remote_ip 100.64.0.0/10
+	}
+	respond @blocked_geo "Access Denied" 403 {
+		close
+	}
+}
+
+# Continent snippets - expand to country codes
+# Usage: import geo_allow_europe
+(geo_allow_europe) {
+	import geo_allow AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE GB CH NO IS LI MC AD SM VA
+}
+
+(geo_allow_north_america) {
+	import geo_allow US CA MX
+}
+
+
+(geo_allow_eu_and_na) {
+	import geo_allow AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE GB CH NO IS US CA
+}
+
+cloud.nelyah.eu {
+	import security_headers
+	import geo_allow_eu_and_na
+
+	import rate_limit_path cloud_login1 /login* 1000 1m
+	import rate_limit_path cloud_login2 /index.php/login* 1000 1m
+
+
+	request_body {
+		max_size 5GB
+	}
+
+	redir /.well-known/carddav /remote.php/dav 301 permanent
+	redir /.well-known/caldav /remote.php/dav 301 permanent
+
+	@forbidden {
+		path /.htaccess
+		path /data/*
+		path /config/*
+		path /db_structure
+		path /.xml
+		path /README
+		path /3rdparty/*
+		path /lib/*
+		path /templates/*
+		path /occ
+		path /console.php
+	}
+	respond @forbidden "Access Denied" 403 {
+		close
+	}
+
+	reverse_proxy http://nextcloud-web.nextcloud.svc.cluster.local
+}
+
+chloe.dequeker.me, blog.nelyah.eu {
+	import security_headers
+	reverse_proxy http://hugo-website.hugo-blog.svc.cluster.local
+}
+
+api.blog.nelyah.eu {
+	import security_headers
+
+	import sso_if_not_whitelist
+	reverse_proxy http://hugo-api.hugo-blog.svc.cluster.local
+}
+
+influxdb.nelyah.eu {
+	import security_headers
+	import sso_if_not_whitelist
+	reverse_proxy http://influxdb.monitoring.svc.cluster.local
+}
+
+music.nelyah.eu {
+	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_path navidrome_login /auth/login 1000 1m
+
+	reverse_proxy http://navidrome.navidrome.svc.cluster.local
+}
+
+prometheus.nelyah.eu {
+	import security_headers
+	reverse_proxy http://prometheus.monitoring.svc.cluster.local
+	import sso_if_not_whitelist
+}
+
+grafana.nelyah.eu {
+	import security_headers
+	import sso_if_not_whitelist
+
+	# Actual site configuration below, for example
+	reverse_proxy http://grafana.monitoring.svc.cluster.local
+}
+
+jellyfin.nelyah.eu {
+	import security_headers
+
+	import geo_allow_europe
+	import rate_limit_path jellyfin_login_name /Users/AuthenticateByName 1000 1m
+	import rate_limit_path jellyfin_login_qc /Users/AuthenticateWithQuickConnect 1000 1m
+	import rate_limit_path jellyfin_quickconnect /QuickConnect/* 1000 1m
+
+	reverse_proxy http://jellyfin.jellyfin.svc.cluster.local
+}
+
+photos.nelyah.eu, immich.nelyah.eu {
+	import security_headers
+	reverse_proxy http://immich-server.immich.svc.cluster.local
+}
+
+audiobookshelf.nelyah.eu {
+	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_path abs_login /login 1000 1m
+
+
+	reverse_proxy http://audiobookshelf.audiobookshelf.svc.cluster.local
+}
+
+pocketid.nelyah.eu {
+	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_site pocketid_global 10000 1m
+
+	reverse_proxy http://pocketid.pocketid.svc.cluster.local
+}
+
+tinyauth.nelyah.eu {
+	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_site tinyauth_global 1000 1m
+	import rate_limit_path tinyauth_oauth_cb /api/oauth/callback/* 1000 1m
+	import rate_limit_path tinyauth_login_ui /login* 1000 1m
+
+	reverse_proxy http://tinyauth.pocketid.svc.cluster.local
+}
+
+vault.nelyah.eu {
+	import security_headers
+	import sso_if_not_whitelist
+	reverse_proxy http://vault.vault.svc.cluster.local
+}
+
+atuin.nelyah.eu {
+	import security_headers
+
+	import geo_allow_eu_and_na
+	import rate_limit_site atuin_global 100 1m
+
+	reverse_proxy http://atuin.atuin.svc.cluster.local
+}
+
+uptime-kuma.nelyah.eu {
+	import security_headers
+	import sso_if_not_whitelist
+	reverse_proxy http://uptime-kuma.uptime-kuma.svc.cluster.local
+}
+
+homeassistant.nelyah.eu {
+	import security_headers
+	reverse_proxy http://homeassistant.homeassistant.svc.cluster.local
+}
+
+matrix.nelyah.eu {
+	import security_headers
+	import geo_allow_eu_and_na
+	# import rate_limit_site synapse_global 1000 1m
+
+	# Matrix media uploads can be up to 50MB
+	request_body {
+		max_size 50MB
+	}
+
+	reverse_proxy http://synapse.synapse.svc.cluster.local
+}
+
+nelyah.eu {
+	# Matrix federation delegation
+	header /.well-known/matrix/* Content-Type application/json
+	header /.well-known/matrix/* Access-Control-Allow-Origin *
+	respond /.well-known/matrix/server `{"m.server": "matrix.nelyah.eu:443"}`
+	respond /.well-known/matrix/client `{"m.homeserver": {"base_url": "https://matrix.nelyah.eu"}}`
+
+	# Reject all other requests
+	respond * "Not Found" 404 {
+		close
+	}
+}

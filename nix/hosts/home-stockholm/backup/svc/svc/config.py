@@ -39,13 +39,21 @@ class RetentionPolicy(PydanticBase):
     yearly: int | None = None
 
 
+class KubernetesBackupConfig(PydanticBase):
+    """Kubernetes backup configuration for a service."""
+
+    namespace: str
+    deployments: list[str] = Field(default_factory=list)
+    pvcs: list[str] = Field(default_factory=list)
+
+
 class BackupConfig(PydanticBase):
     """Backup configuration for a service."""
 
     enable: bool = False
-    needs_service_stopped: bool = Field(default=False, alias="needsServiceStopped")
-    volumes: list[str] = Field(default_factory=list)
     paths: list[str] = Field(default_factory=list)
+    kubernetes: KubernetesBackupConfig | None = None
+    pre_backup_commands: list[list[str]] = Field(default_factory=list, alias="preBackupCommands")
     tags: list[str] = Field(default_factory=list)
     exclude: list[str] = Field(default_factory=list)
     policy: RetentionPolicy | None = None
@@ -55,19 +63,9 @@ class RestoreConfig(PydanticBase):
     """Restore configuration for a service."""
 
     tag: str
-    volumes: list[str] = Field(default_factory=list)
     paths: list[str] = Field(default_factory=list)
-    stop_compose: bool = Field(default=False, alias="stopCompose")
-    compose_unit: str = Field(default="", alias="composeUnit")
+    kubernetes: KubernetesBackupConfig | None = None
     target: str = "/"
-
-
-class MonitoringConfig(PydanticBase):
-    """Optional per-service monitoring configuration overrides."""
-
-    error_patterns: list[str] = Field(default_factory=list, alias="errorPatterns")
-    warning_patterns: list[str] = Field(default_factory=list, alias="warningPatterns")
-    ignore_patterns: list[str] = Field(default_factory=list, alias="ignorePatterns")
 
 
 class ServiceConfig(PydanticBase):
@@ -76,27 +74,15 @@ class ServiceConfig(PydanticBase):
     name: str
     backup: BackupConfig
     restore: RestoreConfig
-    monitoring: MonitoringConfig | None = None
-
-
-class TimerConfig(PydanticBase):
-    """Configuration for a systemd timer."""
-
-    name: str
-    unit: str
-    description: str
-
-
-def _empty_timer_list() -> list[TimerConfig]:
-    return []
 
 
 class PathsConfig(PydanticBase):
     """Path configuration for the application."""
 
     secrets_root: str = Field(default="/var/lib/secrets", alias="secretsRoot")
-    deploy_root: str = Field(default="/var/lib/docker-services", alias="deployRoot")
-    docker_volumes_root: str = Field(default="/data/docker-data/volumes", alias="dockerVolumesRoot")
+    backup_metadata_root: str = Field(
+        default="/var/lib/svc/backup-metadata", alias="backupMetadataRoot"
+    )
 
 
 class Config(PydanticBase):
@@ -104,7 +90,6 @@ class Config(PydanticBase):
 
     paths: PathsConfig
     services: dict[str, ServiceConfig] = Field(default_factory=dict)
-    timers: list[TimerConfig] = Field(default_factory=_empty_timer_list)
 
 
 TModel = TypeVar("TModel", bound=BaseModel)

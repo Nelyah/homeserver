@@ -1,0 +1,9 @@
+apiVersion: v2
+name: caddy
+description: Caddy edge proxy built on the generic app chart.
+type: application
+version: 0.1.0
+dependencies:
+  - name: app
+    version: 0.1.0
+    repository: file://../charts/app

@@ -1,0 +1,10 @@
+{{- $namespace := required "app.name is required" (default .Values.app.name .Values.app.namespace) -}}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: caddy-config
+  namespace: {{ $namespace }}
+data:
+  Caddyfile: |-
+{{ .Files.Get "config/Caddyfile" | nindent 4 }}

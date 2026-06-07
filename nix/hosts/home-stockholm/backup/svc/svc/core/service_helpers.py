@@ -33,28 +33,6 @@ def validate_service(config: Config, service_name: str) -> ServiceConfig:
     return svc
 
 
-def get_service(config: Config, service_name: str) -> ServiceConfig:
-    """
-    Get service configuration (without requiring backup enabled).
-
-    Args:
-        config: Application configuration
-        service_name: Name of the service
-
-    Returns:
-        ServiceConfig
-
-    Raises:
-        ServiceNotFoundError: If service not found
-
-    """
-    if service_name not in config.services:
-        available = ", ".join(sorted(config.services.keys()))
-        message = f"Service '{service_name}' not found. Available: {available}"
-        raise ServiceNotFoundError(message)
-    return config.services[service_name]
-
-
 def require_root(operation: str) -> None:
     """
     Raise PermissionError if not running as root.

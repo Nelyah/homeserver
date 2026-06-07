@@ -57,3 +57,9 @@ class DockerError(SvcError):
     """Docker command execution failed."""
 
     exit_code = EXIT_CONFIG_ERROR
+
+
+class KubernetesError(SvcError):
+    """Kubernetes command execution failed."""
+
+    exit_code = EXIT_CONFIG_ERROR

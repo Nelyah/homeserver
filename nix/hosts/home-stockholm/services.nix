@@ -45,44 +45,14 @@
     entryName = name;
   };
 
-  # Build service attrset with auto-detected files/env templates
+  # Build service attrset from backup metadata modules.
   buildService = name: let
     loaded = loadService name;
     raw = loaded.raw;
     svcName = raw.name or (normalizeName name);
-
-    explicitFiles = raw.files or {};
-    autoComposeFile =
-      if loaded.isDir && loaded.serviceDir != null
-         && builtins.pathExists (loaded.serviceDir + "/docker-compose.yml")
-         && !(explicitFiles ? "docker-compose.yml")
-      then {
-        "docker-compose.yml" = {
-          source = loaded.serviceDir + "/docker-compose.yml";
-          destination = null;
-          executable = false;
-        };
-      }
-      else {};
-    files = autoComposeFile // explicitFiles;
-
-    explicitSecretFiles = raw.secretFiles or {};
-    autoEnvSecret =
-      if loaded.isDir && loaded.serviceDir != null
-         && builtins.pathExists (loaded.serviceDir + "/.env.ctmpl")
-         && !(explicitSecretFiles ? ".env")
-      then {
-        ".env" = {
-          destination = ".env";
-          perms = "0400";
-          template = builtins.readFile (loaded.serviceDir + "/.env.ctmpl");
-        };
-      }
-      else {};
-    secretFiles = explicitSecretFiles // autoEnvSecret;
   in {
     inherit svcName;
-    service = raw // {name = svcName; files = files; secretFiles = secretFiles;};
+    service = raw // {name = svcName;};
   };
 
   builtServices = map buildService serviceNames;
@@ -97,11 +67,6 @@
     builtServices
   );
 
-  # Collect and merge systemd configs from all services
-  mergedSystemd = lib.foldl' lib.recursiveUpdate {} (
-    lib.mapAttrsToList (_: svc: svc.systemd or {}) rawServices
-  );
-
 in {
   config.assertions = [
     {
@@ -112,7 +77,4 @@ in {
 
   # Set the services config directly - options.nix provides the schema
   config.homeserver.services = rawServices;
-
-  # Apply systemd units contributed by service definitions
-  config.systemd = mergedSystemd;
 }

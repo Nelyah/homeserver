@@ -1,0 +1,50 @@
+name: pocketid
+
+secrets:
+  vaultPath: pocketid
+  includeKeys:
+    - ENCRYPTION_KEY
+
+persistentVolumeClaims:
+  - name: pocketid-data
+    storage: 1Gi
+
+services:
+  - name: pocketid
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: pocketid
+
+deployments:
+  - name: pocketid
+    replicas: 1
+    spec:
+      volumes:
+        - name: pocketid-data
+          persistentVolumeClaim:
+            claimName: pocketid-data
+      containers:
+        - name: pocketid
+          image: ghcr.io/pocket-id/pocket-id:v2
+          imagePullPolicy: Always
+          env:
+            - name: APP_URL
+              value: https://pocketid.nelyah.eu
+            - name: TRUST_PROXY
+              value: "true"
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: pocketid
+                  key: ENCRYPTION_KEY
+          volumeMounts:
+            - mountPath: /app/data
+              name: pocketid-data
+          ports:
+            - containerPort: 1411
+              name: http

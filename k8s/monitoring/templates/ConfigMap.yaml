@@ -1,0 +1,37 @@
+{{- $namespace := required "app.name is required" (default .Values.app.name .Values.app.namespace) -}}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: grafana-config
+  namespace: {{ $namespace }}
+data:
+  grafana.ini: |-
+{{ .Files.Get "config/grafana.ini" | nindent 4 }}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: loki-config
+  namespace: {{ $namespace }}
+data:
+  loki_config.yml: |-
+{{ .Files.Get "config/loki_config.yml" | nindent 4 }}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: promtail-config
+  namespace: {{ $namespace }}
+data:
+  promtail_config.yml: |-
+{{ .Files.Get "config/promtail_config.yml" | nindent 4 }}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: prometheus-config
+  namespace: {{ $namespace }}
+data:
+  prometheus.yml: |-
+{{ .Files.Get "config/prometheus.yml" | nindent 4 }}

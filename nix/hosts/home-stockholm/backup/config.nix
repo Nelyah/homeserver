@@ -6,7 +6,6 @@
   config,
   ...
 }: let
-  homeserverLib = import ../lib {inherit lib;};
   services = config.homeserver.services;
 
   # Serialize retention policy to JSON-safe format
@@ -27,17 +26,18 @@
     backup = svc.backup or {};
     restore = backup.restore or {};
     restic = restore.restic or {};
+    kubernetes = restore.kubernetes or (backup.kubernetes or null);
   in {
     tag = restore.tag or name;
-    volumes = restore.volumes or (backup.volumes or []);
     paths = restore.paths or (backup.paths or []);
-    stopCompose =
-      restore.stopCompose
-      or (svc ? compose && svc.compose != null && (svc.compose.enable or false));
-    composeUnit =
-      if (restore.composeUnit or null) != null
-      then restore.composeUnit
-      else "docker-compose-${name}.service";
+    kubernetes =
+      if kubernetes == null
+      then null
+      else {
+        namespace = kubernetes.namespace;
+        deployments = kubernetes.deployments or [];
+        pvcs = kubernetes.pvcs or [];
+      };
     target = restic.target or "/";
   };
 
@@ -45,13 +45,21 @@
   serializeService = name: svc: let
     backup = svc.backup or {};
     backupEnabled = backup.enable or false;
+    kubernetes = backup.kubernetes or null;
   in {
     inherit name;
     backup = {
       enable = backupEnabled;
-      needsServiceStopped = backup.needsServiceStopped or false;
-      volumes = backup.volumes or [];
       paths = backup.paths or [];
+      kubernetes =
+        if kubernetes == null
+        then null
+        else {
+          namespace = kubernetes.namespace;
+          deployments = kubernetes.deployments or [];
+          pvcs = kubernetes.pvcs or [];
+        };
+      preBackupCommands = backup.preBackupCommands or [];
       tags = backup.tags or [name];
       exclude = backup.exclude or [];
       policy = serializePolicy (backup.policy or null);
@@ -59,31 +67,13 @@
     restore = serializeRestore name svc;
   };
 
-  # Timer metadata for svc doctor command
-  # Dynamically collected from config.systemd.timers
-  timers = lib.pipe config.systemd.timers [
-    # Filter to only include timers that are enabled (wantedBy contains "timers.target")
-    (lib.filterAttrs (_name: timer:
-      lib.elem "timers.target" (timer.wantedBy or [])
-    ))
-    # Convert to list of timer metadata objects
-    (lib.mapAttrsToList (name: _timer: {
-      inherit name;
-      unit = "${name}.timer";
-      # Get description from the corresponding service
-      description = config.systemd.services.${name}.description or "";
-    }))
-  ];
-
   # Build complete config structure
   configData = {
     paths = {
       secretsRoot = config.homeserver.paths.secretsRoot;
-      deployRoot = config.homeserver.paths.deployRoot;
-      dockerVolumesRoot = config.homeserver.paths.dockerVolumesRoot;
+      backupMetadataRoot = "/var/lib/svc/backup-metadata";
     };
     services = lib.mapAttrs serializeService services;
-    inherit timers;
   };
 
   configJson = pkgs.writeText "svc-services.json" (builtins.toJSON configData);
