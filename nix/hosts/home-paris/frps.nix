@@ -3,7 +3,7 @@
   lib,
   ...
 }: {
-  services.frp = {
+  services.frp.instances."" = {
     enable = true;
     role = "server";
     settings = {

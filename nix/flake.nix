@@ -5,9 +5,14 @@
     # TODO: Figure out a way to stay up to date with latest releases.
 
     # *-darwin here means that packages are tested for darwin compatibility
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-25.11-darwin";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
 
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    bive = {
+      url = "git+ssh://git@github.com/Nelyah/bive";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     codex-cli-nix = {
       url = "github:sadjow/codex-cli-nix";
@@ -15,13 +20,13 @@
     };
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     nix-darwin = {
       # Use the default nix-darwin, following nixpkgs for compatibility
-      url = "github:LnL7/nix-darwin/nix-darwin-25.11";
+      url = "github:LnL7/nix-darwin/nix-darwin-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -36,6 +41,7 @@
     nixpkgs,
     nix-darwin,
     home-manager,
+    bive,
     ...
   }: let
     darwinSystem = "aarch64-darwin";
@@ -164,6 +170,5 @@
         );
       };
     };
-
   };
 }

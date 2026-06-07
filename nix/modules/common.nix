@@ -12,6 +12,13 @@
 
   config = {
 
+  nixpkgs.overlays = [
+    inputs.bive.overlays.default
+    (_final: prev: {
+      bive = prev.bive.overrideAttrs {doCheck = false;};
+    })
+  ];
+
   # Nix settings shared across all hosts
   nix = {
     settings = {
@@ -44,7 +51,7 @@
       # Nix tools
       alejandra
       nixd
-      nixfmt-rfc-style
+      nixfmt
 
       # Shell & terminal
       bat
@@ -109,6 +116,7 @@
       yt-dlp
 
       # Other utilities
+      bive
       atuin
       ansible
       cacert
@@ -125,7 +133,7 @@
     ++ (with pkgs.unstable; [
       codex
       claude-code
-      claude-code-acp
+      claude-agent-acp
     ]);
 
   # Enable zsh on all hosts

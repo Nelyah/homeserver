@@ -1,5 +1,25 @@
 {
   "nodes": {
+    "bive": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1780550300,
+        "narHash": "sha256-WcRfQEMxlWnG/DYWbm8eOoDhXnoNEWv3Kfbn94G++64=",
+        "ref": "refs/heads/main",
+        "rev": "55ee5ba028bbd4024f992c593d34e0cb59780f58",
+        "revCount": 461,
+        "type": "git",
+        "url": "ssh://git@github.com/Nelyah/bive"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/Nelyah/bive"
+      }
+    },
     "codex-cli-nix": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -8,11 +28,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1772739126,
-        "narHash": "sha256-oHo/EImJ//ZjxV6BmR2RZgo4Jxyubh5mFnFoRYeLzmY=",
+        "lastModified": 1780543091,
+        "narHash": "sha256-qdsCTv+i0YHjFY/DUb2paaxUzUUFrO+BZzKhPKc1m2Q=",
         "owner": "sadjow",
         "repo": "codex-cli-nix",
-        "rev": "e63f18dfbd22bd0a7c5504be9b7f6a8d3c01488a",
+        "rev": "d95f4900331633d49b8df26cfb4142742baa537b",
         "type": "github"
       },
       "original": {
@@ -46,16 +66,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1772633058,
-        "narHash": "sha256-SO7JapRy2HPhgmqiLbfnW1kMx5rakPMKZ9z3wtRLQjI=",
+        "lastModified": 1780361225,
+        "narHash": "sha256-wnV9ttf4fPWNonBIQmvlrSlNpQYgx5HgWWd007mwIFA=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "080657a04188aca25f8a6c70a0fb2ea7e37f1865",
+        "rev": "e28654b71096e08c019d4861ca26acb646f583d8",
         "type": "github"
       },
       "original": {
         "owner": "nix-community",
-        "ref": "release-25.11",
+        "ref": "release-26.05",
         "repo": "home-manager",
         "type": "github"
       }
@@ -67,43 +87,59 @@
         ]
       },
       "locked": {
-        "lastModified": 1772129556,
-        "narHash": "sha256-Utk0zd8STPsUJPyjabhzPc5BpPodLTXrwkpXBHYnpeg=",
+        "lastModified": 1779036909,
+        "narHash": "sha256-zXcwYQGCT6pzinK+1dBB2ekTVtfxGZAapb3Evdcu4fY=",
         "owner": "LnL7",
         "repo": "nix-darwin",
-        "rev": "ebec37af18215214173c98cf6356d0aca24a2585",
+        "rev": "56c666e108467d87d13508936aade6d567f2a501",
         "type": "github"
       },
       "original": {
         "owner": "LnL7",
-        "ref": "nix-darwin-25.11",
+        "ref": "nix-darwin-26.05",
         "repo": "nix-darwin",
         "type": "github"
       }
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1772598333,
-        "narHash": "sha256-YaHht/C35INEX3DeJQNWjNaTcPjYmBwwjFJ2jdtr+5U=",
+        "lastModified": 1780614800,
+        "narHash": "sha256-xq6r60DU54c2C//D+ok+y5A7fp/zpFcNUeX5uGqKyMQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fabb8c9deee281e50b1065002c9828f2cf7b2239",
+        "rev": "cc598dfd09b0a543d574a238d4b3473bb1c6d587",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixpkgs-25.11-darwin",
+        "ref": "nixpkgs-26.05-darwin",
         "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs-neovim": {
+      "locked": {
+        "lastModified": 1769466053,
+        "narHash": "sha256-ULzDD9pH7nlPUUyYsIs0ZAcoBzkJB54+Ii1J+Byw3vQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "fda6b0917a502c8198ef2de613dbad0efa411dca",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "fda6b0917a502c8198ef2de613dbad0efa411dca",
         "type": "github"
       }
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1772624091,
-        "narHash": "sha256-QKyJ0QGWBn6r0invrMAK8dmJoBYWoOWy7lN+UHzW1jc=",
+        "lastModified": 1780243769,
+        "narHash": "sha256-x5UQuRsH3MqI0U9afaXSNqzTPSeZlRLvFAav2Ux1pNw=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "80bdc1e5ce51f56b19791b52b2901187931f5353",
+        "rev": "331800de5053fcebacf6813adb5db9c9dca22a0c",
         "type": "github"
       },
       "original": {
@@ -115,10 +151,12 @@
     },
     "root": {
       "inputs": {
+        "bive": "bive",
         "codex-cli-nix": "codex-cli-nix",
         "home-manager": "home-manager",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-neovim": "nixpkgs-neovim",
         "nixpkgs-unstable": "nixpkgs-unstable"
       }
     },

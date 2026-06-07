@@ -10,7 +10,7 @@ in {
     destination = "frp-token";
   };
 
-  services.frp = {
+  services.frp.instances."" = {
     enable = true;
     role = "client";
     settings = {

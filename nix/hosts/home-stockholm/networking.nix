@@ -59,9 +59,11 @@ in {
   # - else, we are redirectory to the list of public DNS
   services.resolved = {
     enable = true;
-    dnssec = "allow-downgrade";
-    domains = ["~."];
-    fallbackDns = public_dns;
+    settings.Resolve = {
+      DNSSEC = "allow-downgrade";
+      Domains = ["~."];
+      FallbackDNS = public_dns;
+    };
   };
 
   services.dnsmasq = {
