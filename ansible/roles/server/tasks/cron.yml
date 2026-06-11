@@ -1,9 +1,0 @@
----
-
-- name: Deploy cron.d entry
-  copy:
-    dest: '{{ cron_destination }}/ansible-backup-and-docker-images'
-    mode: '0644'
-    content: |
-      # Ansible managed: backup and docker image maintenance
-      0 3 * * * root {{ homeserver_repo_dir }}/bin/docker-images-cleanup

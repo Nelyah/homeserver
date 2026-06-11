@@ -1,1 +1,0 @@
-{{ response.secret.SSH_PRIVATE_KEY }}

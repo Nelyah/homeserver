@@ -1,9 +1,0 @@
-[Unit]
-Description=Triggers local backup
-
-[Timer]
-Unit=ansible-backup.service
-OnCalendar=*-*-* 05:00:00
-
-[Install]
-WantedBy=timers.target

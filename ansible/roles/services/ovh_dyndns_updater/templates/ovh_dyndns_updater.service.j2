@@ -1,8 +1,0 @@
-[Unit]
-Description=Updates OVH DynDNS record
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/bin/bash -c "/bin/docker-compose -f {{ homeserver_repo_dir }}/services/ovh_dyndns_updater/docker-compose.yml build && /bin/docker-compose -f {{ homeserver_repo_dir }}/services/ovh_dyndns_updater/docker-compose.yml run --rm ovh-dyndns-updater"

@@ -1,8 +1,0 @@
-[Unit]
-Description=Update Nextcloud database indexes at midnight
-
-[Timer]
-OnCalendar=*-*-* 00:00:00
-
-[Install]
-WantedBy=timers.target

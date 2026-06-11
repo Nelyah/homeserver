@@ -1,9 +1,0 @@
-[Unit]
-Description=Triggers weekly remote backup
-
-[Timer]
-Unit=ansible-backup.service
-OnCalendar=Mon 05:00
-
-[Install]
-WantedBy=timers.target
