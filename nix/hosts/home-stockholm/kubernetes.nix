@@ -11,6 +11,7 @@
       "--disable=traefik"
       "--disable=servicelb"
       "--write-kubeconfig-mode=0644"
+      "--cluster-domain=k8s.nelyah.eu"
       "--default-local-storage-path=${config.homeserver.mainDrive}/k3s/storage"
     ];
   };

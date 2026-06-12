@@ -65,7 +65,7 @@
 
 	import geo_allow_eu_and_na
 
-	forward_auth @needs_sso http://tinyauth.pocketid.svc.cluster.local {
+	forward_auth @needs_sso http://tinyauth.pocketid.svc.k8s.nelyah.eu {
 		uri /api/auth/caddy
 		copy_headers Remote-User Remote-Name Remote-Email Remote-Groups
 		trusted_proxies private_ranges
@@ -165,25 +165,25 @@ cloud.nelyah.eu {
 		close
 	}
 
-	reverse_proxy http://nextcloud-web.nextcloud.svc.cluster.local
+	reverse_proxy http://nextcloud-web.nextcloud.svc.k8s.nelyah.eu
 }
 
 chloe.dequeker.me, blog.nelyah.eu {
 	import security_headers
-	reverse_proxy http://hugo-website.hugo-blog.svc.cluster.local
+	reverse_proxy http://hugo-website.hugo-blog.svc.k8s.nelyah.eu
 }
 
 api.blog.nelyah.eu {
 	import security_headers
 
 	import sso_if_not_whitelist
-	reverse_proxy http://hugo-api.hugo-blog.svc.cluster.local
+	reverse_proxy http://hugo-api.hugo-blog.svc.k8s.nelyah.eu
 }
 
 influxdb.nelyah.eu {
 	import security_headers
 	import sso_if_not_whitelist
-	reverse_proxy http://influxdb.monitoring.svc.cluster.local
+	reverse_proxy http://influxdb.monitoring.svc.k8s.nelyah.eu
 }
 
 music.nelyah.eu {
@@ -192,12 +192,12 @@ music.nelyah.eu {
 	import geo_allow_eu_and_na
 	import rate_limit_path navidrome_login /auth/login 1000 1m
 
-	reverse_proxy http://navidrome.navidrome.svc.cluster.local
+	reverse_proxy http://navidrome.navidrome.svc.k8s.nelyah.eu
 }
 
 prometheus.nelyah.eu {
 	import security_headers
-	reverse_proxy http://prometheus.monitoring.svc.cluster.local
+	reverse_proxy http://prometheus.monitoring.svc.k8s.nelyah.eu
 	import sso_if_not_whitelist
 }
 
@@ -206,7 +206,7 @@ grafana.nelyah.eu {
 	import sso_if_not_whitelist
 
 	# Actual site configuration below, for example
-	reverse_proxy http://grafana.monitoring.svc.cluster.local
+	reverse_proxy http://grafana.monitoring.svc.k8s.nelyah.eu
 }
 
 jellyfin.nelyah.eu {
@@ -217,12 +217,12 @@ jellyfin.nelyah.eu {
 	import rate_limit_path jellyfin_login_qc /Users/AuthenticateWithQuickConnect 1000 1m
 	import rate_limit_path jellyfin_quickconnect /QuickConnect/* 1000 1m
 
-	reverse_proxy http://jellyfin.jellyfin.svc.cluster.local
+	reverse_proxy http://jellyfin.jellyfin.svc.k8s.nelyah.eu
 }
 
 photos.nelyah.eu, immich.nelyah.eu {
 	import security_headers
-	reverse_proxy http://immich-server.immich.svc.cluster.local
+	reverse_proxy http://immich-server.immich.svc.k8s.nelyah.eu
 }
 
 audiobookshelf.nelyah.eu {
@@ -232,7 +232,7 @@ audiobookshelf.nelyah.eu {
 	import rate_limit_path abs_login /login 1000 1m
 
 
-	reverse_proxy http://audiobookshelf.audiobookshelf.svc.cluster.local
+	reverse_proxy http://audiobookshelf.audiobookshelf.svc.k8s.nelyah.eu
 }
 
 pocketid.nelyah.eu {
@@ -241,7 +241,7 @@ pocketid.nelyah.eu {
 	import geo_allow_eu_and_na
 	import rate_limit_site pocketid_global 10000 1m
 
-	reverse_proxy http://pocketid.pocketid.svc.cluster.local
+	reverse_proxy http://pocketid.pocketid.svc.k8s.nelyah.eu
 }
 
 tinyauth.nelyah.eu {
@@ -252,13 +252,13 @@ tinyauth.nelyah.eu {
 	import rate_limit_path tinyauth_oauth_cb /api/oauth/callback/* 1000 1m
 	import rate_limit_path tinyauth_login_ui /login* 1000 1m
 
-	reverse_proxy http://tinyauth.pocketid.svc.cluster.local
+	reverse_proxy http://tinyauth.pocketid.svc.k8s.nelyah.eu
 }
 
 vault.nelyah.eu {
 	import security_headers
 	import sso_if_not_whitelist
-	reverse_proxy http://vault.vault.svc.cluster.local
+	reverse_proxy http://vault.vault.svc.k8s.nelyah.eu
 }
 
 atuin.nelyah.eu {
@@ -267,18 +267,18 @@ atuin.nelyah.eu {
 	import geo_allow_eu_and_na
 	import rate_limit_site atuin_global 100 1m
 
-	reverse_proxy http://atuin.atuin.svc.cluster.local
+	reverse_proxy http://atuin.atuin.svc.k8s.nelyah.eu
 }
 
 uptime-kuma.nelyah.eu {
 	import security_headers
 	import sso_if_not_whitelist
-	reverse_proxy http://uptime-kuma.uptime-kuma.svc.cluster.local
+	reverse_proxy http://uptime-kuma.uptime-kuma.svc.k8s.nelyah.eu
 }
 
 homeassistant.nelyah.eu {
 	import security_headers
-	reverse_proxy http://homeassistant.homeassistant.svc.cluster.local
+	reverse_proxy http://homeassistant.homeassistant.svc.k8s.nelyah.eu
 }
 
 matrix.nelyah.eu {
@@ -291,7 +291,7 @@ matrix.nelyah.eu {
 		max_size 50MB
 	}
 
-	reverse_proxy http://synapse.synapse.svc.cluster.local
+	reverse_proxy http://synapse.synapse.svc.k8s.nelyah.eu
 }
 
 nelyah.eu {

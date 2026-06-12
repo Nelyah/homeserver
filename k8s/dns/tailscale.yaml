@@ -8,5 +8,8 @@ data:
     nelyah.eu:53 {
       errors
       cache 30
+      kubernetes k8s.nelyah.eu in-addr.arpa ip6.arpa {
+        fallthrough in-addr.arpa ip6.arpa
+      }
       forward . 10.42.0.1
     }

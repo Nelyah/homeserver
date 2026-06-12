@@ -78,7 +78,11 @@ in {
       log-queries = true;
       no-resolv = true;
       "cache-size" = 10000;
-      server = public_dns;
+      server =
+        public_dns
+        # Let tailnet clients resolve Kubernetes service names when Tailscale
+        # split DNS sends k8s.nelyah.eu queries to this host's dnsmasq.
+        ++ ["/k8s.nelyah.eu/10.43.0.10"];
       "conf-dir" = "/run/dnsmasq.d";
     };
   };

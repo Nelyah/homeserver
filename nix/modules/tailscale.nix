@@ -7,6 +7,11 @@
   # NixOS-specific: auth key path and monitoring script
   secretsRoot = lib.attrByPath ["homeserver" "paths" "secretsRoot"] "/var/lib/secrets" config;
   authKeyPath = "${secretsRoot}/tailscale-auth-key";
+  kubernetesServiceRoutes = ["10.43.0.0/16"];
+  kubernetesServiceRoutesCsv = lib.concatStringsSep "," kubernetesServiceRoutes;
+  tailscaleUpFlags = lib.escapeShellArgs (
+    ["--advertise-routes=${kubernetesServiceRoutesCsv}"]
+  );
   monitorScript = pkgs.writeShellScript "tailscale-online.sh" ''
     set -euo pipefail
 
@@ -80,7 +85,7 @@
 
         "Stopped")
           printf "%b%s%b\n" "$YELLOW" "tailscale backend stopped; attempting to bring it up" "$RESET"
-          $TAILSCALE up || true
+          $TAILSCALE up ${tailscaleUpFlags} || true
           if wait_for_change "Stopped" 60 "waiting for tailscale to leave Stopped state..."; then
             continue
           else
@@ -100,7 +105,7 @@
             exit 1
           fi
           printf "%b%s%b\n" "$YELLOW" "tailscale needs login; using auth key" "$RESET"
-          $TAILSCALE up --authkey "$key"
+          $TAILSCALE up --authkey "$key" ${tailscaleUpFlags}
           fetch_state
           if [[ "$state" == "Running" ]]; then
             printf "%b%s%b\n" "$GREEN" "tailscale authenticated successfully via auth key" "$RESET"
@@ -124,6 +129,9 @@
           ;;
       esac
     done
+
+    # Keep declared subnet routes applied even if tailscaled was already running.
+    $TAILSCALE set ${tailscaleUpFlags}
 
     # Verify we have an IP address
     ts_ip="$($TAILSCALE ip -4 2>/dev/null | head -n1 || true)"
@@ -164,6 +172,8 @@ in {
 
     # NixOS-only: tailscale-online target and monitoring service
     (lib.mkIf pkgs.stdenv.isLinux {
+      services.tailscale.useRoutingFeatures = "server";
+
       # Target that represents "tailscale is online and authenticated"
       # bindsTo ensures the target stops when the service stops
       systemd.targets.tailscale-online = {
