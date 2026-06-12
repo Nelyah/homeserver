@@ -80,6 +80,7 @@ in {
   systemd.timers = {
     backup = {
       wantedBy = ["timers.target"];
+      unitConfig.X-OnlyManualStart = true;
       timerConfig = {
         OnCalendar = "05:00";
         Persistent = false;
@@ -88,6 +89,7 @@ in {
 
     backup-remote = {
       wantedBy = ["timers.target"];
+      unitConfig.X-OnlyManualStart = true;
       timerConfig = {
         OnCalendar = "Mon 05:00";
         Persistent = false;
