@@ -63,6 +63,7 @@
       dig
       btop
       htop
+      btop
       jq
       lf
       ncdu
