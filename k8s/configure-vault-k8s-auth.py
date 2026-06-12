@@ -386,7 +386,35 @@ def policy_hcl(role: Role) -> str:
     )
 
 
-def sync_vault(vault: Vault, roles: list[Role], *, prune: bool, kubernetes_host: str) -> None:
+def kubernetes_ca_cert(env: dict[str, str]) -> str:
+    cert = run(
+        [
+            "kubectl",
+            "-n",
+            "default",
+            "get",
+            "configmap",
+            "kube-root-ca.crt",
+            "-o",
+            r"jsonpath={.data.ca\.crt}",
+        ],
+        env,
+        capture=True,
+    )
+    cert = cert.strip()
+    if not cert:
+        die("Kubernetes root CA ConfigMap default/kube-root-ca.crt is empty or missing ca.crt")
+    return f"{cert}\n"
+
+
+def sync_vault(
+    vault: Vault,
+    roles: list[Role],
+    *,
+    prune: bool,
+    kubernetes_host: str,
+    kubernetes_ca_cert: str,
+) -> None:
     auths = vault.data("GET", "sys/auth")
     if "kubernetes/" not in auths:
         vault.request("POST", "sys/auth/kubernetes", {"type": "kubernetes"})
@@ -396,6 +424,8 @@ def sync_vault(vault: Vault, roles: list[Role], *, prune: bool, kubernetes_host:
         "auth/kubernetes/config",
         {
             "kubernetes_host": kubernetes_host,
+            "kubernetes_ca_cert": kubernetes_ca_cert,
+            "disable_local_ca_jwt": True,
             "disable_iss_validation": True,
         },
     )
@@ -454,6 +484,7 @@ def apply(roles: list[Role], args: argparse.Namespace, env: dict[str, str]) -> N
                 roles,
                 prune=not args.no_prune,
                 kubernetes_host=args.kubernetes_host,
+                kubernetes_ca_cert=kubernetes_ca_cert(env),
             )
     except VaultError as exc:
         die(str(exc))

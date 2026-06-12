@@ -25,6 +25,9 @@ Deployments that reference changed local images:
 ./k8s/build-local-images.sh
 ```
 
+On `home-stockholm`, NixOS also installs `homeserver-local-image-refresh.timer`
+to run this nightly for local images such as `homeserver/caddy:latest`.
+
 Deploy all Helm releases with:
 
 ```sh

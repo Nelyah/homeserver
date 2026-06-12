@@ -7,6 +7,14 @@ docker_image_id() {
   docker image inspect -f '{{.Id}}' "$1" 2>/dev/null || true
 }
 
+k3s_ctr_import() {
+  if [ "$(id -u)" -eq 0 ]; then
+    k3s ctr images import "$1"
+  else
+    sudo k3s ctr images import "$1"
+  fi
+}
+
 restart_deployments_using_image() {
   local image="$1"
   local deployments
@@ -55,7 +63,7 @@ build_and_import() {
   docker save "$image" -o "$archive"
 
   echo "Importing ${image} into k3s containerd"
-  sudo k3s ctr images import "$archive"
+  k3s_ctr_import "$archive"
 
   rm -f "$archive"
 

@@ -72,13 +72,16 @@ deployments:
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
       volumes:
         - name: homeassistant-matter
           persistentVolumeClaim:
             claimName: homeassistant-matter
       containers:
         - name: matter-server
-          image: ghcr.io/home-assistant-libs/python-matter-server:stable
+          image: ghcr.io/matter-js/matterjs-server:stable
           imagePullPolicy: Always
           env:
             - name: TZ
