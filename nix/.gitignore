@@ -2,6 +2,9 @@
 result
 result-*
 
+# do not track it as it gets updated every day
+flake.lock
+
 # direnv
 .direnv/
 
