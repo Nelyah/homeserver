@@ -18,6 +18,7 @@
   environment.systemPackages = with pkgs; [
     helmfile
     k3s
+    k9s # TUI for kubernetes
     kubectl
     kubernetes-helm
   ];

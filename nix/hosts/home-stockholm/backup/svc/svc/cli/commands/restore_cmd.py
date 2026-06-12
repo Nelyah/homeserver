@@ -3,7 +3,7 @@
 import logging
 
 from ...config import load_restic_env
-from ...core import RestoreOrchestrator, require_root, validate_service
+from ...core import K3sRestoreOrchestrator, RestoreOrchestrator, require_root, validate_service
 from ..args import RestoreArgs
 from .base import AppContext, Command
 
@@ -28,6 +28,27 @@ class RestoreCommand(Command[RestoreArgs]):
         env_vars = load_restic_env(ctx.config.paths.secrets_root, env)
         restic = ctx.create_restic_runner(env_vars)
 
+        ctx.renderer.print_heading(f"Restore: {service_name} ({env})")
+
+        if ctx.dry_run:
+            ctx.renderer.print_warn("Dry run enabled: no changes will be made")
+
+        if svc.name == "k3s":
+            result = await K3sRestoreOrchestrator(
+                restic,
+                dry_run=ctx.dry_run,
+            ).restore_service(
+                svc=svc,
+                snapshot_spec=snapshot_spec,
+                verify_inputs=verify_includes,
+            )
+
+            if result.success:
+                ctx.renderer.print_ok(result.message)
+            else:
+                ctx.renderer.print_error(result.message)
+            return result.exit_code
+
         # Create orchestrator
         orchestrator = RestoreOrchestrator(
             config=ctx.config,
@@ -35,11 +56,6 @@ class RestoreCommand(Command[RestoreArgs]):
             kubernetes=ctx.kubernetes,
             path_resolver=ctx.path_resolver,
         )
-
-        ctx.renderer.print_heading(f"Restore: {service_name} ({env})")
-
-        if ctx.dry_run:
-            ctx.renderer.print_warn("Dry run enabled: no changes will be made")
 
         # Execute restore
         result = await orchestrator.restore_service(
