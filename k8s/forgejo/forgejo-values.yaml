@@ -1,0 +1,252 @@
+name: forgejo
+
+secrets:
+  vaultPath: forgejo
+  includeKeys:
+    - DB_PASSWORD
+    - RUNNER_SECRET
+
+persistentVolumeClaims:
+  - name: forgejo-data
+    storage: 20Gi
+  - name: forgejo-db
+    storage: 5Gi
+
+services:
+  - name: forgejo
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: forgejo
+  - name: forgejo-ssh
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: ssh
+          port: 22
+          targetPort: ssh
+      selector:
+        app: forgejo
+  - name: forgejo-db
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: postgresql
+          port: 5432
+          targetPort: postgres
+      selector:
+        app: forgejo-db
+
+deployments:
+  - name: forgejo
+    replicas: 1
+    spec:
+      volumes:
+        - name: forgejo-data
+          persistentVolumeClaim:
+            claimName: forgejo-data
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+            type: File
+        - name: vault
+          secret:
+            secretName: forgejo
+            items:
+              - key: RUNNER_SECRET
+                path: RUNNER_SECRET
+      initContainers:
+        # Start alongside Forgejo, then register once the first-run install has
+        # created app.ini. The secret-derived UUID makes retries safe.
+        - name: register-runner
+          restartPolicy: Always
+          image: codeberg.org/forgejo/forgejo:15
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              until [ -s /data/gitea/conf/app.ini ]; do sleep 2; done
+              until forgejo forgejo-cli actions register \
+                  --name k8s-runner --scope Nelyah \
+                  --secret-file /vault/RUNNER_SECRET; do
+                echo "Runner registration failed; retrying in 5 seconds" >&2
+                sleep 5
+              done
+              while :; do sleep 86400; done
+          volumeMounts:
+            - mountPath: /data
+              name: forgejo-data
+            - mountPath: /vault
+              name: vault
+              readOnly: true
+      containers:
+        - name: forgejo
+          image: codeberg.org/forgejo/forgejo:15
+          imagePullPolicy: Always
+          env:
+            - name: USER_UID
+              value: "1000"
+            - name: USER_GID
+              value: "1000"
+            - name: FORGEJO__database__DB_TYPE
+              value: postgres
+            - name: FORGEJO__database__HOST
+              value: forgejo-db:5432
+            - name: FORGEJO__database__NAME
+              value: forgejo
+            - name: FORGEJO__database__USER
+              value: forgejo
+            - name: FORGEJO__database__PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo
+                  key: DB_PASSWORD
+            - name: FORGEJO__server__DOMAIN
+              value: git.nelyah.eu
+            - name: FORGEJO__server__ROOT_URL
+              value: https://git.nelyah.eu/
+            - name: FORGEJO__server__SSH_DOMAIN
+              value: forgejo-ssh.forgejo.svc.k8s.nelyah.eu
+            - name: FORGEJO__server__SSH_PORT
+              value: "22"
+            - name: FORGEJO__service__DISABLE_REGISTRATION
+              value: "true"
+          volumeMounts:
+            - mountPath: /data
+              name: forgejo-data
+            - mountPath: /etc/localtime
+              name: localtime
+              readOnly: true
+          ports:
+            - containerPort: 3000
+              name: http
+            - containerPort: 22
+              name: ssh
+
+  - name: forgejo-db
+    replicas: 1
+    spec:
+      volumes:
+        - name: forgejo-db
+          persistentVolumeClaim:
+            claimName: forgejo-db
+      containers:
+        - name: postgres
+          image: postgres:14
+          imagePullPolicy: Always
+          env:
+            - name: POSTGRES_USER
+              value: forgejo
+            - name: POSTGRES_DB
+              value: forgejo
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo
+                  key: DB_PASSWORD
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: forgejo-db
+          ports:
+            - containerPort: 5432
+              name: postgres
+
+  - name: forgejo-runner
+    replicas: 1
+    labels:
+      homeserver.nelyah.eu/image-refresh: "false"
+    spec:
+      securityContext:
+        fsGroup: 1000
+      volumes:
+        - name: vault
+          secret:
+            secretName: forgejo
+            items:
+              - key: RUNNER_SECRET
+                path: RUNNER_SECRET
+        - name: runner-data
+          emptyDir:
+            sizeLimit: 5Gi
+        - name: docker-storage
+          emptyDir:
+            sizeLimit: 20Gi
+      initContainers:
+        # Name dockerd so its entrypoint does not add a public TCP listener.
+        - name: dind
+          restartPolicy: Always
+          image: docker.io/library/docker:29.7.2-dind@sha256:12e683a161823b2a839aeea999b9d960e6e1f9a97b1679ad6b441982e2d9cf07
+          imagePullPolicy: IfNotPresent
+          args:
+            - dockerd
+            - --host=unix:///var/run/docker.sock
+            - --host=tcp://127.0.0.1:2375
+            - --tls=false
+            # Match the k3s pod network to avoid PMTU black holes in job containers.
+            - --mtu=1450
+            - --default-network-opt=bridge=com.docker.network.driver.mtu=1450
+          securityContext:
+            # DinD manages overlayfs, iptables, and cgroups.
+            privileged: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "3"
+              memory: 6Gi
+          volumeMounts:
+            - mountPath: /var/lib/docker
+              name: docker-storage
+      containers:
+        - name: runner
+          image: data.forgejo.org/forgejo/runner:12.13.2@sha256:eb6e7bc21973382d261e6eb883dbd27b8cb56939d33a3bfd79a1352b7f9a33a0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DOCKER_HOST
+              value: tcp://127.0.0.1:2375
+          # Forgejo derives the runner UUID from the first 16 secret bytes.
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              until nc -z 127.0.0.1 2375; do sleep 1; done
+              UUID=$(head -c16 /vault/RUNNER_SECRET | od -An -tx1 | tr -d ' \n' \
+                     | sed 's/^\(.\{8\}\)\(.\{4\}\)\(.\{4\}\)\(.\{4\}\)/\1-\2-\3-\4-/')
+              exec forgejo-runner daemon \
+                --url http://forgejo.forgejo.svc.k8s.nelyah.eu/ \
+                --uuid "$UUID" \
+                --token-url file:/vault/RUNNER_SECRET \
+                --label docker:docker://node:22-bookworm \
+                --label ubuntu-latest:docker://node:22-bookworm \
+                --label nix:docker://nixos/nix:2.35.1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - mountPath: /vault
+              name: vault
+              readOnly: true
+            - mountPath: /data
+              name: runner-data

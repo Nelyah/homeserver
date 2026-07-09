@@ -27,6 +27,14 @@ releases:
     values:
       - ./audiobookshelf/audiobookshelf-values.yaml
 
+  - name: forgejo
+    namespace: forgejo
+    chart: ./charts/app
+    needs:
+      - vault/vault
+    values:
+      - ./forgejo/forgejo-values.yaml
+
   - name: homeassistant
     namespace: homeassistant
     chart: ./charts/app
@@ -115,6 +123,7 @@ releases:
     needs:
       - atuin/atuin
       - audiobookshelf/audiobookshelf
+      - forgejo/forgejo
       - homeassistant/homeassistant
       - hugo-blog/hugo-blog
       - immich/immich

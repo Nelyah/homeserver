@@ -29,7 +29,7 @@
     };
 
     codex-acp-nix = {
-      url = "git+ssh://git@forgejo-ssh.forgejo.svc.k8s.nelyah.eu/Nelyah/codex-acp-nix.git";
+      url = "git+ssh://git@forgejo-ssh.forgejo.svc.k8s.nelyah.eu/Nelyah/codex-acp-nix.git?ref=main";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 

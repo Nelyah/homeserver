@@ -235,6 +235,19 @@ audiobookshelf.nelyah.eu {
 	reverse_proxy http://audiobookshelf.audiobookshelf.svc.k8s.nelyah.eu
 }
 
+git.nelyah.eu {
+	import security_headers
+
+	import sso_if_not_whitelist
+	import rate_limit_path forgejo_login /user/login* 1000 1m
+
+	request_body {
+		max_size 512MB
+	}
+
+	reverse_proxy http://forgejo.forgejo.svc.k8s.nelyah.eu
+}
+
 pocketid.nelyah.eu {
 	import security_headers
 
