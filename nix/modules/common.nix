@@ -76,12 +76,14 @@
 
       # Version control
       git
-      pre-commit
       tig
       yadm
 
+      ollama
+
       # Editors
       neovim
+      emacs
 
       # Build tools
       cmake
@@ -91,7 +93,10 @@
       gnumake
       pkg-config
       ninja
+      pyright
       ruff
+      docker
+      devcontainer
 
       # Languages & runtimes
       go
@@ -131,10 +136,14 @@
       yarn
     ]
     ++ (with pkgs.unstable; [
-      codex
       claude-code
-      claude-agent-acp
-    ]);
+      cursor-cli
+    ])
+    ++ [
+      pkgs.claude-agent-acp
+      inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default
+      inputs.codex-acp-nix.packages.${pkgs.stdenv.hostPlatform.system}.default
+    ];
 
   # Enable zsh on all hosts
   programs.zsh.enable = true;

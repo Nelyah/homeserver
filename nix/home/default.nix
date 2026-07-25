@@ -3,6 +3,7 @@
   username,
   lib,
   config,
+  gitConfigUser,
   ...
 }: {
   home = {
@@ -34,6 +35,11 @@
   home.activation.createScreenshotsDir = lib.hm.dag.entryAfter ["writeBoundary"] ''
     mkdir -p "${config.home.homeDirectory}/Pictures/screenshots"
   '';
+
+  home.file.".gitconfig-user" = {
+    text = gitConfigUser;
+    force = true;
+  };
 
   # Let Home Manager manage itself
   programs.home-manager.enable = true;

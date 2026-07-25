@@ -1,4 +1,9 @@
-{pkgs, config, ...}: {
+{
+  pkgs,
+  config,
+  gitUser,
+  ...
+}: {
   # Shared NixOS server config (boot, users, locale, security, auto-updates)
 
   boot.loader.systemd-boot.enable = true;
@@ -47,6 +52,7 @@
     enable = true;
     config = {
       safe.directory = "${config.server.repoRoot}";
+      user = gitUser;
     };
   };
 
@@ -64,5 +70,4 @@
     ];
     allowReboot = true;
   };
-
 }

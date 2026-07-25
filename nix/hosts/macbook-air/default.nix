@@ -1,4 +1,4 @@
-{username, ...}: {
+{username, pkgs, ...}: {
   imports = [
     ./homebrew.nix
   ];
@@ -16,4 +16,9 @@
   ];
 
   home-manager.users.${username} = import ../../home;
+
+  environment.systemPackages = with pkgs;
+    [
+      whisky
+    ];
 }

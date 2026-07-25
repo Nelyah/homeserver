@@ -24,6 +24,20 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    ghostty = {
+      url = "github:Nelyah/ghostty";
+    };
+
+    codex-acp-nix = {
+      url = "git+ssh://git@forgejo-ssh.forgejo.svc.k8s.nelyah.eu/Nelyah/codex-acp-nix.git";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+
+    claude-agent-acp-nix = {
+      url = "github:Nelyah/claude-agent-acp-nix";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+
     nix-darwin = {
       # Use the default nix-darwin, following nixpkgs for compatibility
       url = "github:LnL7/nix-darwin/nix-darwin-26.05";
@@ -32,8 +46,12 @@
 
     # Pinned independently so neovim version is controlled separately from nixpkgs.
     # To upgrade: find the nixpkgs commit for the desired neovim version and update this URL.
-    # neovim 0.11.6 commit: fda6b0917a502c8198ef2de613dbad0efa411dca
-    nixpkgs-neovim.url = "github:NixOS/nixpkgs/fda6b0917a502c8198ef2de613dbad0efa411dca";
+    #
+    # To find the commit, run this:
+    # curl -s "https://api.github.com/repos/NixOS/nixpkgs/commits?path=pkgs/by-name/ne/neovim-unwrapped/package.nix&per_page=30" | jq -r '.[] | "\(.sha) \(.commit.message | split("\n")[0])"'
+
+    # nvim 0.12.1
+    nixpkgs-neovim.url = "github:NixOS/nixpkgs/c02cfe212c24ca37f644cb6580e88d4283094fe4";
   };
 
   outputs = inputs @ {
@@ -46,6 +64,16 @@
   }: let
     darwinSystem = "aarch64-darwin";
     linuxSystem = "x86_64-linux";
+    defaultGitUser = {
+      name = "Nelyah";
+      email = "contact@nelyah.eu";
+    };
+    gitConfigUserFor = gitUser: ''
+      [user]
+      	name = ${gitUser.name}
+      	email = ${gitUser.email}
+    '';
+    defaultGitConfigUser = gitConfigUserFor defaultGitUser;
     # Shared overlay that makes nixpkgs-unstable available as pkgs.unstable
     unstableOverlay = system: {
       nixpkgs.overlays = [
@@ -61,11 +89,23 @@
     neovimOverlay = system: {
       nixpkgs.overlays = [
         (_final: _prev: {
-          neovim = (import inputs.nixpkgs-neovim {
-            system = system;
-            config.allowUnfree = true;
-          }).neovim;
+          neovim =
+            (import inputs.nixpkgs-neovim {
+              system = system;
+              config.allowUnfree = true;
+            }).neovim;
         })
+      ];
+    };
+
+    ghosttyOverlay = system: {
+      nixpkgs.overlays = [
+        (
+          _final: _prev:
+            nixpkgs.lib.optionalAttrs (inputs.ghostty.packages.${system} ? ghostty) {
+              ghostty = inputs.ghostty.packages.${system}.ghostty;
+            }
+        )
       ];
     };
 
@@ -73,13 +113,19 @@
       hostname,
       username,
       hostPath,
+      gitConfigUser ? defaultGitConfigUser,
     }:
       nix-darwin.lib.darwinSystem {
         system = darwinSystem;
-        specialArgs = {inherit inputs username hostname;};
+        specialArgs = {
+          inherit inputs username hostname;
+          ghosttyPrebuilt = inputs.ghostty.packages.${darwinSystem} ? ghostty;
+        };
         modules = [
           (unstableOverlay darwinSystem)
           (neovimOverlay darwinSystem)
+          (ghosttyOverlay darwinSystem)
+          {nixpkgs.overlays = [inputs.claude-agent-acp-nix.overlays.default];}
           hostPath
           ./modules/common.nix
           ./modules/darwin.nix
@@ -88,9 +134,27 @@
             home-manager = {
               useGlobalPkgs = true;
               useUserPackages = true;
-              extraSpecialArgs = {inherit username;};
+              extraSpecialArgs = {inherit username gitConfigUser;};
             };
           }
+        ];
+      };
+
+    mkNixosHost = {
+      hostPath,
+      gitUser ? defaultGitUser,
+    }:
+      nixpkgs.lib.nixosSystem {
+        system = linuxSystem;
+        specialArgs = {inherit inputs gitUser;};
+        modules = [
+          (unstableOverlay linuxSystem)
+          (neovimOverlay linuxSystem)
+          {nixpkgs.overlays = [inputs.claude-agent-acp-nix.overlays.default];}
+          hostPath
+          ./modules/common.nix
+          ./modules/server.nix
+          ./modules/tailscale.nix
         ];
       };
   in {
@@ -104,32 +168,18 @@
       hostname = "cdequeker-macbook-pro";
       username = "cdequeker";
       hostPath = ./hosts/work-macbook;
+      gitConfigUser = ''
+        [include]
+        	path = ~/.gitconfig-work-user
+      '';
     };
 
-    nixosConfigurations.home-stockholm = nixpkgs.lib.nixosSystem {
-      system = linuxSystem;
-      specialArgs = {inherit inputs;};
-      modules = [
-        (unstableOverlay linuxSystem)
-        (neovimOverlay linuxSystem)
-        ./hosts/home-stockholm
-        ./modules/common.nix
-        ./modules/server.nix
-        ./modules/tailscale.nix
-      ];
+    nixosConfigurations.home-stockholm = mkNixosHost {
+      hostPath = ./hosts/home-stockholm;
     };
 
-    nixosConfigurations.home-paris = nixpkgs.lib.nixosSystem {
-      system = linuxSystem;
-      specialArgs = {inherit inputs;};
-      modules = [
-        (unstableOverlay linuxSystem)
-        (neovimOverlay linuxSystem)
-        ./hosts/home-paris
-        ./modules/common.nix
-        ./modules/server.nix
-        ./modules/tailscale.nix
-      ];
+    nixosConfigurations.home-paris = mkNixosHost {
+      hostPath = ./hosts/home-paris;
     };
 
     apps.${darwinSystem} = {
@@ -151,7 +201,9 @@
         program = toString (
           nixpkgs.legacyPackages.${darwinSystem}.writeShellScript "ansible-deploy" ''
             cd "$(${nixpkgs.legacyPackages.${darwinSystem}.git}/bin/git rev-parse --show-toplevel)/nix/ansible"
-            ${nixpkgs.legacyPackages.${darwinSystem}.ansible}/bin/ansible-playbook -i inventory.yml site.yml "$@"
+            ${
+              nixpkgs.legacyPackages.${darwinSystem}.ansible
+            }/bin/ansible-playbook -i inventory.yml site.yml "$@"
           ''
         );
       };

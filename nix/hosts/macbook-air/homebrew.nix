@@ -26,12 +26,12 @@
       "easy-move+resize"
       "firefox"
       "font-hack-nerd-font"
-      # "ghostty" # built from custom fork via activation script
       "iterm2"
       "karabiner-elements"
       "obsidian"
       "raycast"
       "spotify"
+      "qbittorrent"
       "tailscale-app"
       "telegram-desktop"
       "ticktick"

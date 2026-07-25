@@ -1,7 +1,6 @@
 {
   pkgs,
   config,
-  inputs,
   ...
 }: {
   server.repoRoot = "/data/homeserver";
@@ -43,7 +42,6 @@
 	      # Development
 	      python3Packages.pip
 	    ])
-	    ++ [inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default]
       ++ (with pkgs.unstable; [beets]);
 
   environment.variables = {
