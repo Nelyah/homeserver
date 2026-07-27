@@ -61,6 +61,7 @@
       fd
       fzf
       dig
+      btop
       htop
       jq
       lf
