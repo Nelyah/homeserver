@@ -97,8 +97,6 @@ class ResticRunner:
         if policy.yearly is not None:
             args.extend(["--keep-yearly", str(policy.yearly)])
 
-        args.append("--prune")
-
         for tag in tags:
             args.extend(["--tag", tag])
 

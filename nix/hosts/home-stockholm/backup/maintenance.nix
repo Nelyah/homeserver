@@ -20,6 +20,7 @@
       inherit description script;
       serviceConfig = {
         Type = "oneshot";
+        TimeoutStartSec = "12h";
         EnvironmentFile = resticEnv env;
         OnFailure = "pushover-notify@%n.service";
       };
@@ -49,6 +50,20 @@
         description = "Restic repository integrity check (remote)";
         calendar = "*-*-02 12:00:00";
         script = "${resticCmd} check";
+      })
+      (mkMaint {
+        name = "prune-backup";
+        env = "local";
+        description = "Restic repository prune (local)";
+        calendar = "Sun 03:00:00";
+        script = "${resticCmd} prune";
+      })
+      (mkMaint {
+        name = "prune-backup-remote";
+        env = "remote";
+        description = "Restic repository prune (remote)";
+        calendar = "*-*-08 12:00:00";
+        script = "${resticCmd} prune --max-unused 10%";
       })
       (mkMaint {
         name = "check-backup-data";
