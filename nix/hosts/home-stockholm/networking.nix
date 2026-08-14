@@ -23,6 +23,14 @@ in {
     5540 # Matter commissioning
   ];
 
+  # OTBR creates this interface for the authenticated Thread mesh. Trusting it
+  # lets sleeping devices report back even after Linux has forgotten an idle flow.
+  networking.firewall.trustedInterfaces = ["wpan0"];
+
+  # Battery-powered Matter devices can sleep long enough for Linux to forget
+  # their connection, causing the next button press to be dropped by the firewall
+  boot.kernel.sysctl."net.netfilter.nf_conntrack_udp_timeout_stream" = 3600;
+
   # Homeserver-specific fail2ban ignore (LAN)
   services.fail2ban.ignoreIP = ["192.168.1.0/24"];
 

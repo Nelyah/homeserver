@@ -4,8 +4,8 @@
     enable = true;
     kubernetes = {
       namespace = "homeassistant";
-      deployments = ["homeassistant" "matter-server"];
-      pvcs = ["homeassistant-config" "homeassistant-matter"];
+      deployments = ["homeassistant" "matter-server" "otbr"];
+      pvcs = ["homeassistant-config" "homeassistant-matter" "homeassistant-otbr"];
     };
   };
 }

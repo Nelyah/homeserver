@@ -1,0 +1,18 @@
+FROM docker.io/library/golang:1.26.5-alpine@sha256:111d79159b2326f7e80c4a4706e1ba166acb0e2611df853955f3621828cd49e8 AS build
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY *.go ./
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -mod=readonly -trimpath -ldflags="-s -w -buildid=" -o /out/zigbee-device-plugin .
+
+FROM scratch
+
+COPY --from=build /out/zigbee-device-plugin /zigbee-device-plugin
+
+USER 0:0
+ENTRYPOINT ["/zigbee-device-plugin"]
+

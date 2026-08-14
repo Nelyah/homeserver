@@ -1,0 +1,7 @@
+apiVersion: v2
+name: zigbee-device-plugin
+description: Minimal device plugin for the home-stockholm Zigbee coordinator
+type: application
+version: 0.1.0
+appVersion: "1"
+

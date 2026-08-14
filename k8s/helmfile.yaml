@@ -35,11 +35,23 @@ releases:
     values:
       - ./forgejo/forgejo-values.yaml
 
+  - name: zigbee-device-plugin
+    namespace: kube-system
+    chart: ./zigbee-device-plugin
+
+  - name: thread-device-plugin
+    namespace: kube-system
+    chart: ./zigbee-device-plugin
+    values:
+      - ./zigbee-device-plugin/thread-values.yaml
+
   - name: homeassistant
     namespace: homeassistant
     chart: ./charts/app
     needs:
       - vault/vault
+      - kube-system/zigbee-device-plugin
+      - kube-system/thread-device-plugin
     values:
       - ./homeassistant/homeassistant-values.yaml
 

@@ -1,0 +1,24 @@
+image:
+  repository: homeserver/zigbee-device-plugin
+  tag: v1
+  pullPolicy: Never
+
+device:
+  resourceName: nelyah.eu/zigbee
+  id: 7cfb165fcd8aef11922220ccef8776e9
+  hostPath: /dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_7cfb165fcd8aef11922220ccef8776e9-if00-port0
+  healthPath: /host-dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_7cfb165fcd8aef11922220ccef8776e9-if00-port0
+  containerPath: /dev/zigbee
+  socketName: nelyah-zigbee.sock
+  lockName: nelyah-zigbee.lock
+
+nodeSelector:
+  kubernetes.io/hostname: home-stockholm
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 10Mi
+  limits:
+    cpu: 50m
+    memory: 30Mi
