@@ -1,39 +1,19 @@
 ---
+# Keep downloads and libraries on one filesystem so imports use hardlinks.
+# Before deploying, migrate the existing library into /data/media/{movies,tv}.
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: movies
+  name: media
 spec:
   capacity:
-    storage: 1Ti
+    storage: 2Ti
   accessModes:
     - ReadWriteOnce
   storageClassName: ""
   persistentVolumeReclaimPolicy: Retain
   local:
-    path: /data/Movies
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: kubernetes.io/hostname
-              operator: In
-              values:
-                - home-stockholm
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: tv-shows
-spec:
-  capacity:
-    storage: 1Ti
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: ""
-  persistentVolumeReclaimPolicy: Retain
-  local:
-    path: /data/TvShows
+    path: /data/media
   nodeAffinity:
     required:
       nodeSelectorTerms:

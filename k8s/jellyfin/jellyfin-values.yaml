@@ -1,28 +1,39 @@
 name: jellyfin
 
+# VPN credentials for gluetun.
+secrets:
+  enabled: true
+  vaultPath: jellyfin
+  includeKeys:
+    - WIREGUARD_PRIVATE_KEY
+
 persistentVolumeClaims:
   - name: jellyfin-config
     storage: 2Gi
   - name: jellyfin-cache
     storage: 1Gi
-  - name: jellyfin-movies
+  # One volume lets Sonarr and Radarr hardlink downloads into the library.
+  - name: media
     spec:
-      volumeName: movies
+      volumeName: media
       storageClassName: ""
       resources:
         requests:
-          storage: 1Ti
+          storage: 2Ti
       accessModes:
         - ReadWriteOnce
-  - name: jellyfin-tv-shows
-    spec:
-      volumeName: tv-shows
-      storageClassName: ""
-      resources:
-        requests:
-          storage: 1Ti
-      accessModes:
-        - ReadWriteOnce
+  - name: prowlarr-config
+    storage: 1Gi
+  - name: sonarr-config
+    storage: 2Gi
+  - name: radarr-config
+    storage: 2Gi
+  - name: bazarr-config
+    storage: 1Gi
+  - name: qbittorrent-config
+    storage: 1Gi
+  - name: jellyseerr-config
+    storage: 1Gi
 
 services:
   - name: jellyfin
@@ -34,6 +45,60 @@ services:
           targetPort: http
       selector:
         app: jellyfin
+  - name: prowlarr
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: prowlarr
+  - name: sonarr
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: sonarr
+  - name: radarr
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: radarr
+  - name: bazarr
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: bazarr
+  - name: qbittorrent
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: qbittorrent
+  - name: jellyseerr
+    spec:
+      type: ClusterIP
+      ports:
+        - appProtocol: http
+          port: 80
+          targetPort: http
+      selector:
+        app: jellyseerr
 
 deployments:
   - name: jellyfin
@@ -43,6 +108,7 @@ deployments:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
       volumes:
         - name: jellyfin-config
           persistentVolumeClaim:
@@ -50,28 +116,364 @@ deployments:
         - name: jellyfin-cache
           persistentVolumeClaim:
             claimName: jellyfin-cache
-        - name: jellyfin-movies
+        - name: media
           persistentVolumeClaim:
-            claimName: jellyfin-movies
-        - name: jellyfin-tv-shows
-          persistentVolumeClaim:
-            claimName: jellyfin-tv-shows
+            claimName: media
       containers:
         - name: jellyfin
           image: jellyfin/jellyfin
           imagePullPolicy: Always
+          # Keep the existing Jellyfin library paths on the shared media volume.
           volumeMounts:
             - mountPath: /config
               name: jellyfin-config
             - mountPath: /cache
               name: jellyfin-cache
             - mountPath: /movies
-              name: jellyfin-movies
+              name: media
+              subPath: movies
             - mountPath: /tv_shows
-              name: jellyfin-tv-shows
+              name: media
+              subPath: tv
           ports:
             - containerPort: 8096
               name: http
 
-secrets:
-  enabled: false
+  # Prowlarr
+  # Indexer manager: one place to configure indexers; syncs them to Sonarr/Radarr.
+  - name: prowlarr
+    replicas: 1
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+      volumes:
+        - name: prowlarr-config
+          persistentVolumeClaim:
+            claimName: prowlarr-config
+        - name: tmp
+          emptyDir: {}
+      containers:
+        - name: prowlarr
+          image: ghcr.io/home-operations/prowlarr:rolling
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: TZ
+              value: Europe/Stockholm
+            - name: PROWLARR__AUTH__AUTHENTICATIONMETHOD
+              value: External
+            - name: PROWLARR__AUTH__AUTHENTICATIONREQUIRED
+              value: DisabledForLocalAddresses
+          volumeMounts:
+            - name: prowlarr-config
+              mountPath: /config
+            - name: tmp
+              mountPath: /tmp
+          ports:
+            - containerPort: 9696
+              name: http
+
+  - name: sonarr
+    replicas: 1
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      volumes:
+        - name: sonarr-config
+          persistentVolumeClaim:
+            claimName: sonarr-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: media
+        - name: tmp
+          emptyDir: {}
+      containers:
+        - name: sonarr
+          image: ghcr.io/home-operations/sonarr:rolling
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: TZ
+              value: Europe/Stockholm
+            - name: SONARR__AUTH__AUTHENTICATIONMETHOD
+              value: External
+            - name: SONARR__AUTH__AUTHENTICATIONREQUIRED
+              value: DisabledForLocalAddresses
+          # UI paths: root /data/media/tv, downloads /data/media/downloads.
+          volumeMounts:
+            - name: sonarr-config
+              mountPath: /config
+            - name: media
+              mountPath: /data/media
+            - name: tmp
+              mountPath: /tmp
+          ports:
+            - containerPort: 8989
+              name: http
+
+  - name: radarr
+    replicas: 1
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      volumes:
+        - name: radarr-config
+          persistentVolumeClaim:
+            claimName: radarr-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: media
+        - name: tmp
+          emptyDir: {}
+      containers:
+        - name: radarr
+          image: ghcr.io/home-operations/radarr:rolling
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: TZ
+              value: Europe/Stockholm
+            - name: RADARR__AUTH__AUTHENTICATIONMETHOD
+              value: External
+            - name: RADARR__AUTH__AUTHENTICATIONREQUIRED
+              value: DisabledForLocalAddresses
+          # UI paths: root /data/media/movies, downloads /data/media/downloads.
+          volumeMounts:
+            - name: radarr-config
+              mountPath: /config
+            - name: media
+              mountPath: /data/media
+            - name: tmp
+              mountPath: /tmp
+          ports:
+            - containerPort: 7878
+              name: http
+
+  # Bazarr
+  - name: bazarr
+    replicas: 1
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      volumes:
+        - name: bazarr-config
+          persistentVolumeClaim:
+            claimName: bazarr-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: media
+        - name: tmp
+          emptyDir: {}
+      containers:
+        - name: bazarr
+          image: ghcr.io/home-operations/bazarr:rolling
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: TZ
+              value: Europe/Stockholm
+          # Library paths: /data/media/movies and /data/media/tv.
+          volumeMounts:
+            - name: bazarr-config
+              mountPath: /config
+            - name: media
+              mountPath: /data/media
+            - name: tmp
+              mountPath: /tmp
+          ports:
+            - containerPort: 6767
+              name: http
+
+  # qBittorrent shares gluetun's network namespace, forcing traffic through the VPN.
+  - name: qbittorrent
+    replicas: 1
+    spec:
+      # Avoid cluster search suffixes; wildcard DNS would resolve them to this host.
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      volumes:
+        - name: qbittorrent-config
+          persistentVolumeClaim:
+            claimName: qbittorrent-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: media
+        - name: tmp
+          emptyDir: {}
+        - name: dev-net-tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
+      containers:
+        - name: gluetun
+          # v3.40.4 avoids the v3.41 ProtonVPN regression (issues #3021 and #3134).
+          image: qmcgaw/gluetun:v3.40.4
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            # Required to create and manage the VPN interface.
+            capabilities:
+              add:
+                - NET_ADMIN
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value: protonvpn
+            - name: VPN_TYPE
+              value: wireguard
+            - name: WIREGUARD_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: jellyfin
+                  key: WIREGUARD_PRIVATE_KEY
+            - name: WIREGUARD_ADDRESSES
+              value: 10.2.0.2/32
+            # Route only IPv4 so gluetun can use the smaller MTU below.
+            - name: WIREGUARD_ALLOWED_IPS
+              value: 0.0.0.0/0
+            # Leave room for WireGuard overhead within the pod network's 1450 MTU.
+            - name: WIREGUARD_MTU
+              value: "1320"
+            - name: SERVER_COUNTRIES
+              value: Netherlands
+            # Request a ProtonVPN port and keep qBittorrent's listen port in sync.
+            - name: PORT_FORWARD_ONLY
+              value: "on"
+            - name: VPN_PORT_FORWARDING
+              value: "on"
+            - name: VPN_PORT_FORWARDING_PROVIDER
+              value: protonvpn
+            # Gluetun fills {{PORTS}}; retry while qBittorrent starts.
+            - name: VPN_PORT_FORWARDING_UP_COMMAND
+              value: |-
+                /bin/sh -c 'for i in $(seq 1 60); do wget -q -O /dev/null --post-data "json={\"listen_port\":{{PORTS}},\"current_network_interface\":\"tun0\",\"random_port\":false,\"upnp\":false}" http://127.0.0.1:8080/api/v2/app/setPreferences; wget -q -O - http://127.0.0.1:8080/api/v2/app/preferences | grep -q "\"listen_port\":{{PORTS}}," && exit 0; sleep 5; done; echo "listen_port not applied after 60 tries" >&2; exit 1'
+            # Clear the port without disconnecting; gluetun's kill switch remains active.
+            - name: VPN_PORT_FORWARDING_DOWN_COMMAND
+              value: |-
+                /bin/sh -c 'wget -q -O /dev/null --post-data "json={\"listen_port\":0}" http://127.0.0.1:8080/api/v2/app/setPreferences'
+            - name: FIREWALL_INPUT_PORTS
+              value: "8080"
+            - name: FIREWALL_OUTBOUND_SUBNETS
+              value: 10.42.0.0/16,10.43.0.0/16
+            - name: VPN_IPV6_SERVER
+              value: "off"
+            # ProtonVPN rejects encrypted DNS; plain DNS still stays inside the tunnel.
+            - name: DNS_UPSTREAM_RESOLVER_TYPE
+              value: plain
+            - name: TZ
+              value: Europe/Stockholm
+          volumeMounts:
+            - name: dev-net-tun
+              mountPath: /dev/net/tun
+          # Restore the MTU after gluetun creates tun0.
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    for i in $(seq 1 60); do ip link show tun0 >/dev/null 2>&1 && break; sleep 1; done
+                    ip link set tun0 mtu 1320 || true
+        - name: qbittorrent
+          image: ghcr.io/home-operations/qbittorrent:rolling
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: TZ
+              value: Europe/Stockholm
+          # One-time qBittorrent settings:
+          # - Web UI server domain: qbittorrent.nelyah.eu
+          # - Save and incomplete paths: /data/media/downloads
+          # - Allow 10.42.0.0/16 and bypass authentication for localhost
+          volumeMounts:
+            - name: qbittorrent-config
+              mountPath: /config
+            - name: media
+              mountPath: /data/media/downloads
+              subPath: downloads
+            - name: tmp
+              mountPath: /tmp
+          ports:
+            - containerPort: 8080
+              name: http
+
+  # Jellyseerr
+  - name: jellyseerr
+    replicas: 1
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+      volumes:
+        - name: jellyseerr-config
+          persistentVolumeClaim:
+            claimName: jellyseerr-config
+      containers:
+        - name: jellyseerr
+          image: ghcr.io/fallenbagel/jellyseerr:latest
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: TZ
+              value: Europe/Stockholm
+          volumeMounts:
+            - name: jellyseerr-config
+              mountPath: /app/config
+          ports:
+            - containerPort: 5055
+              name: http

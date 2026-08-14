@@ -220,6 +220,43 @@ jellyfin.nelyah.eu {
 	reverse_proxy http://jellyfin.jellyfin.svc.k8s.nelyah.eu
 }
 
+# The *arr services are tailnet-only; Jellyfin remains public.
+prowlarr.nelyah.eu {
+	import security_headers
+	import restrict_to_lan
+	reverse_proxy http://prowlarr.jellyfin.svc.k8s.nelyah.eu
+}
+
+sonarr.nelyah.eu {
+	import security_headers
+	import restrict_to_lan
+	reverse_proxy http://sonarr.jellyfin.svc.k8s.nelyah.eu
+}
+
+radarr.nelyah.eu {
+	import security_headers
+	import restrict_to_lan
+	reverse_proxy http://radarr.jellyfin.svc.k8s.nelyah.eu
+}
+
+bazarr.nelyah.eu {
+	import security_headers
+	import restrict_to_lan
+	reverse_proxy http://bazarr.jellyfin.svc.k8s.nelyah.eu
+}
+
+qbittorrent.nelyah.eu {
+	import security_headers
+	import restrict_to_lan
+	reverse_proxy http://qbittorrent.jellyfin.svc.k8s.nelyah.eu
+}
+
+jellyseerr.nelyah.eu {
+	import security_headers
+	import restrict_to_lan
+	reverse_proxy http://jellyseerr.jellyfin.svc.k8s.nelyah.eu
+}
+
 photos.nelyah.eu, immich.nelyah.eu {
 	import security_headers
 	reverse_proxy http://immich-server.immich.svc.k8s.nelyah.eu
