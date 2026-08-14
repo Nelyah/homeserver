@@ -4,6 +4,7 @@ svc - Service backup and restore CLI tool
 
 Commands:
   svc backup <local|remote> <service|all>
+  svc logs <local|remote>
   svc restore <local|remote> <service> [latest|SNAPSHOT_ID]
   svc list
   svc list-backups <local|remote> <service>

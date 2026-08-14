@@ -17,6 +17,7 @@ import click
 from click.shell_completion import CompletionItem
 
 from ..config import load_config
+from ..controllers import SystemctlController
 from .args import (
     BackupArgs,
     ListArgs,
@@ -162,6 +163,18 @@ def list_cmd(ctx: click.Context, backup_env: str) -> None:
 def list_backups_cmd(ctx: click.Context, env: str, service: str) -> None:
     """List restic snapshots for a service."""
     _run_command(ctx, ListBackupsCommand(), ListBackupsArgs(env=env, service=service))
+
+
+@cli.command("logs")
+@click.argument("env", type=click.Choice(["local", "remote"], case_sensitive=False))
+def logs_cmd(env: str) -> None:
+    """Show logs for scheduled backups."""
+    unit = "backup.service" if env == "local" else "backup-remote.service"
+    try:
+        exit_code = asyncio.run(SystemctlController().logs(unit))
+        raise click.exceptions.Exit(exit_code)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        raise click.exceptions.Exit(130) from None
 
 
 @cli.command("backup")

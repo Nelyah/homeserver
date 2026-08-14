@@ -14,6 +14,13 @@ class SystemctlController:
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run
         self.systemctl = "/run/current-system/sw/bin/systemctl"
+        self.journalctl = "/run/current-system/sw/bin/journalctl"
+
+    async def logs(self, unit: str) -> int:
+        """Show all retained logs for a unit, preserving journalctl's pager."""
+        proc = await asyncio.create_subprocess_exec(self.journalctl, "--unit", unit)
+        await proc.wait()
+        return proc.returncode or 0
 
     async def _run(
         self, args: list[str], capture_output: bool = False
