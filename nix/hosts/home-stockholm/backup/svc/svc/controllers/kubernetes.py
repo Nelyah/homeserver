@@ -14,6 +14,9 @@ from ..exceptions import KubernetesError
 
 logger = logging.getLogger("svc.controllers.kubernetes")
 
+_NON_TERMINAL_POD_FIELD_SELECTOR = "status.phase!=Succeeded,status.phase!=Failed"
+_TERMINAL_POD_PHASES = frozenset({"Succeeded", "Failed"})
+
 
 @dataclass
 class DeploymentScale:
@@ -204,6 +207,8 @@ class KubernetesController:
                 "pod",
                 "-l",
                 selector,
+                "--field-selector",
+                _NON_TERMINAL_POD_FIELD_SELECTOR,
                 f"--timeout={timeout_seconds}s",
             ],
             capture_output=True,
@@ -212,15 +217,14 @@ class KubernetesController:
             message = result.stderr.strip() or f"Timed out waiting for pods of {deployment}"
             raise KubernetesError(message)
 
-        pods = await self._run(
-            ["-n", namespace, "get", "pods", "-l", selector, "-o", "name"],
-            allow_dry_run=True,
-        )
-        if pods.returncode != 0:
-            message = pods.stderr.strip() or f"Failed to list pods for deployment/{deployment}"
-            raise KubernetesError(message)
-        if pods.stdout.strip():
-            message = f"Pods for deployment/{deployment} still exist after scale-down"
+        pods = await self._get_json(["-n", namespace, "get", "pods", "-l", selector])
+        remaining = _non_terminal_pod_summaries(pods)
+        if remaining:
+            details = ", ".join(remaining)
+            message = (
+                f"Non-terminal pods for deployment/{deployment} still exist "
+                f"after scale-down: {details}"
+            )
             raise KubernetesError(message)
 
     async def _deployment_selector(self, namespace: str, deployment: str) -> str:
@@ -256,3 +260,30 @@ def _nested_string(obj: dict[str, Any], first: str, second: str) -> str | None:
     nested = cast("dict[str, Any]", raw_nested)
     value = nested.get(second)
     return value if isinstance(value, str) else None
+
+
+def _non_terminal_pod_summaries(obj: dict[str, Any]) -> list[str]:
+    """Return names and API phases for pods that may still be active."""
+    raw_items = obj.get("items")
+    if not isinstance(raw_items, list):
+        return ["<invalid pod list> (Unknown)"]
+
+    summaries: list[str] = []
+    for raw_item in cast("list[Any]", raw_items):
+        if not isinstance(raw_item, dict):
+            summaries.append("<invalid pod> (Unknown)")
+            continue
+
+        item = cast("dict[str, Any]", raw_item)
+        metadata = _dict_field(item, "metadata")
+        status = _dict_field(item, "status")
+
+        raw_name = metadata.get("name")
+        name = raw_name if isinstance(raw_name, str) and raw_name else "<unknown>"
+        raw_phase = status.get("phase")
+        phase = raw_phase if isinstance(raw_phase, str) and raw_phase else "Unknown"
+
+        if phase not in _TERMINAL_POD_PHASES:
+            summaries.append(f"{name} ({phase})")
+
+    return summaries
