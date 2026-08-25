@@ -23,8 +23,8 @@ in {
     5540 # Matter commissioning
   ];
 
-  # OTBR creates this interface for the authenticated Thread mesh. Trusting it
-  # lets sleeping devices report back even after Linux has forgotten an idle flow.
+  # OTBR creates wpan0 for the Thread network. Trust traffic from it so sleeping
+  # Matter devices can still reach Home Assistant after old connections time out.
   networking.firewall.trustedInterfaces = ["wpan0"];
 
   # Battery-powered Matter devices can sleep long enough for Linux to forget
@@ -45,8 +45,12 @@ in {
     networkConfig = {
       DHCP = "yes";
       DNS = ["127.0.0.1"];
+      # OTBR advertises its infrastructure and Thread IPv6 prefixes using
+      # Router Advertisements. Enable networkd's userspace RA implementation
+      # explicitly because this host also forwards IPv6 traffic.
+      IPv6AcceptRA = true;
     };
-    dhcpConfig.UseDNS = false;
+    dhcpV4Config.UseDNS = false;
   };
 
   networking.nameservers = ["127.0.0.1"];
