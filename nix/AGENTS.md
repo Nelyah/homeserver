@@ -50,6 +50,7 @@ The `svc` tool is backup/restore only:
 ```bash
 svc list [--backup-env local|remote]
 svc list-backups <local|remote> <service>
+sudo svc restic <local|remote> <restic arguments...>
 sudo svc backup <local|remote> <service|all>
 sudo svc restore <local|remote> <service> [snapshot|latest] [--verify-includes]
 ```
@@ -63,4 +64,3 @@ sudo svc restore <local|remote> <service> [snapshot|latest] [--verify-includes]
 - Avoid adding host-level service management to `svc`; Kubernetes deployment state belongs in Helm/Kubernetes config.
 - Prefer small service metadata modules over cross-cutting helper abstractions.
 - Do not modify `hardware-configuration.nix` unless the hardware really changed.
-

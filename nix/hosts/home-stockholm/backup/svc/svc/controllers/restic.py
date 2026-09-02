@@ -34,10 +34,15 @@ class CommandResult:
 class ResticRunner:
     """Executes restic commands asynchronously."""
 
-    def __init__(self, env_vars: dict[str, str], dry_run: bool = False):
+    def __init__(
+        self,
+        env_vars: dict[str, str],
+        dry_run: bool = False,
+        restic_bin: str = "/run/current-system/sw/bin/restic",
+    ):
         self.env_vars = env_vars
         self.dry_run = dry_run
-        self.restic = "/run/current-system/sw/bin/restic"
+        self.restic = restic_bin
 
     async def _run(self, args: list[str], capture_output: bool = False) -> CommandResult:
         """Run a restic command with environment."""
@@ -67,6 +72,11 @@ class ResticRunner:
         proc = await asyncio.create_subprocess_exec(*cmd, env=env)
         await proc.wait()
         return CommandResult(returncode=proc.returncode or 0)
+
+    async def run(self, args: list[str]) -> int:
+        """Run an arbitrary Restic command with inherited terminal I/O."""
+        result = await self._run(args)
+        return result.returncode
 
     async def backup(self, paths: list[str], tags: list[str], exclude: list[str]) -> int:
         """Run restic backup command."""

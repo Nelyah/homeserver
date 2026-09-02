@@ -9,14 +9,12 @@ from __future__ import annotations
 
 import asyncio
 import json
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
 import click
 from click.shell_completion import CompletionItem
 
-from ..config import load_config
 from ..controllers import SystemctlController
 from .args import (
     BackupArgs,
@@ -29,18 +27,9 @@ from .commands import (
     ListBackupsCommand,
     ListCommand,
     RestoreCommand,
+    restic_cli,
 )
-from .commands.base import AppContext, Command
-from .renderer import create_renderer
-
-
-@dataclass(frozen=True)
-class GlobalOptions:
-    """Global options parsed by click."""
-
-    config: str
-    verbose: bool
-    dry_run: bool
+from .runtime import GlobalOptions, run_command, setup_logging
 
 
 def _load_services_for_completion(config_path: str, *, backup_only: bool) -> list[str]:
@@ -103,29 +92,6 @@ class ServiceNameParam(click.ParamType):
         return [CompletionItem(m) for m in matches]
 
 
-def _get_app_ctx(ctx: click.Context) -> AppContext:
-    """Create the AppContext from global click options."""
-    options: GlobalOptions = ctx.ensure_object(GlobalOptions)  # type: ignore[assignment]
-    config = load_config(options.config)
-    renderer = create_renderer()
-    return AppContext(
-        config=config,
-        renderer=renderer,
-        dry_run=options.dry_run,
-        verbose=options.verbose,
-    )
-
-
-def _run_command(ctx: click.Context, command: Command[Any], args: Any) -> None:
-    """Run a command object using an isolated asyncio event loop."""
-    app_ctx = _get_app_ctx(ctx)
-    try:
-        exit_code: int = asyncio.run(command.execute(args, app_ctx))
-        raise click.exceptions.Exit(exit_code)
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        raise click.exceptions.Exit(130) from None
-
-
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 @click.option(
     "--config",
@@ -139,7 +105,11 @@ def _run_command(ctx: click.Context, command: Command[Any], args: Any) -> None:
 @click.pass_context
 def cli(ctx: click.Context, config: str, verbose: bool, dry_run: bool) -> None:
     """Manage backup and restore operations for homeserver services."""
+    setup_logging(verbose=verbose)
     ctx.obj = GlobalOptions(config=config, verbose=verbose, dry_run=dry_run)
+
+
+cli.add_command(restic_cli)
 
 
 @cli.command("list")
@@ -153,7 +123,7 @@ def cli(ctx: click.Context, config: str, verbose: bool, dry_run: bool) -> None:
 @click.pass_context
 def list_cmd(ctx: click.Context, backup_env: str) -> None:
     """List services and their backup status."""
-    _run_command(ctx, ListCommand(), ListArgs(backup_env=backup_env))
+    run_command(ctx, ListCommand(), ListArgs(backup_env=backup_env))
 
 
 @cli.command("list-backups")
@@ -162,7 +132,7 @@ def list_cmd(ctx: click.Context, backup_env: str) -> None:
 @click.pass_context
 def list_backups_cmd(ctx: click.Context, env: str, service: str) -> None:
     """List restic snapshots for a service."""
-    _run_command(ctx, ListBackupsCommand(), ListBackupsArgs(env=env, service=service))
+    run_command(ctx, ListBackupsCommand(), ListBackupsArgs(env=env, service=service))
 
 
 @cli.command("logs")
@@ -183,7 +153,7 @@ def logs_cmd(env: str) -> None:
 @click.pass_context
 def backup_cmd(ctx: click.Context, env: str, service: str) -> None:
     """Run backups"""
-    _run_command(ctx, BackupCommand(), BackupArgs(env=env, service=service))
+    run_command(ctx, BackupCommand(), BackupArgs(env=env, service=service))
 
 
 @cli.command("restore")
@@ -204,7 +174,7 @@ def restore_cmd(
     verify_includes: bool,
 ) -> None:
     """Restore a service from a snapshot (default: `latest`)."""
-    _run_command(
+    run_command(
         ctx,
         RestoreCommand(),
         RestoreArgs(
