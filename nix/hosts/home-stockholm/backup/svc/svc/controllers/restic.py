@@ -1,6 +1,7 @@
 """Restic backup controller with async support."""
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -63,15 +64,36 @@ class ResticRunner:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout_bytes, stderr_bytes = await proc.communicate()
+            try:
+                stdout_bytes, stderr_bytes = await proc.communicate()
+            except asyncio.CancelledError:
+                await self._terminate_process(proc, communicate=True)
+                raise
             return CommandResult(
                 returncode=proc.returncode or 0,
                 stdout=stdout_bytes.decode() if stdout_bytes else "",
                 stderr=stderr_bytes.decode() if stderr_bytes else "",
             )
         proc = await asyncio.create_subprocess_exec(*cmd, env=env)
-        await proc.wait()
+        try:
+            await proc.wait()
+        except asyncio.CancelledError:
+            await self._terminate_process(proc, communicate=False)
+            raise
         return CommandResult(returncode=proc.returncode or 0)
+
+    async def _terminate_process(
+        self, proc: asyncio.subprocess.Process, *, communicate: bool
+    ) -> None:
+        """Terminate and reap a Restic subprocess after command cancellation."""
+        if proc.returncode is None:
+            with contextlib.suppress(ProcessLookupError):
+                proc.terminate()
+
+        if communicate:
+            await proc.communicate()
+        else:
+            await proc.wait()
 
     async def run(self, args: list[str]) -> int:
         """Run an arbitrary Restic command with inherited terminal I/O."""
@@ -231,7 +253,7 @@ class ResticRunner:
         ]
         if not candidates:
             return None
-        best = max(candidates, key=lambda s: (s.get("time") or ""))
+        best = max(candidates, key=lambda s: s.get("time") or "")
         best_id = best.get("id")
         return best_id if isinstance(best_id, str) else None
 

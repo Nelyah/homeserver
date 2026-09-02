@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 import sys
 from dataclasses import dataclass
 from typing import TypeVar
@@ -72,11 +73,36 @@ def _get_app_ctx(ctx: typer.Context) -> AppContext:
     )
 
 
+async def _execute_command(command: Command[TArgs], args: TArgs, app_ctx: AppContext) -> int:
+    """Execute a command while translating SIGTERM into graceful cancellation."""
+    loop = asyncio.get_running_loop()
+    task = asyncio.current_task()
+    signal_handler_installed = False
+
+    if task is not None:
+
+        def cancel_command() -> None:
+            if task.cancelling() == 0:
+                task.cancel()
+
+        try:
+            loop.add_signal_handler(signal.SIGTERM, cancel_command)
+            signal_handler_installed = True
+        except NotImplementedError:  # pragma: no cover - Unix-only production path
+            pass
+
+    try:
+        return await command.execute(args, app_ctx)
+    finally:
+        if signal_handler_installed:
+            loop.remove_signal_handler(signal.SIGTERM)
+
+
 def run_command(ctx: typer.Context, command: Command[TArgs], args: TArgs) -> None:
     """Run a command object using an isolated asyncio event loop."""
     app_ctx = _get_app_ctx(ctx)
     try:
-        exit_code = asyncio.run(command.execute(args, app_ctx))
+        exit_code = asyncio.run(_execute_command(command, args, app_ctx))
         raise typer.Exit(code=exit_code)
     except (KeyboardInterrupt, asyncio.CancelledError):
         raise typer.Exit(code=130) from None

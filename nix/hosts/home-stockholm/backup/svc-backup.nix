@@ -57,6 +57,7 @@ in {
       serviceConfig = {
         Type = "oneshot";
         TimeoutStartSec = "12h";
+        TimeoutStopSec = "30m";
         EnvironmentFile = resticEnv "local";
       };
       script = "${svcBin} backup local all";
@@ -71,6 +72,7 @@ in {
       serviceConfig = {
         Type = "oneshot";
         TimeoutStartSec = "12h";
+        TimeoutStopSec = "30m";
         EnvironmentFile = resticEnv "remote";
       };
       script = "${svcBin} backup remote all";

@@ -1,7 +1,8 @@
 """Tests for the direct Restic command passthrough."""
 
-# ruff: noqa: PT009
+# ruff: noqa: PT009, PT027
 
+import asyncio
 import json
 import tempfile
 import unittest
@@ -135,9 +136,7 @@ class CompletionTests(unittest.TestCase):
                 prog_name="svc",
                 env={
                     "_SVC_COMPLETE": "complete_zsh",
-                    "_TYPER_COMPLETE_ARGS": (
-                        f"svc --config {config_path} backup remote enabled"
-                    ),
+                    "_TYPER_COMPLETE_ARGS": (f"svc --config {config_path} backup remote enabled"),
                 },
             )
 
@@ -189,6 +188,29 @@ class ResticRunnerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(call.args, ("/test/restic", "unlock"))
         self.assertEqual(set(call.kwargs), {"env"})
         self.assertEqual(call.kwargs["env"]["RESTIC_REPOSITORY"], "/backups")
+
+    async def test_cancellation_terminates_and_reaps_restic(self) -> None:
+        process = SimpleNamespace(
+            wait=AsyncMock(side_effect=[asyncio.CancelledError(), None]),
+            returncode=None,
+            terminate=Mock(),
+        )
+        runner = ResticRunner(
+            {"RESTIC_PASSWORD": "secret", "RESTIC_REPOSITORY": "/backups"},
+            restic_bin="/test/restic",
+        )
+
+        with (
+            patch(
+                "svc.controllers.restic.asyncio.create_subprocess_exec",
+                new=AsyncMock(return_value=process),
+            ),
+            self.assertRaises(asyncio.CancelledError),
+        ):
+            await runner.run(["backup", "/data"])
+
+        process.terminate.assert_called_once_with()
+        self.assertEqual(process.wait.await_count, 2)
 
 
 if __name__ == "__main__":

@@ -94,6 +94,8 @@ class BackupOrchestrator:
             return invalid
 
         deployment_scales: list[DeploymentScale] = []
+        result: BackupResult
+        restoration_failures: list[DeploymentScale]
 
         try:
             deployment_scales = await self._scale_down_kubernetes_deployments(svc)
@@ -103,31 +105,45 @@ class BackupOrchestrator:
             status = await self.restic.backup(paths, svc.backup.tags, svc.backup.exclude)
 
             if status != 0:
-                return BackupResult(
+                result = BackupResult(
                     service_name=svc.name,
                     success=False,
                     exit_code=EXIT_RESTIC_ERROR,
                     message=f"{dry_run_prefix}Backup failed for {svc.name} (exit code {status})",
                     paths_backed_up=paths,
                 )
+            else:
+                # Run forget if policy defined
+                forget_status = None
+                if svc.backup.policy is not None:
+                    logger.info("Running restic forget with retention policy...")
+                    forget_status = await self.restic.forget(svc.backup.tags, svc.backup.policy)
 
-            # Run forget if policy defined
-            forget_status = None
-            if svc.backup.policy is not None:
-                logger.info("Running restic forget with retention policy...")
-                forget_status = await self.restic.forget(svc.backup.tags, svc.backup.policy)
-
-            return BackupResult(
-                service_name=svc.name,
-                success=True,
-                exit_code=EXIT_SUCCESS,
-                message=f"{dry_run_prefix}Backup completed for {svc.name}",
-                paths_backed_up=paths,
-                forget_status=forget_status,
-            )
+                result = BackupResult(
+                    service_name=svc.name,
+                    success=True,
+                    exit_code=EXIT_SUCCESS,
+                    message=f"{dry_run_prefix}Backup completed for {svc.name}",
+                    paths_backed_up=paths,
+                    forget_status=forget_status,
+                )
 
         finally:
-            await self._restore_kubernetes_deployments(deployment_scales)
+            restoration_failures = await self._restore_kubernetes_deployments(deployment_scales)
+
+        if restoration_failures:
+            failed = ", ".join(f"{scale.namespace}/{scale.name}" for scale in restoration_failures)
+            return BackupResult(
+                service_name=svc.name,
+                success=False,
+                exit_code=result.exit_code if not result.success else EXIT_CONFIG_ERROR,
+                message=f"{result.message}; failed to restore deployments: {failed}",
+                paths_backed_up=result.paths_backed_up,
+                missing_paths=result.missing_paths,
+                forget_status=result.forget_status,
+            )
+
+        return result
 
     async def _prepare_backup_paths(
         self, svc: ServiceConfig, dry_run_prefix: str
@@ -259,9 +275,7 @@ class BackupOrchestrator:
             },
         }
 
-    async def _scale_down_kubernetes_deployments(
-        self, svc: ServiceConfig
-    ) -> list[DeploymentScale]:
+    async def _scale_down_kubernetes_deployments(self, svc: ServiceConfig) -> list[DeploymentScale]:
         """Scale configured Kubernetes deployments to zero for a consistent backup."""
         kubernetes = svc.backup.kubernetes
         if kubernetes is None:
@@ -289,8 +303,9 @@ class BackupOrchestrator:
 
     async def _restore_kubernetes_deployments(
         self, deployment_scales: list[DeploymentScale]
-    ) -> None:
+    ) -> list[DeploymentScale]:
         """Restore Kubernetes deployments to their original replica counts."""
+        failures: list[DeploymentScale] = []
         for scale in reversed(deployment_scales):
             if scale.replicas == 0:
                 continue
@@ -303,9 +318,11 @@ class BackupOrchestrator:
                     scale.replicas,
                 )
             except KubernetesError as error:
+                failures.append(scale)
                 logger.warning(
                     "Failed to restore deployment/%s in %s: %s",
                     scale.name,
                     scale.namespace,
                     error,
                 )
+        return failures
