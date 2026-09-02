@@ -1,4 +1,4 @@
-"""Shared Click command execution helpers."""
+"""Shared Typer command execution helpers."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import sys
 from dataclasses import dataclass
 from typing import TypeVar
 
-import click
+import typer
 
 from ..config import load_config
 from .commands.base import AppContext, Command
@@ -24,7 +24,7 @@ except ImportError:  # pragma: no cover
 
 @dataclass(frozen=True)
 class GlobalOptions:
-    """Global options parsed by Click."""
+    """Global options parsed by Typer."""
 
     config: str
     verbose: bool
@@ -59,9 +59,9 @@ def setup_logging(*, verbose: bool) -> None:
     logging.basicConfig(level=level, format=fmt, datefmt="%Y-%m-%d %H:%M:%S")
 
 
-def _get_app_ctx(ctx: click.Context) -> AppContext:
-    """Create the application context from global Click options."""
-    options: GlobalOptions = ctx.ensure_object(GlobalOptions)  # type: ignore[assignment]
+def _get_app_ctx(ctx: typer.Context) -> AppContext:
+    """Create the application context from global Typer options."""
+    options = ctx.ensure_object(GlobalOptions)
     config = load_config(options.config)
     renderer = create_renderer()
     return AppContext(
@@ -72,11 +72,11 @@ def _get_app_ctx(ctx: click.Context) -> AppContext:
     )
 
 
-def run_command(ctx: click.Context, command: Command[TArgs], args: TArgs) -> None:
+def run_command(ctx: typer.Context, command: Command[TArgs], args: TArgs) -> None:
     """Run a command object using an isolated asyncio event loop."""
     app_ctx = _get_app_ctx(ctx)
     try:
         exit_code = asyncio.run(command.execute(args, app_ctx))
-        raise click.exceptions.Exit(exit_code)
+        raise typer.Exit(code=exit_code)
     except (KeyboardInterrupt, asyncio.CancelledError):
-        raise click.exceptions.Exit(130) from None
+        raise typer.Exit(code=130) from None

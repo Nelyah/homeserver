@@ -1,7 +1,7 @@
 """CLI components for svc."""
 
 from .commands import AppContext, Command
-from .parser import cli
+from .parser import app
 from .renderer import (
     PlainRenderer,
     Renderer,
@@ -19,6 +19,6 @@ __all__ = [
     "RichRenderer",
     "TableColumn",
     "TableRow",
-    "cli",
+    "app",
     "create_renderer",
 ]

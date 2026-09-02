@@ -35,10 +35,13 @@ sudo svc restic remote snapshots -v
 sudo svc restic local backup -- -leading-dash
 ```
 
-Following Click's command convention, place `svc` global options before the
-subcommand. For example,
+Place `svc` global options before the subcommand. For example,
 `sudo svc --dry-run restic remote unlock` prints the command without executing
 it.
+
+Typer provides shell completion through `svc --show-completion` and
+`svc --install-completion`. The homeserver loads the generated Zsh completion
+script automatically.
 
 ## Notes
 

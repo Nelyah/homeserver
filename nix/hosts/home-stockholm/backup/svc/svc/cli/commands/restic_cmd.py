@@ -1,10 +1,14 @@
 """Direct Restic command passthrough."""
 
-from dataclasses import dataclass
+from __future__ import annotations
 
-import click
+from dataclasses import dataclass
+from typing import Annotated
+
+import typer
 
 from ...config import load_restic_env
+from ..args import BackupEnvironment  # noqa: TC001 - Typer resolves annotations at runtime
 from ..runtime import run_command
 from .base import AppContext, Command
 
@@ -27,19 +31,27 @@ class ResticCommand(Command[ResticArgs]):
         return await restic.run(list(args.command))
 
 
-@click.command(
-    "restic",
-    context_settings={
-        "allow_extra_args": True,
-        "allow_interspersed_args": False,
-        "ignore_unknown_options": True,
-    },
-)
-@click.argument("env", type=click.Choice(["local", "remote"], case_sensitive=False))
-@click.pass_context
-def restic_cli(ctx: click.Context, env: str) -> None:
+def restic_cli(
+    ctx: typer.Context,
+    env: Annotated[
+        BackupEnvironment,
+        typer.Argument(case_sensitive=False),
+    ],
+) -> None:
     """Run Restic directly against a configured repository."""
     if not ctx.args:
-        message = "Missing Restic command."
-        raise click.UsageError(message, ctx)
-    run_command(ctx, ResticCommand(), ResticArgs(env=env, command=tuple(ctx.args)))
+        typer.echo("Error: Missing Restic command.", err=True)
+        raise typer.Exit(code=2)
+    run_command(ctx, ResticCommand(), ResticArgs(env=env.value, command=tuple(ctx.args)))
+
+
+def register_restic_command(app: typer.Typer) -> None:
+    """Register the Restic passthrough while keeping its parsing policy local."""
+    app.command(
+        "restic",
+        context_settings={
+            "allow_extra_args": True,
+            "allow_interspersed_args": False,
+            "ignore_unknown_options": True,
+        },
+    )(restic_cli)

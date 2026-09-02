@@ -1,8 +1,16 @@
-"""Typed argument payloads passed from click to command objects."""
+"""Typed argument payloads passed from Typer to command objects."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
+
+
+class BackupEnvironment(StrEnum):
+    """Configured backup repository environments."""
+
+    local = "local"
+    remote = "remote"
 
 
 @dataclass(frozen=True)

@@ -2,7 +2,7 @@
 {pkgs, ...}:
 let
   pythonEnv = pkgs.python3.withPackages (ps: [
-    ps.click
+    ps.typer
     ps.pydantic
     ps.rich
     (ps.buildPythonPackage {

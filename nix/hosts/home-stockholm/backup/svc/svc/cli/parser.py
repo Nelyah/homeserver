@@ -1,23 +1,18 @@
-"""
-Click-based CLI for svc.
-
-This replaces the previous argparse+argcomplete implementation while keeping the
-same commands/options and dynamic completion of service names.
-"""
+"""Typer application for the svc backup CLI."""
 
 from __future__ import annotations
 
 import asyncio
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Annotated, Any, cast
 
-import click
-from click.shell_completion import CompletionItem
+import typer
 
 from ..controllers import SystemctlController
 from .args import (
     BackupArgs,
+    BackupEnvironment,
     ListArgs,
     ListBackupsArgs,
     RestoreArgs,
@@ -27,7 +22,7 @@ from .commands import (
     ListBackupsCommand,
     ListCommand,
     RestoreCommand,
-    restic_cli,
+    register_restic_command,
 )
 from .runtime import GlobalOptions, run_command, setup_logging
 
@@ -67,118 +62,130 @@ def _load_services_for_completion(config_path: str, *, backup_only: bool) -> lis
     return services
 
 
-class ServiceNameParam(click.ParamType):
-    """click ParamType with dynamic service-name completion."""
-
-    name = "service"
-
-    def __init__(self, *, backup_only: bool, allow_all: bool):
-        super().__init__()
-        self._backup_only = backup_only
-        self._allow_all = allow_all
-
-    def shell_complete(
-        self, ctx: click.Context, param: click.Parameter, incomplete: str
-    ) -> list[CompletionItem]:
-        """Return completion candidates for the `service` argument."""
-        _ = param
-        params = ctx.find_root().params or {}
-        config_param = params.get("config")
-        config_path = config_param if isinstance(config_param, str) else "/etc/svc/services.json"
-        services = _load_services_for_completion(config_path, backup_only=self._backup_only)
-        if self._allow_all:
-            services.append("all")
-        matches = sorted({s for s in services if s.startswith(incomplete)})
-        return [CompletionItem(m) for m in matches]
+def _complete_services(
+    ctx: typer.Context,
+    incomplete: str,
+    *,
+    allow_all: bool,
+) -> list[str]:
+    """Return configured backup service names matching the partial value."""
+    params = ctx.find_root().params or {}
+    config_param = params.get("config")
+    config_path = config_param if isinstance(config_param, str) else "/etc/svc/services.json"
+    services = _load_services_for_completion(config_path, backup_only=True)
+    if allow_all:
+        services.append("all")
+    return sorted({service for service in services if service.startswith(incomplete)})
 
 
-@click.group(context_settings={"help_option_names": ["-h", "--help"]})
-@click.option(
-    "--config",
-    "-c",
-    default="/etc/svc/services.json",
-    show_default=True,
-    help="Path to services JSON config",
-)
-@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.option("--dry-run", "-n", is_flag=True, help="Show actions without executing")
-@click.pass_context
-def cli(ctx: click.Context, config: str, verbose: bool, dry_run: bool) -> None:
+def _complete_backup_service(ctx: typer.Context, incomplete: str) -> list[str]:
+    """Complete the name of a backup-enabled service."""
+    return _complete_services(ctx, incomplete, allow_all=False)
+
+
+def _complete_backup_service_or_all(ctx: typer.Context, incomplete: str) -> list[str]:
+    """Complete a backup-enabled service name or the `all` selector."""
+    return _complete_services(ctx, incomplete, allow_all=True)
+
+
+app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
+
+
+@app.callback()
+def cli(
+    ctx: typer.Context,
+    config: Annotated[
+        str,
+        typer.Option("--config", "-c", help="Path to services JSON config", show_default=True),
+    ] = "/etc/svc/services.json",
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Enable verbose output"),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", "-n", help="Show actions without executing"),
+    ] = False,
+) -> None:
     """Manage backup and restore operations for homeserver services."""
     setup_logging(verbose=verbose)
     ctx.obj = GlobalOptions(config=config, verbose=verbose, dry_run=dry_run)
 
 
-cli.add_command(restic_cli)
+register_restic_command(app)
 
 
-@cli.command("list")
-@click.option(
-    "--backup-env",
-    type=click.Choice(["local", "remote"], case_sensitive=False),
-    default="local",
-    show_default=True,
-    help="Which systemd backup unit to check for last result",
-)
-@click.pass_context
-def list_cmd(ctx: click.Context, backup_env: str) -> None:
+@app.command("list")
+def list_cmd(
+    ctx: typer.Context,
+    backup_env: Annotated[
+        BackupEnvironment,
+        typer.Option(
+            "--backup-env",
+            case_sensitive=False,
+            help="Which systemd backup unit to check for last result",
+            show_default=True,
+        ),
+    ] = BackupEnvironment.local,
+) -> None:
     """List services and their backup status."""
-    run_command(ctx, ListCommand(), ListArgs(backup_env=backup_env))
+    run_command(ctx, ListCommand(), ListArgs(backup_env=backup_env.value))
 
 
-@cli.command("list-backups")
-@click.argument("env", type=click.Choice(["local", "remote"], case_sensitive=False))
-@click.argument("service", type=ServiceNameParam(backup_only=True, allow_all=False))
-@click.pass_context
-def list_backups_cmd(ctx: click.Context, env: str, service: str) -> None:
+@app.command("list-backups")
+def list_backups_cmd(
+    ctx: typer.Context,
+    env: Annotated[BackupEnvironment, typer.Argument(case_sensitive=False)],
+    service: Annotated[str, typer.Argument(autocompletion=_complete_backup_service)],
+) -> None:
     """List restic snapshots for a service."""
-    run_command(ctx, ListBackupsCommand(), ListBackupsArgs(env=env, service=service))
+    run_command(ctx, ListBackupsCommand(), ListBackupsArgs(env=env.value, service=service))
 
 
-@cli.command("logs")
-@click.argument("env", type=click.Choice(["local", "remote"], case_sensitive=False))
-def logs_cmd(env: str) -> None:
+@app.command("logs")
+def logs_cmd(
+    env: Annotated[BackupEnvironment, typer.Argument(case_sensitive=False)],
+) -> None:
     """Show logs for scheduled backups."""
-    unit = "backup.service" if env == "local" else "backup-remote.service"
+    unit = "backup.service" if env is BackupEnvironment.local else "backup-remote.service"
     try:
         exit_code = asyncio.run(SystemctlController().logs(unit))
-        raise click.exceptions.Exit(exit_code)
+        raise typer.Exit(code=exit_code)
     except (KeyboardInterrupt, asyncio.CancelledError):
-        raise click.exceptions.Exit(130) from None
+        raise typer.Exit(code=130) from None
 
 
-@cli.command("backup")
-@click.argument("env", type=click.Choice(["local", "remote"], case_sensitive=False))
-@click.argument("service", type=ServiceNameParam(backup_only=True, allow_all=True))
-@click.pass_context
-def backup_cmd(ctx: click.Context, env: str, service: str) -> None:
+@app.command("backup")
+def backup_cmd(
+    ctx: typer.Context,
+    env: Annotated[BackupEnvironment, typer.Argument(case_sensitive=False)],
+    service: Annotated[str, typer.Argument(autocompletion=_complete_backup_service_or_all)],
+) -> None:
     """Run backups"""
-    run_command(ctx, BackupCommand(), BackupArgs(env=env, service=service))
+    run_command(ctx, BackupCommand(), BackupArgs(env=env.value, service=service))
 
 
-@cli.command("restore")
-@click.argument("env", type=click.Choice(["local", "remote"], case_sensitive=False))
-@click.argument("service", type=ServiceNameParam(backup_only=True, allow_all=False))
-@click.argument("snapshot", required=False, default="latest")
-@click.option(
-    "--verify-includes",
-    is_flag=True,
-    help="Check snapshot contains each configured path/PVC before restoring",
-)
-@click.pass_context
+@app.command("restore")
 def restore_cmd(
-    ctx: click.Context,
-    env: str,
-    service: str,
-    snapshot: str,
-    verify_includes: bool,
+    ctx: typer.Context,
+    env: Annotated[BackupEnvironment, typer.Argument(case_sensitive=False)],
+    service: Annotated[str, typer.Argument(autocompletion=_complete_backup_service)],
+    snapshot: Annotated[str, typer.Argument()] = "latest",
+    *,
+    verify_includes: Annotated[
+        bool,
+        typer.Option(
+            "--verify-includes",
+            help="Check snapshot contains each configured path/PVC before restoring",
+        ),
+    ] = False,
 ) -> None:
     """Restore a service from a snapshot (default: `latest`)."""
     run_command(
         ctx,
         RestoreCommand(),
         RestoreArgs(
-            env=env,
+            env=env.value,
             service=service,
             snapshot=snapshot,
             verify_includes=verify_includes,

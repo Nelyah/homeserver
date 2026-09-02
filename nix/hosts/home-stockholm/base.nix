@@ -66,7 +66,7 @@
         *i*)
 	          __svc_completion_precmd() {
 	            if type compdef >/dev/null 2>&1 && command -v svc >/dev/null 2>&1; then
-	              eval "$(_SVC_COMPLETE=zsh_source svc)"
+	              eval "$(svc --show-completion)"
 	
 	              add-zsh-hook -d precmd __svc_completion_precmd >/dev/null 2>&1 || :
 	              unfunction __svc_completion_precmd >/dev/null 2>&1 || :
