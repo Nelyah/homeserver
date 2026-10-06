@@ -24,10 +24,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    ghostty = {
-      url = "github:Nelyah/ghostty";
-    };
-
     codex-acp-nix = {
       url = "git+ssh://git@forgejo-ssh.forgejo.svc.k8s.nelyah.eu/Nelyah/codex-acp-nix.git?ref=main";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -50,8 +46,8 @@
     # To find the commit, run this:
     # curl -s "https://api.github.com/repos/NixOS/nixpkgs/commits?path=pkgs/by-name/ne/neovim-unwrapped/package.nix&per_page=30" | jq -r '.[] | "\(.sha) \(.commit.message | split("\n")[0])"'
 
-    # nvim 0.12.1
-    nixpkgs-neovim.url = "github:NixOS/nixpkgs/c02cfe212c24ca37f644cb6580e88d4283094fe4";
+    # nvim 0.12.5
+    nixpkgs-neovim.url = "github:NixOS/nixpkgs/6a96a4723c8e3e170b6a504a01d789d2bc3eeedf";
   };
 
   outputs = inputs @ {
@@ -98,17 +94,6 @@
       ];
     };
 
-    ghosttyOverlay = system: {
-      nixpkgs.overlays = [
-        (
-          _final: _prev:
-            nixpkgs.lib.optionalAttrs (inputs.ghostty.packages.${system} ? ghostty) {
-              ghostty = inputs.ghostty.packages.${system}.ghostty;
-            }
-        )
-      ];
-    };
-
     mkDarwinHost = {
       hostname,
       username,
@@ -119,12 +104,10 @@
         system = darwinSystem;
         specialArgs = {
           inherit inputs username hostname;
-          ghosttyPrebuilt = inputs.ghostty.packages.${darwinSystem} ? ghostty;
         };
         modules = [
           (unstableOverlay darwinSystem)
           (neovimOverlay darwinSystem)
-          (ghosttyOverlay darwinSystem)
           {nixpkgs.overlays = [inputs.claude-agent-acp-nix.overlays.default];}
           hostPath
           ./modules/common.nix

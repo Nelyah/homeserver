@@ -107,6 +107,7 @@
       lua
       rustup
       cargo
+      zig
 
       # Network & web
       curl
@@ -119,6 +120,7 @@
       flac
       imagemagick
       rsync
+      rclone
       unzip
       yt-dlp
 

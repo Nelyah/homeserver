@@ -2,9 +2,6 @@
   pkgs,
   username,
   hostname,
-  inputs,
-  lib,
-  ghosttyPrebuilt,
   ...
 }: {
   environment.systemPackages = with pkgs; [
@@ -15,15 +12,6 @@
     # Linux has it with gettext, but not macos
     libintl
   ];
-
-  system.activationScripts.ghostty = lib.mkIf ghosttyPrebuilt {
-    text = ''
-      echo "Installing Ghostty.app from ${pkgs.ghostty}..."
-      ${pkgs.rsync}/bin/rsync -a --delete \
-        "${pkgs.ghostty}/Applications/Ghostty.app/" \
-        /Applications/Ghostty.app/
-    '';
-  };
 
   # Enable Touch ID for sudo
   security.pam.services.sudo_local.touchIdAuth = true;
