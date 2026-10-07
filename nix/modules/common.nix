@@ -12,13 +12,6 @@
 
   config = {
 
-  nixpkgs.overlays = [
-    inputs.bive.overlays.default
-    (_final: prev: {
-      bive = prev.bive.overrideAttrs {doCheck = false;};
-    })
-  ];
-
   # Nix settings shared across all hosts
   nix = {
     settings = {
@@ -125,7 +118,6 @@
       yt-dlp
 
       # Other utilities
-      bive
       atuin
       ansible
       cacert

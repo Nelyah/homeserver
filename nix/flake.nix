@@ -9,11 +9,6 @@
 
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    bive = {
-      url = "git+ssh://git@github.com/Nelyah/bive";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     codex-cli-nix = {
       url = "github:sadjow/codex-cli-nix";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -55,7 +50,6 @@
     nixpkgs,
     nix-darwin,
     home-manager,
-    bive,
     ...
   }: let
     darwinSystem = "aarch64-darwin";
